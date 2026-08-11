@@ -1,66 +1,27 @@
-// ==================================================
-// FUNÇÕES AUXILIARES / UTILITÁRIAS
-// ==================================================
-const Utils = {
-
-  // ✅ Formatar valor para moeda brasileira (R$ 1.234,56)
+// js/utils.js
+export const Utils = {
   formatarMoeda(valor) {
-    const numero = Number(valor);
-    if (isNaN(numero) || numero < 0) return "R$ 0,00";
-    return numero.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: CONFIG.PADROES.MOEDA
-    });
+    const n = Number(valor);
+    if (isNaN(n) || n < 0) return "R$ 0,00";
+    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   },
-
-  // ✅ Formatar data no padrão dd/mm/aaaa
   formatarData(data) {
-    let dataObj;
-    if (!data) {
-      dataObj = new Date();
-    } else {
-      dataObj = new Date(data);
-    }
-    // ✅ Tratar datas inválidas
-    if (isNaN(dataObj.getTime())) return "--/--/----";
-    return dataObj.toLocaleDateString('pt-BR');
+    const d = data ? new Date(data) : new Date();
+    if (isNaN(d.getTime())) return "--/--/----";
+    return d.toLocaleDateString('pt-BR');
   },
-
-  // ✅ Gerar ID único automático
   gerarId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   },
-
-  // ✅ Obter data e hora atual
-  getDataHoraAtual() {
-    return new Date().toLocaleString('pt-BR');
+  getDataHoraAtual() { return new Date().toLocaleString('pt-BR'); },
+  diasEntre(d1, d2) {
+    const a = new Date(d1), b = new Date(d2);
+    if (isNaN(a.getTime()) || isNaN(b.getTime())) return 0;
+    return Math.ceil(Math.abs(b - a) / 86400000);
   },
-
-  // ✅ Calcular diferença em dias entre duas datas
-  diasEntre(dataInicial, dataFinal) {
-    const inicio = new Date(dataInicial);
-    const fim = new Date(dataFinal);
-    // ✅ Validar datas antes de calcular
-    if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) return 0;
-    const diferenca = Math.abs(fim - inicio);
-    return Math.ceil(diferenca / (1000 * 60 * 60 * 24));
-  },
-
-  // ✅ Limpar espaços e caracteres desnecessários
-  limparTexto(texto) {
-    if (!texto) return "";
-    return texto.toString().trim().replace(/\s+/g, " ");
-  },
-
-  // 🆕 Extrair somente números de um texto
-  extrairNumeros(texto) {
-    if (!texto) return "";
-    return texto.toString().replace(/[^0-9]/g, "");
-  },
-
-  // 🆕 Padronizar placa (maiúsculo, sem hífen)
-  padronizarPlaca(placa) {
-    if (!placa) return "";
-    return placa.toString().toUpperCase().replace(/[^A-Z0-9]/g, "");
-  }
+  limparTexto(t) { return !t ? "" : t.toString().trim().replace(/\s+/g, " "); },
+  extrairNumeros(t) { return !t ? "" : t.toString().replace(/[^0-9]/g, ""); },
+  padronizarPlaca(p) { return !p ? "" : p.toString().toUpperCase().replace(/[^A-Z0-9]/g, ""); }
 };
+window.Utils = Utils;
+export default Utils;

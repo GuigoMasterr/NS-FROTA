@@ -1,7 +1,7 @@
 if (typeof window.usuarioAtual === 'undefined') window.usuarioAtual = null;
 var usuarioAtual = window.usuarioAtual;
 window.USUARIOS = window.USUARIOS || [
-  { usuario: 'admin', senha: '123456', nome: 'Administrador', perfil: 'admin' },
+  { usuario: 'admin', senha: 'admin123', nome: 'Administrador', perfil: 'admin' },
   { usuario: 'operador', senha: '1234', nome: 'Operador', perfil: 'operador' }
 ];
 
