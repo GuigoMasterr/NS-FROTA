@@ -1,10 +1,8 @@
-// ==================================================
-// ALOCAÇÕES DE VEÍCULOS — Origem / Destino com Locais
-// ==================================================
+import { obterLocais, obterVeiculos, obterVeiculoPorPlaca, salvarAlocacaoSupabase, obterAlocacoes } from './banco-dados.js'
 
 // ✅ Preenche os selects de Origem e Destino com os Locais cadastrados
-function carregarSelectLocaisAlocacao() {
-  const locais = BD.locais || [];
+async function carregarSelectLocaisAlocacao() {
+  const locais = await obterLocais();
   const listaNomes = locais.map(l => l.nome);
 
   const origemEl = document.getElementById('alocacaoOrigem');
@@ -32,13 +30,15 @@ function carregarSelectLocaisAlocacao() {
 }
 
 // ✅ Abre o modal de cadastro de Alocação
-function abrirModalAlocacao() {
-  if (!BD.veiculos || BD.veiculos.length === 0) {
+async function abrirModalAlocacao() {
+  const veiculos = await obterVeiculos();
+  
+  if (!veiculos || veiculos.length === 0) {
     alert('⚠️ Cadastre um veículo primeiro!');
     return;
   }
 
-  const placas = BD.veiculos.map(v => `<option value="${v.placa}">${v.placa}</option>`).join('');
+  const placas = veiculos.map(v => `<option value="${v.placa}">${v.placa}</option>`).join('');
 
   document.getElementById('modais').innerHTML = `
     <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
@@ -90,13 +90,13 @@ function abrirModalAlocacao() {
 }
 
 // ✅ Salva a nova alocação
-function salvarAlocacao(event) {
+async function salvarAlocacao(event) {
   event.preventDefault();
 
   const placa = document.getElementById('alocacaoPlaca').value;
   const origem = document.getElementById('alocacaoOrigem').value.trim();
   const destino = document.getElementById('alocacaoDestino').value.trim();
-  const kmInicial = document.getElementById('alocacaoKmInicial').value;
+  const kmInicial = parseInt(document.getElementById('alocacaoKmInicial').value);
   const responsavel = document.getElementById('alocacaoResponsavel').value.trim();
   const observacao = document.getElementById('alocacaoObs').value.trim() || '';
 
@@ -109,23 +109,45 @@ function salvarAlocacao(event) {
     return;
   }
 
-  // Salva no BD
-  adicionarRegistro('alocacoes', {
-    placa, origem, destino, kmInicial, responsavel, observacao
-  });
+  // Busca o veículo pela placa para pegar o ID
+  const veiculo = await obterVeiculoPorPlaca(placa);
+  if (!veiculo) {
+    alert('⚠️ Veículo não encontrado!');
+    return;
+  }
 
-  fecharModal();
-  carregarTabelaAlocacoes();
+  // Monta os dados no formato do Supabase
+  const dadosAlocacao = {
+    veiculo_id: veiculo.id,
+    motorista: responsavel,
+    data_saida: new Date().toISOString().split('T')[0],
+    km_saida: kmInicial,
+    origem: origem,
+    destino: destino,
+    observacoes: observacao
+  };
+
+  // Salva no Supabase
+  const resultado = await salvarAlocacaoSupabase(dadosAlocacao);
+  
+  if (resultado) {
+    alert('✅ Alocação salva com sucesso!');
+    fecharModal();
+    carregarTabelaAlocacoes();
+  } else {
+    alert('❌ Erro ao salvar alocação! Verifique o console.');
+  }
 }
 
 // ✅ Carrega a tabela
-function carregarTabelaAlocacoes(filtroVeiculo = 'todos') {
+async function carregarTabelaAlocacoes(filtroVeiculo = 'todos') {
   const tbody = document.getElementById('tabelaAlocacoes');
   if (!tbody) return;
 
-  let lista = BD.alocacoes || [];
+  let lista = await obterAlocacoes();
+  
   if (filtroVeiculo && filtroVeiculo !== 'todos') {
-    lista = lista.filter(a => a.placa === filtroVeiculo);
+    lista = lista.filter(a => a.veiculo?.placa === filtroVeiculo);
   }
 
   if (lista.length === 0) {
@@ -135,11 +157,11 @@ function carregarTabelaAlocacoes(filtroVeiculo = 'todos') {
 
   tbody.innerHTML = lista.map(a => `
     <tr>
-      <td><strong>${a.placa}</strong></td>
-      <td>📍 ${a.origem} → ${a.destino}</td>
-      <td>${a.dataCadastro?.split(' ')[0] || '-'}</td>
-      <td>${a.kmInicial || '-'}</td>
-      <td>${a.responsavel || '-'}</td>
+      <td><strong>${a.veiculo?.placa || a.placa || '-'}</strong></td>
+      <td>📍 ${a.origem || '-'} → ${a.destino || '-'}</td>
+      <td>${a.data_saida || a.created_at?.split('T')[0] || '-'}</td>
+      <td>${a.km_saida || '-'}</td>
+      <td>${a.motorista || '-'}</td>
     </tr>
   `).join('');
 }
@@ -147,11 +169,18 @@ function carregarTabelaAlocacoes(filtroVeiculo = 'todos') {
 // ✅ Atualiza filtros ao abrir a página
 document.addEventListener('DOMContentLoaded', function () {
   const originalMostrarPagina = window.mostrarPagina;
-  window.mostrarPagina = function (pagina) {
+  window.mostrarPagina = async function (pagina) {
     if (originalMostrarPagina) originalMostrarPagina(pagina);
     if (pagina === 'alocacoes') {
-      carregarTabelaAlocacoes();
-      atualizarListaVeiculosNosFiltros();
+      await carregarTabelaAlocacoes();
+      if (typeof atualizarListaVeiculosNosFiltros === 'function') {
+        atualizarListaVeiculosNosFiltros();
+      }
     }
   };
 });
+
+// Torna funções acessíveis globalmente
+window.abrirModalAlocacao = abrirModalAlocacao;
+window.salvarAlocacao = salvarAlocacao;
+window.carregarTabelaAlocacoes = carregarTabelaAlocacoes;
