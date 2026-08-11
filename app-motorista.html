@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Motorista | Gestão de Frota</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="stylesheet" href="css/estilos.css">
+    <style>
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 32%),
+                radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 28%),
+                linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+        }
+        .app-shell { min-height: 100vh; }
+        .app-glass {
+            background: rgba(255, 255, 255, 0.86);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+        }
+        .app-hero {
+            background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 45%, #2563eb 100%);
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .app-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top right, rgba(255,255,255,0.18), transparent 34%);
+            pointer-events: none;
+        }
+        .app-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-radius: 999px;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+        .quick-card {
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(226,232,240,0.9);
+            box-shadow: 0 10px 24px rgba(15,23,42,0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .quick-card:hover { transform: translateY(-2px); box-shadow: 0 18px 30px rgba(15,23,42,0.08); }
+        .summary-card {
+            background: rgba(255,255,255,0.82);
+            border: 1px solid rgba(226,232,240,0.95);
+            box-shadow: 0 8px 24px rgba(15,23,42,0.05);
+        }
+    </style>
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
+</head>
+<body class="app-shell">
+    <div id="telaLogin" class="flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-sm">
+            <div class="app-glass rounded-3xl p-6">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 14px 30px rgba(37,99,235,0.34);">
+                        <i class="fa-solid fa-truck-fast text-2xl text-white"></i>
+                    </div>
+                    <div class="app-chip mb-3" style="background: rgba(37,99,235,0.10); color: #1d4ed8;">CHECKLIST • CAMPO • ALERTAS</div>
+                    <h1 class="text-2xl font-black text-slate-900 tracking-tight">App do Motorista</h1>
+                    <p class="text-slate-500 text-sm mt-1">Acesse com suas credenciais para registrar inspeções e ocorrências.</p>
+                </div>
+                <form id="formLoginApp" class="space-y-3">
+                    <div>
+                        <input type="text" id="usuarioApp" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-base bg-white/95" placeholder="Usuário" required>
+                    </div>
+                    <div>
+                        <input type="password" id="senhaApp" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-base bg-white/95" placeholder="Senha" required>
+                    </div>
+                    <button type="submit" class="w-full bg-slate-900 text-white py-3 rounded-xl font-semibold shadow-lg">Entrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div id="telaPrincipal" class="hidden pb-24">
+        <header class="app-hero px-4 pt-6 pb-8 shadow-xl">
+            <div class="relative z-10">
+                <div class="flex items-center justify-between gap-3 mb-5">
+                    <div>
+                        <div class="app-chip mb-2" style="background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.92);">OPERACIONAL</div>
+                        <h1 class="text-2xl font-black tracking-tight">App do Motorista</h1>
+                        <p id="nomeMotorista" class="text-blue-100 text-sm mt-1"></p>
+                    </div>
+                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(255,255,255,0.14); backdrop-filter: blur(8px);">
+                        <i class="fa-solid fa-route text-xl text-white"></i>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="summary-card rounded-2xl p-3 text-slate-900">
+                        <div class="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-bold">Check-lists</div>
+                        <div id="statChecklists" class="text-2xl font-black mt-1">0</div>
+                    </div>
+                    <div class="summary-card rounded-2xl p-3 text-slate-900">
+                        <div class="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-bold">Chamados</div>
+                        <div id="statChamados" class="text-2xl font-black mt-1">0</div>
+                    </div>
+                    <div class="summary-card rounded-2xl p-3 text-slate-900">
+                        <div class="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-bold">Veículos</div>
+                        <div id="statVeiculos" class="text-2xl font-black mt-1">0</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <main class="p-4 space-y-4 -mt-4 relative z-10">
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="abrirChecklistApp()" class="quick-card w-full rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98]">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-list-check text-xl text-green-600"></i>
+                </div>
+                <div class="text-left">
+                    <h2 class="font-semibold text-slate-900">Novo Check-list</h2>
+                    <p class="text-xs text-slate-500 mt-1">Inspeção diária com fotos</p>
+                </div>
+            </button>
+                <button onclick="abrirChamadoApp()" class="quick-card w-full rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98]">
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-triangle-exclamation text-xl text-red-600"></i>
+                </div>
+                <div class="text-left">
+                    <h2 class="font-semibold text-slate-900">Problema / Sinistro</h2>
+                    <p class="text-xs text-slate-500 mt-1">Abrir chamado de ocorrência</p>
+                </div>
+            </button>
+            </div>
+            <div class="bg-white/90 rounded-3xl shadow-lg p-4 border border-white/70">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-slate-900">Meus Registros</h3>
+                    <span class="text-xs text-slate-500">Sincronizado localmente</span>
+                </div>
+                <div id="listaMeusRegistros" class="space-y-2 text-sm">
+                    <p class="text-slate-500">Nenhum registro enviado</p>
+                </div>
+            </div>
+        </main>
+        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
+            <div class="flex justify-around py-2">
+                <button onclick="sairApp()" class="flex flex-col items-center text-slate-500 py-1">
+                    <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                    <span class="text-xs mt-1">Sair</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+    <div id="areaFormularios"></div>
+    <div id="modais"></div>
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/validacoes.js"></script>
+    <script src="js/banco-dados.js"></script>
+    <script src="js/sync.js"></script>
+    <script src="js/checklist.js"></script>
+    <script>
+        let usuarioLogado = null;
+        document.getElementById('formLoginApp').addEventListener('submit', e => {
+            e.preventDefault();
+            const u = document.getElementById('usuarioApp').value.trim();
+            const s = document.getElementById('senhaApp').value;
+            const encontrado = BD.usuarios.find(x => x.usuario === u && x.senha === s && x.ativo);
+            if(encontrado && (encontrado.perfil === 'operacional' || encontrado.perfil === 'admin')) {
+                usuarioLogado = encontrado;
+                if (typeof usuarioAtual !== 'undefined') {
+                    usuarioAtual = encontrado;
+                }
+                document.getElementById('telaLogin').classList.add('hidden');
+                document.getElementById('telaPrincipal').classList.remove('hidden');
+                document.getElementById('nomeMotorista').textContent = encontrado.nome;
+                carregarMeusRegistros();
+            } else {
+                alert('Credenciais inválidas ou sem permissão de acesso!');
+            }
+        });
+        function sairApp() {
+            usuarioLogado = null;
+            document.getElementById('telaPrincipal').classList.add('hidden');
+            document.getElementById('telaLogin').classList.remove('hidden');
+            document.getElementById('usuarioApp').value = '';
+            document.getElementById('senhaApp').value = '';
+        }
+        function carregarMeusRegistros() {
+            const registros = [...BD.checklists.filter(c => c.motorista === usuarioLogado.nome), 
+                              ...BD.chamados.filter(c => c.responsavel === usuarioLogado.nome)];
+            registros.sort((a,b) => new Date(b.data) - new Date(a.data));
+            atualizarResumoApp(registros);
+            const lista = document.getElementById('listaMeusRegistros');
+            if(!registros.length) { lista.innerHTML = '<p class="text-slate-500">Nenhum registro enviado</p>'; return; }
+            lista.innerHTML = registros.slice(0,8).map(r => {
+                const dt = new Date(r.data).toLocaleDateString('pt-BR');
+                const tipo = r.tipo ? 'Chamado' : 'Check-list';
+                const cor = r.tipo ? 'bg-red-50 text-red-700 border-red-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100';
+                return `<div class="p-3 bg-slate-50 rounded-2xl flex justify-between items-center border border-slate-100">
+                    <div>
+                        <div class="inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold border ${cor}">${tipo}</div>
+                        <div class="font-semibold text-slate-900 mt-2">${r.placaVeiculo || 'Veículo'}</div>
+                    </div>
+                    <span class="text-xs text-slate-500">${dt}</span>
+                </div>`;
+            }).join('');
+        }
+        function atualizarResumoApp(registros = []) {
+            const checklists = BD.checklists.filter(c => c.motorista === usuarioLogado?.nome).length;
+            const chamados = BD.chamados.filter(c => c.responsavel === usuarioLogado?.nome).length;
+            const veiculos = BD.veiculos.length;
+            const statChecklists = document.getElementById('statChecklists');
+            const statChamados = document.getElementById('statChamados');
+            const statVeiculos = document.getElementById('statVeiculos');
+            if (statChecklists) statChecklists.textContent = checklists;
+            if (statChamados) statChamados.textContent = chamados;
+            if (statVeiculos) statVeiculos.textContent = veiculos;
+        }
+        function abrirChecklistApp() {
+            if (typeof abrirModalChecklist === 'function') {
+                abrirModalChecklist();
+                return;
+            }
+            alert('⚠️ O check-list completo ainda não foi carregado.');
+        }
+        function abrirChamadoApp() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/50 flex items-end justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white w-full max-w-lg rounded-t-2xl p-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold">Relatar Problema / Sinistro</h2>
+                        <button onclick="fecharFormularioApp()"><i class="fa-solid fa-times text-slate-400"></i></button>
+                    </div>
+                    <form id="formChamadoApp" class="space-y-3">
+                        <div><label class="block text-sm font-medium mb-1">Veículo</label>
+                            <select id="chVeiculo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
+                                <option value="">Selecione o veículo</option>
+                                ${BD.veiculos.map(v => `<option value="${v.id}">${v.placa} — ${v.modelo}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div><label class="block text-sm font-medium mb-1">Tipo de Ocorrência</label>
+                            <select id="chTipo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
+                                <option value="Problema Mecânico">🔧 Problema Mecânico</option>
+                                <option value="Sinistro">💥 Sinistro / Acidente</option>
+                                <option value="Outro">📋 Outro</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-sm font-medium mb-1">Obra / Local Atual</label>
+                            <input type="text" id="chObra" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
+                        </div>
+                        <div><label class="block text-sm font-medium mb-1">Quilometragem</label>
+                            <input type="number" id="chKm" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
+                        </div>
+                        <div><label class="block text-sm font-medium mb-1">Descrição do Problema</label>
+                            <textarea id="chDescricao" class="w-full px-3 py-2 border border-slate-200 rounded-lg" rows="4" placeholder="Descreva detalhadamente o que ocorreu..." required></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-red-600 text-white py-3 rounded-lg font-medium mt-2">Enviar Chamado</button>
+                    </form>
+                </div>
+            `;
+            document.getElementById('areaFormularios').innerHTML = '';
+            document.getElementById('areaFormularios').appendChild(modal);
+            document.getElementById('formChamadoApp').addEventListener('submit', e => {
+                e.preventDefault();
+                const veicId = parseInt(document.getElementById('chVeiculo').value);
+                BD.chamados.push({
+                    id: Date.now(), veiculoId: veicId, tipo: document.getElementById('chTipo').value,
+                    obra: document.getElementById('chObra').value, km: parseFloat(document.getElementById('chKm').value),
+                    descricao: document.getElementById('chDescricao').value, responsavel: usuarioLogado.nome,
+                    data: new Date().toISOString(), status: 'Aberto'
+                });
+                salvarDados();
+                fecharFormularioApp();
+                alert('✅ Chamado registrado! O administrador será notificado.');
+                carregarMeusRegistros();
+            });
+        }
+        window.fecharFormularioApp = () => document.getElementById('areaFormularios').innerHTML = '';
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Frotas | Painel Administrativo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { 
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); 
+            min-height: 100vh; 
+            margin: 0; 
+        }
+        .card { 
+            background: white; 
+            border-radius: 1rem; 
+            border: 1px solid #e2e8f0; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06); 
+            transition: all 0.3s ease; 
+        }
+        .card:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 12px 30px rgba(79,70,229,0.12); 
+        }
+        .btn { 
+            border-radius: 0.75rem; 
+            font-weight: 600; 
+            padding: 0.875rem 1.5rem; 
+            border: none; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-size: 0.9375rem; 
+            text-decoration: none; 
+            display: inline-block; 
+            text-align: center;
+        }
+        .btn-primary { 
+            background: linear-gradient(90deg, #4f46e5, #6366f1); 
+            color: white; 
+            box-shadow: 0 4px 12px rgba(79,70,229,0.3); 
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(79,70,229,0.4); 
+        }
+        .btn-secondary { 
+            background: white; 
+            color: #4f46e5; 
+            border: 2px solid #e0e7ff; 
+        }
+        .btn-secondary:hover { 
+            border-color: #4f46e5; 
+            background: #f8fafc; 
+        }
+        .feature-icon { 
+            width: 3.5rem; 
+            height: 3.5rem; 
+            border-radius: 1rem; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 1.5rem; 
+            margin-bottom: 1rem; 
+        }
+        .gradiente-1 { background: linear-gradient(135deg, #eef2ff, #e0e7ff); color: #4338ca; }
+        .gradiente-2 { background: linear-gradient(135deg, #f0fdf4, #dcfce7); color: #166534; }
+        .gradiente-3 { background: linear-gradient(135deg, #fffbeb, #fef3c7); color: #92400e; }
+        .gradiente-4 { background: linear-gradient(135deg, #fef2f2, #fee2e2); color: #991b1b; }
+        .gradiente-5 { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); color: #0369a1; }
+        .gradiente-6 { background: linear-gradient(135deg, #faf5ff, #f3e8ff); color: #7e22ce; }
+    </style>
+</head>
+<body>
+
+    <!-- Cabeçalho -->
+    <header style="background: white; border-bottom: 1px solid #e2e8f0; padding: 1.25rem 2rem;">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.875rem;">
+                <div style="width: 2.75rem; height: 2.75rem; background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 0.625rem; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.25rem;">🚛</div>
+                <div>
+                    <h1 style="font-size: 1.125rem; font-weight: 700; color: #1e293b; margin: 0;">Gestão de Frotas</h1>
+                    <p style="font-size: 0.75rem; color: #94a3b8; margin: 0;">Sistema Integrado de Controle Veicular</p>
+                </div>
+            </div>
+            <div>
+                <a href="index.html" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                    <i class="fa-solid fa-arrow-left"></i> Voltar ao Login
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main style="max-width: 1200px; margin: 0 auto; padding: 3rem 2rem;">
+        <!-- Título -->
+        <div style="text-align: center; margin-bottom: 3rem;">
+            <h2 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0 0 0.75rem 0;">Bem-vindo ao Sistema de Gestão de Frotas</h2>
+            <p style="font-size: 1.0625rem; color: #64748b; max-width: 600px; margin: 0 auto;">Solução completa para controle, manutenção, abastecimento e acompanhamento de toda a frota da sua empresa.</p>
+        </div>
+
+        <!-- Cards de Módulos -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;">
+            <div class="card p-6">
+                <div class="feature-icon gradiente-1"><i class="fa-solid fa-chart-pie"></i></div>
+                <h3 style="font-size: 1.125rem; font-weight: 600; color: #1e293b; margin: 0 0 0.5rem 0;">Dashboard</h3>
+                <p style="color: #64748b; font-size: 0.9375rem; margin: 0 0 1rem 0;">Visão geral com estatísticas, alertas e indicadores em tempo real.</p>
+                <a href="index.html" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Acessar →</a>
+            </div>
+
+            <div class="card p-6">
+                <div class="feature-icon gradiente-2"><i class="fa-solid fa-truck"></i></div>
+                <h3 style="font-size: 1.125rem; font-weight: 600; color: #1e293b; margin: 0 0 0.5rem 0;">Veículos</h3>
+                <p style="color: #64748b; font-size: 0.9375rem; margin: 0 0 1rem 0;">Cadastro completo com categoria, quilometragem, obra e status.</p>
+                <a href="index.html" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Acessar →</a>
+            </div>
+
+            <div class="card p-6">
+                <div class="feature-icon gradiente-3"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                <h3 style="font-size: 1.125rem; font-weight: 600; color: #1e293b; margin: 0 0 0.5rem 0;">Manutenção</h3>
+                <p style="color: #64748b; font-size: 0.9375rem; margin: 0 0 1rem 0;">Controle de preventiva e corretiva, com status e histórico.</p>
+                <a href="index.html" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Acessar →</a>
+            </div>
+
+            <div class="card p-6">
+                <div class="feature-icon gradiente-4"><i class="fa-solid fa-money-bill-wave"></i></div>
+                <h3 style="font-size: 1.125rem; font-weight: 600; color: #1e293b; margin: 0 0 0.5rem 0;">Gastos</h3>
+                <p style="color: #64748b; font-size: 0.9375rem; margin: 0 0 1rem 0;">Registros de abastecimento, peças, serviços e despesas.</p>
+                <a href="index.html" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Acessar →</a>
+            </div>
+
+            <div class="card p-6">
+                <div class="feature-icon gradiente-5"><i class="fa-solid fa-list-check"></i></div>
+                <h3 style="font-size: 1.125rem; font-weight: 600; color: #1e293b; margin: 0 0 0.5rem 0;">Check-list</h3>
+                <p style="color: #64748b; font-size: 0.9375rem; margin: 0 0 1rem 0;">Inspeções diárias, verificações e aprovações de uso.</p>
+                <a href="index.html" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Acessar →</a>
+            </div>
+
+            <div class="card p-6">
+                <div class="feature-icon gradiente-6"><i class="fa-solid fa-map-location-dot"></i></div>
+                <h3 style="font-size: 1.125rem; font-weight: 600; color: #1e293b; margin: 0 0 0.5rem 0;">Alocações</h3>
+                <p style="color: #64748b; font-size: 0.9375rem; margin: 0 0 1rem 0;">Controle de veículos por obra, local e responsável.</p>
+                <a href="index.html" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Acessar →</a>
+            </div>
+        </div>
+
+        <!-- Área de Acesso Principal -->
+        <div class="card p-8" style="text-align: center; background: linear-gradient(135deg, #f8fafc, #eef2ff);">
+            <h3 style="font-size: 1.25rem; font-weight: 600; color: #1e293b; margin: 0 0 1rem 0;">🔐 Acesse o Sistema Principal</h3>
+            <p style="color: #64748b; margin: 0 0 1.5rem 0;">Faça login para acessar todas as funcionalidades e gerenciar sua frota com segurança.</p>
+            <a href="index.html" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem;">
+                <i class="fa-solid fa-right-to-bracket"></i> Acessar Área Restrita
+            </a>
+        </div>
+    </main>
+
+    <!-- Rodapé -->
+    <footer style="text-align: center; padding: 2rem; margin-top: 2rem; border-top: 1px solid #e2e8f0;">
+        <p style="color: #94a3b8; font-size: 0.875rem; margin: 0;">© 2026 Gestão de Frotas — Sistema Integrado de Controle Veicular | Versão 2.0</p>
+    </footer>
+
+</body>
+</html>

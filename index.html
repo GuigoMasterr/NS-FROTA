@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Frotas | Sistema Veicular</title>
+    <script>
+        if (navigator.userAgent.includes('Capacitor')) {
+            window.location.replace('app-motorista.html');
+        }
+
+        if (typeof window.usuarioAtual === 'undefined') {
+            window.usuarioAtual = null;
+        }
+
+        try {
+            const sessaoInicial = localStorage.getItem('sessaoUsuario');
+            if (sessaoInicial) {
+                window.usuarioAtual = JSON.parse(sessaoInicial);
+            }
+        } catch (erro) {
+            console.warn('Falha ao restaurar sessão inicial', erro);
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background-color: #f8fafc; color: #1e293b; margin: 0; }
+        .sidebar-link {
+            display: flex; align-items: center; gap: 0.875rem; padding: 0.75rem 1rem;
+            margin: 0.25rem 0.75rem; border-radius: 0.625rem; cursor: pointer;
+            transition: all 0.2s ease; color: #64748b; text-decoration: none;
+            font-size: 0.9375rem; font-weight: 500; border: none; background: transparent; width: calc(100% - 1.5rem); text-align: left;
+        }
+        .sidebar-link:hover { background: #eef2ff; color: #4f46e5; }
+        .sidebar-link.ativo { background: linear-gradient(90deg, #4f46e5, #6366f1); color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); }
+        .card { background: white; border-radius: 0.875rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.2s; }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); border-color: #cbd5e1; }
+        .stat-card { border-radius: 0.875rem; padding: 1.25rem; position: relative; overflow: hidden; }
+        .btn { border-radius: 0.625rem; font-weight: 600; font-size: 0.875rem; padding: 0.625rem 1rem; border: none; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(90deg, #4f46e5, #6366f1); color: white; box-shadow: 0 4px 10px rgba(79,70,229,0.25); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(79,70,229,0.35); }
+        .btn-success { background: linear-gradient(90deg, #10b981, #059669); color: white; }
+        .btn-warning { background: linear-gradient(90deg, #f59e0b, #d97706); color: white; }
+        .btn-danger { background: linear-gradient(90deg, #ef4444, #dc2626); color: white; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.875rem 1rem; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
+        th { background: #f8fafc; font-weight: 600; color: #475569; font-size: 0.8125rem; }
+        tr:hover { background: #f8fafc; }
+        .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .alerta { border-left: 4px solid; padding: 0.875rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin-bottom: 0.75rem; }
+        .alerta-critico { border-color: #ef4444; background: #fef2f2; }
+        .alerta-atencao { border-color: #f59e0b; background: #fffbeb; }
+        .pagina { display: none; }
+        .pagina.ativa { display: block; animation: aparecer 0.3s ease; }
+        .hidden { display: none !important; }
+        @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .sidebar-icon { width: 1.25rem; height: 1.25rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .modal-fundo { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-corpo { background: white; border-radius: 1rem; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal-cabecalho { padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-conteudo { padding: 1.5rem; }
+        input, select, textarea { border-radius: 0.5rem; border: 1px solid #cbd5e1; padding: 0.625rem 0.875rem; font-size: 0.9375rem; transition: all 0.2s; width: 100%; box-sizing: border-box; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.15); }
+        label { display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.375rem; color: #334155; }
+        
+        body.usuario-motorista .admin-only { display: none !important; }
+        body.usuario-admin .admin-only { display: table-cell; }
+        
+        .filtro-area { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 1rem; background: #f8fafc; border-radius: 0.75rem; flex-wrap: wrap; }
+        .filtro-area label { font-weight: 600; font-size: 0.875rem; color: #475569; white-space: nowrap; margin:0; }
+        .filtro-area select { max-width: 250px; }
+        .btn-fechar { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #94a3b8; }
+        .btn-fechar:hover { color: #1e293b; }
+        .linha-form { margin-bottom: 1rem; }
+        .botoes-form { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+        @media (max-width: 768px) { 
+            .admin-only { display: none !important; } 
+            .filtro-area { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE LOGIN -->
+    <div id="telaLogin">
+        <div class="min-h-screen flex items-center justify-center p-4" style="background: linear-gradient(135deg, #1e293b 0%, #312e81 50%, #4338ca 100%);">
+            <div class="w-full max-w-md">
+                <div class="card p-8" style="border-radius: 1.25rem;">
+                    <div class="text-center mb-8">
+                        <div style="width: 4.5rem; height: 4.5rem; background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 1rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 8px 24px rgba(79,70,229,0.3);">
+                            <span style="font-size: 1.875rem;">🚛</span>
+                        </div>
+                        <h1 style="font-size: 1.75rem; font-weight: 700; color: #1e293b; margin: 0;">Gestão de Frotas</h1>
+                        <p style="color: #64748b; margin: 0.25rem 0 0 0;">Controle inteligente de veículos</p>
+                    </div>
+                    <form id="formLogin">
+                        <div style="margin-bottom: 1rem;">
+                            <label>Usuário</label>
+                            <input type="text" id="campoUsuario" placeholder="Digite seu usuário" required>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label>Senha</label>
+                            <input type="password" id="campoSenha" placeholder="Digite sua senha" required>
+                        </div>
+                        <div id="erroLogin" style="color: #dc2626; font-size: 0.875rem; margin-bottom: 1rem; padding: 0.5rem; background: #fef2f2; border-radius: 0.375rem; display: none;"></div>
+                        <button type="submit" class="btn btn-primary w-full" style="width: 100%; padding: 0.75rem; font-size: 1rem; margin-top: 0.5rem;">
+                            Entrar no Sistema
+                        </button>
+                        <div style="margin-top: 1.25rem; padding: 1rem; background: #f8fafc; border-radius: 0.625rem; font-size: 0.8125rem; color: #475569; line-height: 1.6;">
+                            <div style="font-weight: 600; color: #334155; margin-bottom: 0.25rem;">🔑 Credenciais de acesso:</div>
+                            <strong>Administrador:</strong> admin / admin123<br>
+                            <strong>Motorista:</strong> motorista / motorista123
+                        </div>
+                    </form>
+                </div>
+                <p style="text-align: center; color: rgba(255,255,255,0.5); font-size: 0.75rem; margin-top: 1rem;">© 2026 Gestão de Frotas — Versão 2.1</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SISTEMA PRINCIPAL -->
+    <div id="sistemaPrincipal" class="hidden flex h-screen w-full overflow-hidden">
+        <!-- BARRA LATERAL -->
+        <aside style="width: 16.5rem; background: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0;">
+            <div style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 2.5rem; height: 2.5rem; background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 0.625rem; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.125rem;">🚛</div>
+                    <div>
+                        <h1 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0;">Gestão de Frotas</h1>
+                        <p style="font-size: 0.75rem; color: #94a3b8; margin: 0;">Painel de Controle</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav style="flex: 1; padding: 1rem 0;">
+                <button class="sidebar-link ativo" data-pagina="dashboard"><i class="fa-solid fa-chart-pie sidebar-icon"></i> Dashboard</button>
+                <button class="sidebar-link" data-pagina="veiculos"><i class="fa-solid fa-truck sidebar-icon"></i> Veículos</button>
+                <button class="sidebar-link" data-pagina="checklist"><i class="fa-solid fa-list-check sidebar-icon"></i> Check-list</button>
+                <button class="sidebar-link" data-pagina="manutencao"><i class="fa-solid fa-screwdriver-wrench sidebar-icon"></i> Manutenção</button>
+                <button class="sidebar-link" data-pagina="gastos"><i class="fa-solid fa-money-bill-wave sidebar-icon"></i> Gastos</button>
+                <button class="sidebar-link" data-pagina="chamados"><i class="fa-solid fa-bell sidebar-icon"></i> Chamados</button>
+                <button class="sidebar-link" data-pagina="alocacoes"><i class="fa-solid fa-map-location-dot sidebar-icon"></i> Alocações</button>
+                <button class="sidebar-link admin-only" data-pagina="locais"><i class="fa-solid fa-location-dot sidebar-icon"></i> Locais / Obras</button>
+            </nav>
+
+            <div style="padding: 1rem; border-top: 1px solid #f1f5f9;">
+                <div style="padding: 0.75rem; background: #f8fafc; border-radius: 0.625rem; margin-bottom: 0.75rem;">
+                    <p style="font-size: 0.8125rem; color: #64748b; margin: 0 0 0.125rem 0;">Usuário conectado</p>
+                    <p style="font-weight: 600; color: #1e293b; margin: 0;" id="infoUsuario">Carregando...</p>
+                </div>
+                <button onclick="sairSistema()" class="sidebar-link" style="color: #dc2626; background: #fef2f2; margin: 0; width: 100%;">
+                    <i class="fa-solid fa-right-from-bracket sidebar-icon"></i> Sair do Sistema
+                </button>
+            </div>
+        </aside>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main style="flex: 1; overflow-y: auto; background: #f8fafc;">
+            <!-- DASHBOARD -->
+            <section id="pagina-dashboard" class="pagina ativa">
+                <div style="padding: 1.5rem 2rem;">
+                    <div style="margin-bottom: 2rem;">
+                        <h2 style="font-size: 1.625rem; font-weight: 700; color: #1e293b; margin: 0 0 0.25rem 0;">Bem-vindo de volta! 👋</h2>
+                        <p style="color: #64748b; margin: 0;">Aqui está o resumo da sua frota hoje — <span id="dataAtual"></span></p>
+                    </div>
+                    <div id="areaAlertas" style="margin-bottom: 2rem;"></div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #eef2ff, #e0e7ff);">
+                            <p style="font-size: 0.875rem; color: #4f46e5; font-weight: 600; margin: 0 0 0.5rem 0;">Total de Veículos</p>
+                            <p style="font-size: 2rem; font-weight: 700; color: #3730a3; margin: 0;" id="dashVeiculos">0</p>
+                            <p style="font-size: 0.75rem; color: #6366f1; margin: 0.25rem 0 0 0;">cadastrados no sistema</p>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7);">
+                            <p style="font-size: 0.875rem; color: #16a34a; font-weight: 600; margin: 0 0 0.5rem 0;">✅ Em Operação</p>
+                            <p style="font-size: 2rem; font-weight: 700; color: #15803d; margin: 0;" id="dashAtivos">0</p>
+                            <p style="font-size: 0.75rem; color: #22c55e; margin: 0.25rem 0 0 0;">veículos ativos</p>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #fffbeb, #fef3c7);">
+                            <p style="font-size: 0.875rem; color: #d97706; font-weight: 600; margin: 0 0 0.5rem 0;">🔧 Em Manutenção</p>
+                            <p style="font-size: 2rem; font-weight: 700; color: #b45309; margin: 0;" id="dashManutencao">0</p>
+                            <p style="font-size: 0.75rem; color: #f59e0b; margin: 0.25rem 0 0 0;">precisam de atenção</p>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #fef2f2, #fee2e2);">
+                            <p style="font-size: 0.875rem; color: #dc2626; font-weight: 600; margin: 0 0 0.5rem 0;">🔔 Chamados Abertos</p>
+                            <p style="font-size: 2rem; font-weight: 700; color: #b91c1c; margin: 0;" id="dashChamados">0</p>
+                            <p style="font-size: 0.75rem; color: #ef4444; margin: 0.25rem 0 0 0;">pendentes de resolução</p>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div class="card p-5">
+                            <h3 style="font-size: 1rem; font-weight: 600; color: #334155; margin: 0 0 1rem 0;">🚛 Veículos Recentes</h3>
+                            <div id="ultimosVeiculos">
+                                <p style="color: #94a3b8; font-size: 0.875rem;">Nenhum veículo cadastrado ainda.</p>
+                            </div>
+                        </div>
+                        <div class="card p-5">
+                            <h3 style="font-size: 1rem; font-weight: 600; color: #334155; margin: 0 0 1rem 0;">🔔 Últimos Chamados</h3>
+                            <div id="ultimosChamados">
+                                <p style="color: #94a3b8; font-size: 0.875rem;">Nenhum chamado registrado.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VEÍCULOS -->
+            <section id="pagina-veiculos" class="pagina">
+                <div style="padding: 1.5rem 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">🚛 Cadastro de Veículos</h2>
+                            <p style="color: #64748b; margin: 0;">Gerencie toda a frota da empresa</p>
+                        </div>
+                        <button type="button" onclick="abrirModalVeiculo()" class="btn btn-primary admin-only">➕ Novo Veículo</button>
+                    </div>
+                    <div class="card">
+                        <table>
+                            <thead>
+                                <tr><th>Placa</th><th>Categoria</th><th>Modelo</th><th>Km Atual</th><th>Obra</th><th>Status</th><th class="admin-only">Ações</th></tr>
+                            </thead>
+                            <tbody id="tabelaVeiculos">
+                                <tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 2rem;">Nenhum veículo cadastrado</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHECK-LIST COM FILTRO -->
+            <section id="pagina-checklist" class="pagina">
+                <div style="padding: 1.5rem 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">✅ Check-list de Veículos</h2>
+                            <p style="color: #64748b; margin: 0;">Inspeções e verificações diárias</p>
+                        </div>
+                        <button type="button" onclick="abrirModalChecklist()" class="btn btn-success">➕ Novo Check-list</button>
+                    </div>
+                    <div class="filtro-area">
+                        <label for="filtroChecklist">🔍 Filtrar por Veículo:</label>
+                        <select id="filtroChecklist" onchange="aplicarFiltroChecklist()">
+                            <option value="todos">Todos os Veículos</option>
+                        </select>
+                    </div>
+                    <div class="card">
+                        <table>
+                            <thead>
+                                <tr><th>Data</th><th>Placa</th><th>Motorista</th><th>Km</th><th>Status</th><th>Ações</th></tr>
+                            </thead>
+                            <tbody id="tabelaChecklist">
+                                <tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 2rem;">Nenhum check-list registrado</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MANUTENÇÃO COM FILTRO -->
+            <section id="pagina-manutencao" class="pagina">
+                <div style="padding: 1.5rem 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">🔧 Controle de Manutenção</h2>
+                            <p style="color: #64748b; margin: 0;">Solicitações e serviços em andamento</p>
+                        </div>
+                        <button type="button" onclick="abrirModalManutencao()" class="btn btn-warning admin-only">➕ Nova Solicitação</button>
+                    </div>
+                    <div class="filtro-area">
+                        <label for="filtroManutencao">🔍 Filtrar por Veículo:</label>
+                        <select id="filtroManutencao" onchange="aplicarFiltroManutencao()">
+                            <option value="todos">Todos os Veículos</option>
+                        </select>
+                    </div>
+                    <div class="card">
+                        <table>
+                            <thead>
+                                <tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th class="admin-only">Ações</th></tr>
+                            </thead>
+                            <tbody id="tabelaManutencao">
+                                <tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 2rem;">Nenhuma solicitação registrada</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GASTOS COM FILTRO -->
+            <section id="pagina-gastos" class="pagina">
+                <div style="padding: 1.5rem 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">⛽ Gastos e Abastecimento</h2>
+                            <p style="color: #64748b; margin: 0;">Registros de despesas com veículos</p>
+                        </div>
+                        <button type="button" onclick="abrirModalGasto()" class="btn btn-success">➕ Novo Registro</button>
+                    </div>
+                    <div class="filtro-area">
+                        <label for="filtroGastos">🔍 Filtrar por Veículo:</label>
+                        <select id="filtroGastos" onchange="aplicarFiltroGastos()">
+                            <option value="todos">Todos os Veículos</option>
+                        </select>
+                    </div>
+                    <div class="card">
+                        <table>
+                            <thead>
+                                <tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Valor</th><th>Observação</th></tr>
+                            </thead>
+                            <tbody id="tabelaGastos">
+                                <tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 2rem;">Nenhum registro de gasto</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHAMADOS -->
+            <section id="pagina-chamados" class="pagina">
+                <div style="padding: 1.5rem 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">🔔 Chamados e Ocorrências</h2>
+                            <p style="color: #64748b; margin: 0;">Problemas e solicitações registradas</p>
+                        </div>
+                        <button type="button" onclick="abrirModalChamado()" class="btn btn-danger">➕ Novo Chamado</button>
+                    </div>
+                    <div class="card">
+                        <table>
+                            <thead>
+                                <tr><th>Data</th><th>Veículo</th><th>Assunto</th><th>Status</th><th>Ações</th></tr>
+                            </thead>
+                            <tbody id="tabelaChamados">
+                                <tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 2rem;">Nenhum chamado registrado</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ALOCAÇÕES COM FILTRO + BOTÃO NOVO -->
+            <section id="pagina-alocacoes" class="pagina">
+                <div style="padding: 1.5rem 2rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h2 style="font-size:1.5rem; font-weight:700; margin:0;">📍 Alocações de Veículos</h2>
+                        <button type="button" onclick="abrirModalAlocacao()" class="btn btn-primary">➕ Nova Alocação</button>
+                    </div>
+                    <div class="filtro-area">
+                        <label for="filtroAlocacoes">🔍 Selecionar Veículo:</label>
+                        <select id="filtroAlocacoes" onchange="aplicarFiltroAlocacoes()">
+                            <option value="todos">Todos os Veículos</option>
+                        </select>
+                    </div>
+                    <div class="card">
+                        <table>
+                            <thead>
+                                <tr><th>Placa</th><th>Origem → Destino</th><th>Data de Início</th><th>Km Inicial</th><th>Responsável</th></tr>
+                            </thead>
+                            <tbody id="tabelaAlocacoes">
+                                <tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 2rem;">Sem registros de alocação</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 📍 LOCAIS / OBRAS -->
+            <section id="pagina-locais" class="pagina">
+                <div style="padding: 1.5rem 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">📍 Cadastro de Locais / Obras</h2>
+                            <p style="color: #64748b; margin: 0;">Locais que aparecem como Origem e Destino</p>
+                        </div>
+                        <button type="button" onclick="abrirModalLocal()" class="btn btn-primary admin-only">➕ Novo Local</button>
+                    </div>
+                    <div class="card">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome do Local / Obra</th>
+                                    <th style="width: 140px;" class="admin-only">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaLocais">
+                                <tr>
+                                    <td colspan="2" style="text-align: center; color: #94a3b8; padding: 2rem;">Nenhum local cadastrado</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ÁREA DE MODAIS -->
+    <div id="modais"></div>
+
+    <!-- ORDEM OBRIGATÓRIA — ✅ Adicionado alocacoes.js -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/validacoes.js"></script>
+    <script src="js/banco-dados.js"></script>
+    <script src="js/sync.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/veiculos.js"></script>
+    <script src="js/checklist.js"></script>
+    <script src="js/manutencao.js"></script>
+    <script src="js/gastos.js"></script>
+    <script src="js/chamados.js"></script>
+    <script src="js/alocacoes.js"></script>
+    <script src="js/navegacao.js"></script>
+
+    <!-- FUNÇÕES GLOBAIS + CADASTRO DE LOCAIS + PERMISSÕES -->
+    <script>
+        // ========== CONTROLE DE PERMISSÕES POR PERFIL ==========
+        function ehAdmin() {
+            return typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'admin';
+        }
+        function ehMotorista() {
+            return typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'motorista';
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            if (ehAdmin()) {
+                document.body.classList.add('usuario-admin');
+                console.log('🔑 Perfil: Administrador — acesso completo');
+            } else if (ehMotorista()) {
+                document.body.classList.add('usuario-motorista');
+                console.log('🔑 Perfil: Motorista — áreas de admin ocultas');
+            }
+        });
+
+        function atualizarNomeUsuarioCabecalho() {
+            const nome = window.usuarioAtual?.nome || 'Carregando...';
+            const infoUsuario = document.getElementById('infoUsuario');
+            if (infoUsuario) infoUsuario.textContent = nome;
+        }
+        window.addEventListener('DOMContentLoaded', atualizarNomeUsuarioCabecalho);
+
+        // ========== 📍 CADASTRO DE LOCAIS / OBRAS — ✅ UNIFICADO COM BD ==========
+        function carregarLocaisBD() {
+            return BD.locais || [
+                { id: 'patio-metalica', nome: 'Pátio Metálica' },
+                { id: 'patio-usina-conc', nome: 'Pátio Usina Conc.' },
+                { id: 'obra', nome: 'Obra' }
+            ];
+        }
+
+        function abrirModalLocal(idEditar = null) {
+            if (!ehAdmin()) { alert('❌ Apenas Administrador pode cadastrar locais!'); return; }
+            const locais = carregarLocaisBD();
+            const local = idEditar ? locais.find(l => l.id === idEditar) : null;
+            document.getElementById('modais').innerHTML = `
+                <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
+                    <div class="modal-corpo">
+                        <div class="modal-cabecalho">
+                            <h3 style="margin:0; font-size:1.125rem; font-weight:600;">${local ? '✏️ Editar Local' : '📍 Novo Local'}</h3>
+                            <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
+                        </div>
+                        <div class="modal-conteudo">
+                            <form onsubmit="salvarLocal(event, '${idEditar || ''}')">
+                                <div class="linha-form">
+                                    <label>Nome do Local / Obra</label>
+                                    <input type="text" id="nomeLocal" required placeholder="Ex: Pátio Metálica, Usina, Obra..." value="${local?.nome || ''}">
+                                </div>
+                                <div class="botoes-form">
+                                    <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
+                                    <button type="submit" class="btn btn-primary">Salvar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>`;
+        }
+        window.abrirModalLocal = abrirModalLocal;
+
+        function salvarLocal(event, idEditar = null) {
+            event.preventDefault();
+            if (!ehAdmin()) { alert('❌ Sem permissão!'); return; }
+            const nome = document.getElementById('nomeLocal').value.trim();
+            if (!nome) return;
+
+            if (idEditar) {
+                const idx = BD.locais.findIndex(l => l.id === idEditar);
+                if (idx !== -1) BD.locais[idx].nome = nome;
+            } else {
+                const id = nome.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+                BD.locais.push({ id, nome });
+            }
+
+            salvarDados();
+            fecharModal();
+            carregarTabelaLocais();
+            atualizarListaLocaisNosFormularios();
+        }
+        window.salvarLocal = salvarLocal;
+
+        function excluirLocal(id) {
+            if (!ehAdmin()) { alert('❌ Apenas Administrador pode excluir!'); return; }
+            if (!confirm('Excluir este local?')) return;
+            BD.locais = BD.locais.filter(l => l.id !== id);
+            salvarDados();
+            carregarTabelaLocais();
+            atualizarListaLocaisNosFormularios();
+        }
+        window.excluirLocal = excluirLocal;
+
+        function carregarTabelaLocais() {
+            const locais = carregarLocaisBD();
+            const tbody = document.getElementById('tabelaLocais');
+            if (!locais.length) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhum local cadastrado</td></tr>';
+                return;
+            }
+            tbody.innerHTML = locais.map(l => `
+                <tr>
+                    <td><strong>${l.nome}</strong></td>
+                    <td class="admin-only">
+                        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fef3c7; color:#92400e; margin-right:0.25rem;" onclick="abrirModalLocal('${l.id}')">✏️</button>
+                        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fee2e2; color:#991b1b;" onclick="excluirLocal('${l.id}')">🗑️</button>
+                    </td>
+                </tr>`).join('');
+        }
+
+        function atualizarListaLocaisNosFormularios() {
+            const listaNomes = BD.locais.map(l => l.nome);
+            console.log('📍 Locais disponíveis:', listaNomes);
+        }
+
+        // ✅ Carrega tabela ao abrir a página
+        const PaginaOriginal = window.mostrarPagina;
+        window.mostrarPagina = function(pagina) {
+            if (PaginaOriginal) PaginaOriginal(pagina);
+            if (pagina === 'locais') {
+                carregarTabelaLocais();
+            }
+        };
+
+        // ========== ATUALIZA LISTA DE PLACAS NOS FILTROS ==========
+        function atualizarListaVeiculosNosFiltros() {
+            if (!BD.veiculos) return;
+            const placas = BD.veiculos.map(v => v.placa).sort();
+            ['filtroAlocacoes', 'filtroChecklist', 'filtroManutencao', 'filtroGastos'].forEach(id => {
+                const sel = document.getElementById(id);
+                if (!sel) return;
+                const atual = sel.value;
+                sel.innerHTML = '<option value="todos">Todos os Veículos</option>';
+                placas.forEach(p => sel.innerHTML += `<option value="${p}">${p}</option>`);
+                if (placas.includes(atual)) sel.value = atual;
+            });
+        }
+
+        // ========== FUNÇÕES DE FILTRO ==========
+        function aplicarFiltroAlocacoes() {
+            const filtro = document.getElementById('filtroAlocacoes')?.value || 'todos';
+            if (typeof carregarTabelaAlocacoes === 'function') carregarTabelaAlocacoes(filtro);
+        }
+        function aplicarFiltroChecklist() {
+            const filtro = document.getElementById('filtroChecklist')?.value || 'todos';
+            if (typeof carregarTabelaChecklist === 'function') carregarTabelaChecklist(filtro);
+        }
+        function aplicarFiltroManutencao() {
+            const filtro = document.getElementById('filtroManutencao')?.value || 'todos';
+            if (typeof carregarTabelaManutencao === 'function') carregarTabelaManutencao(filtro);
+        }
+        function aplicarFiltroGastos() {
+            const filtro = document.getElementById('filtroGastos')?.value || 'todos';
+            if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos(filtro);
+        }
+
+        // ========== FECHAR MODAL ==========
+        function fecharModal() {
+            document.getElementById('modais').innerHTML = '';
+        }
+
+        // ========== ABERTURA DE MODAIS ==========
+        function abrirModalChecklist() {
+            if (!BD.veiculos || BD.veiculos.length === 0) { alert('Cadastre um veículo primeiro!'); return; }
+            const placas = BD.veiculos.map(v => `<option value="${v.placa}">${v.placa}</option>`).join('');
+            document.getElementById('modais').innerHTML = `
+                <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
+                    <div class="modal-corpo">
+                        <div class="modal-cabecalho">
+                            <h3 style="margin:0; font-size:1.125rem; font-weight:600;">✅ Novo Check-list</h3>
+                            <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
+                        </div>
+                        <div class="modal-conteudo">
+                            <form id="formChecklist" onsubmit="salvarChecklist(event)">
+                                <div class="linha-form"><label>Veículo (Placa)</label><select id="clPlaca" required>${placas}</select></div>
+                                <div class="linha-form"><label>Motorista</label><input type="text" id="clMotorista" required placeholder="Nome do motorista"></div>
+                                <div class="linha-form"><label>Quilometragem Atual</label><input type="number" id="clKm" required placeholder="0"></div>
+                                <div class="linha-form"><label>Status</label>
+                                    <select id="clStatus">
+                                        <option value="${CONFIG.STATUS.CHECKLIST.APROVADO}">${CONFIG.STATUS.CHECKLIST.APROVADO}</option>
+                                        <option value="${CONFIG.STATUS.CHECKLIST.PENDENTE}">${CONFIG.STATUS.CHECKLIST.PENDENTE}</option>
+                                    </select>
+                                </div>
+                                <div class="botoes-form">
+                                    <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
+                                    <button type="submit" class="btn btn-success">Salvar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>`;
+        }
+        window.abrirModalChecklist = abrirModalChecklist;
+
+        function abrirModalManutencao() {
+            if (!BD.veiculos || BD.veiculos.length === 0) { alert('Cadastre um veículo primeiro!'); return; }
+            const placas = BD.veiculos.map(v => `<option value="${v.placa}">${v.placa}</option>`).join('');
+            document.getElementById('modais').innerHTML = `
+                <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
+                    <div class="modal-corpo">
+                        <div class="modal-cabecalho">
+                            <h3 style="margin:0; font-size:1.125rem; font-weight:600;">🔧 Nova Solicitação</h3>
+                            <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
+                        </div>
+                        <div class="modal-conteudo">
+                            <form id="formManutencao" onsubmit="salvarManutencao(event)">
+                                <div class="linha-form"><label>Veículo (Placa)</label><select id="mnVeiculo" required>${placas}</select></div>
+                                <div class="linha-form"><label>Tipo de Manutenção</label>
+                                    <select id="mnTipo">
+                                        <option value="${CONFIG.STATUS.TIPO_MANUTENCAO.PREVENTIVA}">${CONFIG.STATUS.TIPO_MANUTENCAO.PREVENTIVA}</option>
+                                        <option value="${CONFIG.STATUS.TIPO_MANUTENCAO.CORRETIVA}">${CONFIG.STATUS.TIPO_MANUTENCAO.CORRETIVA}</option>
+                                        <option value="${CONFIG.STATUS.TIPO_MANUTENCAO.REVISAO}">${CONFIG.STATUS.TIPO_MANUTENCAO.REVISAO}</option>
+                                    </select>
+                                </div>
+                                <div class="linha-form"><label>Descrição</label><textarea id="mnDescricao" rows="3" required placeholder="Descreva o serviço..."></textarea></div>
+                                <div class="linha-form"><label>Status</label>
+                                    <select id="mnStatus">
+                                        <option value="${CONFIG.STATUS.MANUTENCAO.ABERTA}">${CONFIG.STATUS.MANUTENCAO.ABERTA}</option>
+                                        <option value="${CONFIG.STATUS.MANUTENCAO.ANDAMENTO}">${CONFIG.STATUS.MANUTENCAO.ANDAMENTO}</option>
+                                        <option value="${CONFIG.STATUS.MANUTENCAO.CONCLUIDA}">${CONFIG.STATUS.MANUTENCAO.CONCLUIDA}</option>
+                                    </select>
+                                </div>
+                                <div class="botoes-form">
+                                    <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
+                                    <button type="submit" class="btn btn-success">Salvar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>`;
+        }
+        window.abrirModalManutencao = abrirModalManutencao;
+    </script>
+</body>
+</html>

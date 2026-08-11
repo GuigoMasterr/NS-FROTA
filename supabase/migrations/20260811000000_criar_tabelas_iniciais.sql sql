@@ -1,0 +1,43 @@
+-- ==================================================
+-- TABELAS DO SISTEMA DE GESTÃO DE FROTAS
+-- ==================================================
+
+-- Tabela de Locais (Origem/Destino)
+CREATE TABLE locais (
+  id SERIAL PRIMARY KEY,
+  nome VARCHAR(150) NOT NULL UNIQUE,
+  endereco TEXT,
+  cidade VARCHAR(100),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de Veículos
+CREATE TABLE veiculos (
+  id SERIAL PRIMARY KEY,
+  placa VARCHAR(10) NOT NULL UNIQUE,
+  modelo VARCHAR(100),
+  marca VARCHAR(100),
+  ano INTEGER,
+  km_inicial INTEGER DEFAULT 0,
+  responsavel VARCHAR(100),
+  status VARCHAR(20) DEFAULT 'disponivel',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de Alocações
+CREATE TABLE alocacoes (
+  id SERIAL PRIMARY KEY,
+  veiculo_id INTEGER REFERENCES veiculos(id) ON DELETE CASCADE,
+  motorista VARCHAR(100) NOT NULL,
+  data_saida DATE NOT NULL,
+  km_saida INTEGER,
+  data_entrada DATE,
+  km_entrada INTEGER,
+  observacoes TEXT,
+  origem VARCHAR(150),
+  destino VARCHAR(150),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Habilitar sincronização em tempo real
+ALTER PUBLICATION supabase_realtime ADD TABLE locais, veiculos, alocacoes;
