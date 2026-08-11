@@ -404,18 +404,21 @@
     <div id="modais"></div>
 
     <!-- ORDEM OBRIGATÓRIA — ✅ Adicionado alocacoes.js -->
-    <script src="js/config.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/validacoes.js"></script>
-    <script src="js/banco-dados.js"></script>
+        <!-- ✅ ORDEM CORRETA: módulos primeiro -->
+    <script type="module" src="js/config.js"></script>
+    <script type="module" src="js/banco-dados.js"></script>
+    <script type="module" src="js/utils.js"></script>
+    <script type="module" src="js/validacoes.js"></script>
+    <script type="module" src="js/veiculos.js"></script>
+    <script type="module" src="js/checklist.js"></script>
+    <script type="module" src="js/manutencao.js"></script>
+    <script type="module" src="js/gastos.js"></script>
+    <script type="module" src="js/chamados.js"></script>
+    <script type="module" src="js/alocacoes.js"></script>
+    
+    <!-- Estes NÃO são módulos → ficam por último -->
     <script src="js/sync.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/veiculos.js"></script>
-    <script src="js/checklist.js"></script>
-    <script src="js/manutencao.js"></script>
-    <script src="js/gastos.js"></script>
-    <script src="js/chamados.js"></script>
-    <script src="js/alocacoes.js"></script>
     <script src="js/navegacao.js"></script>
 
     <!-- FUNÇÕES GLOBAIS + CADASTRO DE LOCAIS + PERMISSÕES -->

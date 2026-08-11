@@ -1,188 +1,231 @@
 // ==================================================
-// CADASTRO E GESTÃO DE VEÍCULOS — ✅ CORRIGIDO
+// 🚗 CADASTRO E GESTÃO DE VEÍCULOS — SUPABASE + LOCAL
 // ==================================================
+
+import { obterVeiculos, salvarVeiculo, obterVeiculoPorPlaca } from './banco-dados.js';
+import { BD, salvarDados } from './banco-dados.js';
+import { CONFIG } from './config.js';
 
 // ✅ Abre janela de cadastro ou edição
 function abrirModalVeiculo(veiculo = null) {
   const ehEdicao = !!veiculo;
 
   const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+  modal.className = 'modal-fundo';
+  modal.onclick = (e) => { if (e.target === modal) fecharModal(); };
   modal.innerHTML = `
-    <div class="bg-white rounded-xl w-full max-w-md p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">${ehEdicao ? '✏️ Editar' : '➕ Cadastrar'} Veículo</h3>
-        <button type="button" onclick="fecharModal()"><i class="fa-solid fa-times text-slate-400"></i></button>
+    <div class="modal-corpo">
+      <div class="modal-cabecalho">
+        <h3 style="margin:0; font-size:1.125rem; font-weight:600;">${ehEdicao ? '✏️ Editar' : '➕ Cadastrar'} Veículo</h3>
+        <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
       </div>
-      <form id="formVeiculo" class="space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium mb-1">Placa *</label>
-            <input type="text" id="vPlaca" class="w-full px-3 py-2 border border-slate-200 rounded-lg uppercase" required value="${veiculo?.placa || ''}" ${ehEdicao ? 'readonly' : ''}>
+      <div class="modal-conteudo">
+        <form id="formVeiculo" class="space-y-3">
+          <div class="linha-form">
+            <label>Placa *</label>
+            <input type="text" id="vPlaca" style="text-transform:uppercase;" required value="${veiculo?.placa || ''}" ${ehEdicao ? 'readonly' : ''}>
           </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Ano</label>
-            <input type="number" id="vAno" class="w-full px-3 py-2 border border-slate-200 rounded-lg" value="${veiculo?.ano || ''}">
+          <div class="linha-form">
+            <label>Ano</label>
+            <input type="number" id="vAno" value="${veiculo?.ano || ''}">
           </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Categoria *</label>
-          <select id="vCategoria" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="">Selecione</option>
-            ${(CONFIG?.CATEGORIAS_VEICULOS || CATEGORIAS_VEICULOS || []).map(c => 
-              `<option value="${c.id}" ${veiculo?.categoria === c.id ? 'selected' : ''}>${c.icone} ${c.nome}</option>`
-            ).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Modelo / Marca *</label>
-          <input type="text" id="vModelo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${veiculo?.modelo || ''}">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium mb-1">Km Atual *</label>
-            <input type="number" id="vKm" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${veiculo?.kmAtual || 0}">
+          <div class="linha-form">
+            <label>Categoria *</label>
+            <select id="vCategoria" required>
+              <option value="">Selecione</option>
+              <option value="caminhao" ${veiculo?.categoria === 'caminhao' ? 'selected' : ''}>🚛 Caminhão</option>
+              <option value="utilitario" ${veiculo?.categoria === 'utilitario' ? 'selected' : ''}>🚐 Utilitário</option>
+              <option value="carro" ${veiculo?.categoria === 'carro' ? 'selected' : ''}>🚗 Carro</option>
+              <option value="moto" ${veiculo?.categoria === 'moto' ? 'selected' : ''}>🏍️ Moto</option>
+              <option value="maquina" ${veiculo?.categoria === 'maquina' ? 'selected' : ''}>🚜 Máquina</option>
+              <option value="outro" ${veiculo?.categoria === 'outro' ? 'selected' : ''}>❔ Outro</option>
+            </select>
           </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Status</label>
-            <select id="vStatus" class="w-full px-3 py-2 border border-slate-200 rounded-lg">
-              <option value="ativo" ${veiculo?.status === 'ativo' ? 'selected' : ''}>✅ Ativo</option>
+          <div class="linha-form">
+            <label>Marca / Modelo *</label>
+            <input type="text" id="vModelo" required value="${veiculo?.modelo || ''}">
+          </div>
+          <div class="linha-form">
+            <label>Km Atual *</label>
+            <input type="number" id="vKm" required value="${veiculo?.km_atual || 0}">
+          </div>
+          <div class="linha-form">
+            <label>Status</label>
+            <select id="vStatus">
+              <option value="disponivel" ${veiculo?.status === 'disponivel' ? 'selected' : ''}>✅ Disponível</option>
+              <option value="alocado" ${veiculo?.status === 'alocado' ? 'selected' : ''}>🚛 Alocado</option>
               <option value="manutencao" ${veiculo?.status === 'manutencao' ? 'selected' : ''}>🔧 Manutenção</option>
               <option value="inativo" ${veiculo?.status === 'inativo' ? 'selected' : ''}>⛔ Inativo</option>
             </select>
           </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Obra / Local *</label>
-          <select id="vObra" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="">Selecione</option>
-            ${(BD?.obras || []).map(o => `<option value="${o}" ${veiculo?.obraAtual === o ? 'selected' : ''}>${o}</option>`).join('')}
-          </select>
-        </div>
-        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg mt-2">
-          ${ehEdicao ? '💾 Salvar' : '➕ Cadastrar Veículo'}
-        </button>
-      </form>
+          <div class="linha-form">
+            <label>Obra / Local *</label>
+            <input type="text" id="vObra" required value="${veiculo?.obra_atual || ''}" placeholder="Nome da obra ou local">
+          </div>
+          <div class="linha-form">
+            <label>Responsável</label>
+            <input type="text" id="vResponsavel" value="${veiculo?.responsavel || ''}" placeholder="Nome do motorista responsável">
+          </div>
+          <div class="botoes-form">
+            <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">${ehEdicao ? '💾 Salvar' : '➕ Cadastrar Veículo'}</button>
+          </div>
+        </form>
+      </div>
     </div>
   `;
 
   document.getElementById('modais').appendChild(modal);
 
   // ===== MANIPULAÇÃO DO FORMULÁRIO =====
-  document.getElementById('formVeiculo').addEventListener('submit', e => {
+  document.getElementById('formVeiculo').addEventListener('submit', async e => {
     e.preventDefault();
 
     const placa = document.getElementById('vPlaca').value.toUpperCase().trim();
     const categoria = document.getElementById('vCategoria').value;
     const modelo = document.getElementById('vModelo').value.trim();
-    const ano = document.getElementById('vAno').value;
-    const kmAtual = parseFloat(document.getElementById('vKm').value);
+    const ano = document.getElementById('vAno').value || null;
+    const kmAtual = parseInt(document.getElementById('vKm').value) || 0;
     const status = document.getElementById('vStatus').value;
-    const obraAtual = document.getElementById('vObra').value;
+    const obraAtual = document.getElementById('vObra').value.trim();
+    const responsavel = document.getElementById('vResponsavel').value.trim() || null;
 
-    // ✅ VALIDAÇÕES AUTOMÁTICAS
-    if (!Validacoes.placaValida(placa)) {
+    // ✅ VALIDAÇÕES
+    if (!/^[A-Z]{3}-?[0-9][A-Z0-9][0-9]{2}$/.test(placa.replace('-', '')) && !/^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(placa)) {
       alert('❌ Placa inválida! Use o formato AAA-1234 ou AAA1A23');
       return;
     }
-    if (!Validacoes.camposPreenchidos([categoria, modelo, obraAtual])) {
+    if (!categoria || !modelo || !obraAtual) {
       alert('❌ Preencha todos os campos obrigatórios!');
       return;
     }
-    if (!Validacoes.kmValido(kmAtual)) {
-      alert('❌ Quilometragem inválida! Deve ser um número positivo.');
+    if (kmAtual < 0) {
+      alert('❌ Quilometragem deve ser um número positivo!');
       return;
     }
 
-    // ✅ Verifica se placa já existe (NOVO cadastro)
-    if (!ehEdicao && BD.veiculos.some(v => v.placa === placa)) {
-      alert('❌ Já existe um veículo cadastrado com esta placa!');
-      return;
-    }
-
-    const dados = { placa, categoria, modelo, ano, kmAtual, status, obraAtual };
+    const dados = { 
+      placa, 
+      categoria, 
+      modelo, 
+      marca: modelo.split(' ')[0],
+      ano, 
+      km_atual: kmAtual,
+      km_inicial: ehEdicao ? (veiculo?.km_inicial || kmAtual) : kmAtual,
+      status, 
+      obra_atual: obraAtual,
+      responsavel
+    };
 
     if (ehEdicao) {
-      // ✅ Usando função genérica do banco
-      atualizarRegistro('veiculos', veiculo.id, dados);
+      // ✅ Edição
+      dados.id = veiculo.id;
     } else {
-      // ✅ Usando função genérica do banco
-      const novoVeiculo = adicionarRegistro('veiculos', dados);
-
-      // ✅ Cria alocação automática
-      BD.alocacoes.push({
-        id: Utils.gerarId(),
-        veiculoId: novoVeiculo.id,
-        placa: dados.placa,
-        obra: dados.obraAtual,
-        dataInicio: new Date().toISOString(),
-        kmInicio: dados.kmAtual,
-        responsavel: (usuarioAtual?.nome) || 'Administrador'
-      });
-      salvarDados();
+      // ✅ Novo — Verifica placa duplicada
+      const existe = await obterVeiculoPorPlaca(placa);
+      if (existe) {
+        alert('❌ Já existe um veículo cadastrado com esta placa!');
+        return;
+      }
     }
 
-    fecharModal();
-    carregarTabelaVeiculos();
-    if (typeof atualizarDashboardCompleto === 'function') {
-      atualizarDashboardCompleto();
-    } else if (typeof atualizarDashboard === 'function') {
-      atualizarDashboard();
+    const resultado = await salvarVeiculo(dados);
+
+    if (resultado) {
+      alert('✅ Veículo salvo com sucesso!');
+      fecharModal();
+      await carregarTabelaVeiculos();
+      if (typeof atualizarDashboard === 'function') atualizarDashboard();
+      if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
+    } else {
+      alert('❌ Erro ao salvar veículo! Verifique o console.');
     }
-    alert('✅ Veículo salvo com sucesso!');
   });
 }
 
 // ✅ Carrega e exibe a tabela completa
-function carregarTabelaVeiculos() {
+window.carregarTabelaVeiculos = async function () {
   const corpo = document.getElementById('tabelaVeiculos');
   if (!corpo) return;
 
-  corpo.innerHTML = BD.veiculos.length ? BD.veiculos.map(v => {
-    // Usa CONFIG se disponível
-    const cat = typeof getCategoriaVeiculo === 'function' 
-      ? getCategoriaVeiculo(v.categoria)
-      : ((CONFIG?.CATEGORIAS_VEICULOS || CATEGORIAS_VEICULOS || []).find(c => c.id === v.categoria));
+  const veiculos = await obterVeiculos();
 
-    const status = {
-      ativo: '<span class="text-green-600">✅ Ativo</span>',
-      manutencao: '<span class="text-amber-500">🔧 Manutenção</span>',
-      inativo: '<span class="text-red-500">⛔ Inativo</span>'
-    }[v.status] || v.status;
+  if (!veiculos.length) {
+    corpo.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhum veículo cadastrado</td></tr>';
+    return;
+  }
 
-    // ✅ JSON SEGURO — escapa aspas e quebras de linha para não quebrar o onclick
+  const statusMap = {
+    disponivel: '<span class="badge badge-success">✅ Disponível</span>',
+    alocado: '<span class="badge" style="background:#dbeafe; color:#1e40af;">🚛 Alocado</span>',
+    manutencao: '<span class="badge badge-warning">🔧 Manutenção</span>',
+    inativo: '<span class="badge badge-danger">⛔ Inativo</span>'
+  };
+
+  const catIcone = {
+    caminhao: '🚛', utilitario: '🚐', carro: '🚗', moto: '🏍️', maquina: '🚜', outro: '❔'
+  };
+
+  corpo.innerHTML = veiculos.map(v => {
     const seguro = JSON.stringify(v).replace(/"/g, '&quot;');
-
     return `<tr>
       <td class="font-mono">${v.placa}</td>
-      <td>${cat ? cat.icone + ' ' + cat.nome : v.categoria}</td>
+      <td>${catIcone[v.categoria] || '❔'} ${v.categoria || '-'}</td>
       <td>${v.modelo}</td>
-      <td>${Number(v.kmAtual || 0).toLocaleString('pt-BR')} km</td>
-      <td>${v.obraAtual || '—'}</td>
-      <td>${status}</td>
-      <td>
-        <button class="text-blue-600 text-sm mr-1" onclick='abrirModalVeiculo(${seguro})'>✏️</button>
-        <button class="text-red-600 text-sm" onclick="excluirVeiculo(${v.id})">🗑️</button>
+      <td>${Number(v.km_atual || 0).toLocaleString('pt-BR')} km</td>
+      <td>${v.obra_atual || '—'}</td>
+      <td>${statusMap[v.status] || v.status}</td>
+      <td class="admin-only">
+        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fef3c7; color:#92400e; margin-right:0.25rem;" onclick='abrirModalVeiculo(${seguro})'>✏️</button>
+        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fee2e2; color:#991b1b;" onclick="excluirVeiculo('${v.placa || v.id}')">🗑️</button>
       </td>
     </tr>`;
-  }).join('') : '<tr><td colspan="7" class="text-center text-slate-500 py-4">Nenhum veículo cadastrado</td></tr>';
+  }).join('');
 }
 
-// ✅ Exclui veículo
-function excluirVeiculo(id) {
-  if (confirm('⚠️ Tem certeza que deseja excluir este veículo?')) {
-    excluirRegistro('veiculos', id);
-    carregarTabelaVeiculos();
-    if (typeof atualizarDashboardCompleto === 'function') {
-      atualizarDashboardCompleto();
-    } else if (typeof atualizarDashboard === 'function') {
-      atualizarDashboard();
+// ✅ Excluir veículo
+window.excluirVeiculo = async function (identificador) {
+  if (!confirm('⚠️ Tem certeza que deseja excluir este veículo?')) return;
+  
+  // Tenta pelo Supabase, senão usa local
+  let sucesso = false;
+  try {
+    const { supabase } = await import('./supabase.js').catch(() => ({ supabase: null }));
+    if (supabase) {
+      await supabase.from('veiculos').delete().eq('placa', identificador);
+      sucesso = true;
     }
+  } catch {}
+  
+  // Fallback local
+  if (!sucesso) {
+    BD.veiculos = BD.veiculos.filter(v => v.placa !== identificador && String(v.id) !== String(identificador));
+    salvarDados();
   }
+  
+  alert('✅ Veículo excluído!');
+  await carregarTabelaVeiculos();
+  if (typeof atualizarDashboard === 'function') atualizarDashboard();
+  if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
 }
 
-// ✅ Função auxiliar de categoria (se não existir no config.js)
-function getCategoriaVeiculo(id) {
-  const lista = CONFIG?.CATEGORIAS_VEICULOS || CATEGORIAS_VEICULOS || [];
-  return lista.find(c => c.id === id);
-}
+// ✅ Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+  const originalMostrarPagina = window.mostrarPagina;
+  window.mostrarPagina = async function (pagina) {
+    if (originalMostrarPagina) originalMostrarPagina(pagina);
+    if (pagina === 'veiculos') {
+      await carregarTabelaVeiculos();
+    }
+  };
+});
+
+// ==================================================
+// ✅ DISPONIBILIZA TUDO GLOBALMENTE PARA O HTML
+// ==================================================
+window.BD = BD;
+window.CONFIG = CONFIG;
+window.abrirModalVeiculo = abrirModalVeiculo;
+window.carregarTabelaVeiculos = carregarTabelaVeiculos;
+window.CATEGORIAS_VEICULOS = CONFIG?.CATEGORIAS_VEICULOS;
+window.excluirVeiculo = excluirVeiculo;
