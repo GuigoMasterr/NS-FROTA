@@ -48,7 +48,52 @@
         body.usuario-motorista .admin-only, body.usuario-motorista .supervisor-only { display: none !important; }
         body.usuario-visitante .admin-only, body.usuario-visitante .supervisor-only { display: none !important; }
         body.usuario-supervisor .admin-only { display: none !important; }
-        .filtro-area { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; padding: 1rem; background: #f8fafc; border-radius: 0.75rem; flex-wrap: wrap; }
+        .filtro-area { 
+    display: flex; 
+    gap: 1rem; 
+    align-items: flex-end; 
+    margin-bottom: 1.25rem; 
+    padding: 1.25rem; 
+    background: #ffffff; 
+    border-radius: 0.875rem; 
+    flex-wrap: wrap; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #4f46e5;
+}
+.filtro-area .filtro-titulo { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.5rem; 
+    font-weight: 600; 
+    color: #334155; 
+    font-size: 0.9rem; 
+    margin-right: 0.5rem;
+}
+.filtro-area .filtro-grupo { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0.35rem; 
+    min-width: 180px;
+}
+.filtro-area .filtro-grupo label { 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    color: #64748b; 
+    margin-bottom: 0; 
+    text-transform: uppercase; 
+    letter-spacing: 0.03em;
+}
+.filtro-area .filtro-grupo select,
+.filtro-area .filtro-grupo input { 
+    min-width: 180px; 
+    margin: 0;
+}
+.filtro-area .filtro-separador { 
+    color: #94a3b8; 
+    font-size: 0.875rem; 
+    padding-bottom: 0.5rem;
+}
         .btn-fechar { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #94a3b8; }
         .linha-form { margin-bottom: 1rem; }
         .botoes-form { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap; }
@@ -153,7 +198,7 @@
                 <!-- VEÍCULOS -->
                 <div id="pag-veiculos" class="pagina">
                     <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg> Cadastro de Veículos</h2><p style="color:#64748b; margin:0.25rem 0 0;">Gerencie toda a frota</p></div><button class="btn btn-primary admin-only" onclick="abrirModalVeiculo()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Veículo</button></div>
-                    <div class="filtro-area"><label>Filtrar:</label><select id="filtroVeiculoCategoria" onchange="carregarTabelaVeiculos()"><option value="todas">Todas Categorias</option></select><select id="filtroVeiculoStatus" onchange="carregarTabelaVeiculos()"><option value="todos">Todos Status</option><option value="disponivel">Disponível</option><option value="alocado">Alocado</option><option value="manutencao">Manutenção</option><option value="inativo">Inativo</option></select></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Categoria</label><select id="filtroVeiculoCategoria" onchange="carregarTabelaVeiculos()"><option value="todas">Todas Categorias</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroVeiculoStatus" onchange="carregarTabelaVeiculos()"><option value="todos">Todos Status</option><option value="disponivel">Disponível</option><option value="alocado">Alocado</option><option value="manutencao">Manutenção</option><option value="inativo">Inativo</option></select></div></div>
                     <div class="card table-container"><table><thead><tr><th>Placa</th><th>Categoria</th><th>Modelo</th><th>Km Atual</th><th>Obra</th><th>Status</th><th class="admin-only">Ações</th></tr></thead><tbody id="tabelaVeiculos"></tbody></table></div>
                 </div>
 
@@ -161,35 +206,35 @@
                 <div id="pag-checklist" class="pagina">
                     <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Check-list de Inspeção</h2><p style="color:#64748b; margin:0.25rem 0 0;">Inspeções diárias</p></div><button class="btn btn-primary" onclick="abrirModalChecklist()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Check-list</button></div>
                     <div id="alertasCintas"></div>
-                    <div class="filtro-area"><label>Filtrar:</label><select id="filtroChecklistVeiculo" onchange="carregarTabelaChecklist()"><option value="todos">Todos Veículos</option></select><input type="date" id="filtroChecklistDataIni" onchange="carregarTabelaChecklist()" style="max-width:160px;"><span style="color:#64748b;">até</span><input type="date" id="filtroChecklistDataFim" onchange="carregarTabelaChecklist()" style="max-width:160px;"></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroChecklistVeiculo" onchange="carregarTabelaChecklist()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Data Início</label><input type="date" id="filtroChecklistDataIni" onchange="carregarTabelaChecklist()"></div><div class="filtro-separador">até</div><div class="filtro-grupo"><label>Data Fim</label><input type="date" id="filtroChecklistDataFim" onchange="carregarTabelaChecklist()"></div></div>
                     <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Motorista</th><th>Status</th><th>Localização</th><th>Ações</th></tr></thead><tbody id="tabelaChecklist"></tbody></table></div>
                 </div>
 
                 <!-- MANUTENÇÃO -->
                 <div id="pag-manutencao" class="pagina">
                     <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Manutenção</h2><p style="color:#64748b; margin:0.25rem 0 0;">Solicitações e serviços</p></div><button class="btn btn-primary" onclick="abrirModalManutencao()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nova Solicitação</button></div>
-                    <div class="filtro-area"><label>Filtrar:</label><select id="filtroManutencaoVeiculo" onchange="carregarTabelaManutencao()"><option value="todos">Todos Veículos</option></select><select id="filtroManutencaoStatus" onchange="carregarTabelaManutencao()"><option value="todos">Todos Status</option><option value="aberta">Aberta</option><option value="andamento">Em Andamento</option><option value="concluida">Concluída</option></select></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroManutencaoVeiculo" onchange="carregarTabelaManutencao()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroManutencaoStatus" onchange="carregarTabelaManutencao()"><option value="todos">Todos Status</option><option value="aberta">Aberta</option><option value="andamento">Em Andamento</option><option value="concluida">Concluída</option></select></div></div>
                     <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaManutencao"></tbody></table></div>
                 </div>
 
                 <!-- GASTOS -->
                 <div id="pag-gastos" class="pagina">
                     <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> Gastos</h2><p style="color:#64748b; margin:0.25rem 0 0;">Registro de despesas</p></div><button class="btn btn-primary" onclick="abrirModalGasto()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Gasto</button></div>
-                    <div class="filtro-area"><label>Filtrar:</label><select id="filtroGastosVeiculo" onchange="carregarTabelaGastos()"><option value="todos">Todos Veículos</option></select><select id="filtroGastosTipo" onchange="carregarTabelaGastos()"><option value="todos">Todos Tipos</option><option value="combustivel">Combustível</option><option value="manutencao">Manutenção</option><option value="pneus">Pneus</option><option value="pedagio">Pedágio</option><option value="seguro">Seguro</option><option value="outro">Outro</option></select></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroGastosVeiculo" onchange="carregarTabelaGastos()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Tipo</label><select id="filtroGastosTipo" onchange="carregarTabelaGastos()"><option value="todos">Todos Tipos</option><option value="combustivel">Combustível</option><option value="manutencao">Manutenção</option><option value="pneus">Pneus</option><option value="pedagio">Pedágio</option><option value="seguro">Seguro</option><option value="outro">Outro</option></select></div></div>
                     <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaGastos"></tbody></table></div>
                 </div>
 
                 <!-- CHAMADOS -->
                 <div id="pag-chamados" class="pagina">
                     <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Chamados</h2><p style="color:#64748b; margin:0.25rem 0 0;">Ocorrências registradas</p></div><button class="btn btn-primary" onclick="abrirModalChamado()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Abrir Chamado</button></div>
-                    <div class="filtro-area"><label>Filtrar:</label><select id="filtroChamadosVeiculo" onchange="carregarTabelaChamados()"><option value="todos">Todos Veículos</option></select><select id="filtroChamadosStatus" onchange="carregarTabelaChamados()"><option value="todos">Todos Status</option><option value="aberto">Aberto</option><option value="andamento">Em Andamento</option><option value="resolvido">Resolvido</option></select></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroChamadosVeiculo" onchange="carregarTabelaChamados()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroChamadosStatus" onchange="carregarTabelaChamados()"><option value="todos">Todos Status</option><option value="aberto">Aberto</option><option value="andamento">Em Andamento</option><option value="resolvido">Resolvido</option></select></div></div>
                     <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Título</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaChamados"></tbody></table></div>
                 </div>
 
                 <!-- ALOCAÇÕES -->
                 <div id="pag-alocacoes" class="pagina">
                     <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Alocações</h2><p style="color:#64748b; margin:0.25rem 0 0;">Alocação de veículos</p></div><button class="btn btn-primary" onclick="abrirModalAlocacao()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nova Alocação</button></div>
-                    <div class="filtro-area"><label>Filtrar:</label><select id="filtroAlocacoesVeiculo" onchange="carregarTabelaAlocacoes()"><option value="todos">Todos Veículos</option></select></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroAlocacoesVeiculo" onchange="carregarTabelaAlocacoes()"><option value="todos">Todos Veículos</option></select></div></div>
                     <div class="card table-container"><table><thead><tr><th>Veículo</th><th>Origem</th><th>Destino</th><th>Data Início</th><th>Data Fim</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaAlocacoes"></tbody></table></div>
                 </div>
 
@@ -216,7 +261,7 @@
                 <!-- LOG -->
                 <div id="pag-log" class="pagina admin-only">
                     <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg> Log de Registros</h2><p style="color:#64748b; margin:0.25rem 0 0;">Histórico de ações</p></div><button class="btn btn-secondary" onclick="limparLog()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Limpar Log</button></div>
-                    <div class="filtro-area"><label>Filtrar:</label><select id="filtroLogUsuario" onchange="carregarLog()"><option value="todos">Todos Usuários</option></select><select id="filtroLogAcao" onchange="carregarLog()"><option value="todas">Todas Ações</option><option value="login">Login</option><option value="criacao">Criação</option><option value="edicao">Edição</option><option value="exclusao">Exclusão</option></select></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Usuário</label><select id="filtroLogUsuario" onchange="carregarLog()"><option value="todos">Todos Usuários</option></select></div><div class="filtro-grupo"><label>Ação</label><select id="filtroLogAcao" onchange="carregarLog()"><option value="todas">Todas Ações</option><option value="login">Login</option><option value="criacao">Criação</option><option value="edicao">Edição</option><option value="exclusao">Exclusão</option></select></div></div>
                     <div class="card table-container"><table><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead><tbody id="tabelaLog"></tbody></table></div>
                 </div>
 
