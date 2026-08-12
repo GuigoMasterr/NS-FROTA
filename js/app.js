@@ -390,7 +390,7 @@ window.Validacoes = Validacoes;
 // import removido
 
 // ✅ Abre janela de cadastro ou edição
-function abrirModalVeiculo(veiculo = null) {
+window.abrirModalVeiculo = function(veiculo = null) {
   const ehEdicao = !!veiculo;
 
   const modal = document.createElement('div');
@@ -695,7 +695,7 @@ function veiculosDoUsuario() {
 }
 
 // ✅ Abre formulário de check-list
-function abrirModalChecklist() {
+window.abrirModalChecklist = function() {
   const fotosAtuais = {};
   let localizacaoAtual = { lat: 'Obtendo...', lng: 'Obtendo...' };
   const dataHoraRegistro = new Date().toLocaleString('pt-BR');
@@ -1101,7 +1101,7 @@ function verDetalhesChecklist(id) {
 }
 
 // ✅ Exclui check-list
-function excluirChecklist(id) {
+window.excluirChecklist = function(id) {
   // 🔒 BLOQUEIA MOTORISTA
     if (!ehAdmin()) {
     alert('❌ Acesso restrito ao Administrador!');
@@ -1124,7 +1124,7 @@ function excluirChecklist(id) {
 }
 
 // ✅ Carrega tabela com filtro
-function carregarTabelaChecklist(filtroPlaca = 'todos') {
+window.carregarTabelaChecklist = function(filtroPlaca = 'todos') {
   const corpo = document.getElementById('tabelaChecklist');
   if (!corpo) return;
 
@@ -1189,7 +1189,7 @@ let tipoManutencaoAtual = null;
 
 
 // ✅ Abre janela de cadastro ou edição
-function abrirModalManutencao(tipo, manutencao = null) {
+window.abrirModalManutencao = function(tipo, manutencao = null) {
   manutencaoEmEdicao = manutencao;
   tipoManutencaoAtual = tipo || manutencao?.tipo;
   const ehEdicao = !!manutencao;
@@ -1323,7 +1323,7 @@ function abrirModalManutencao(tipo, manutencao = null) {
 }
 
 // ✅ Exclui manutenção
-function excluirManutencao(id) {
+window.excluirManutencao = function(id) {
   if (confirm('⚠️ Tem certeza que deseja excluir esta manutenção?')) {
     if (typeof excluirRegistro === 'function') {
       excluirRegistro('manutencoes', id);
@@ -1338,7 +1338,7 @@ function excluirManutencao(id) {
 }
 
 // ✅ Carrega e exibe tabela com filtro por veículo
-function carregarTabelaManutencao(filtroPlaca = 'todos') {
+window.carregarTabelaManutencao = function(filtroPlaca = 'todos') {
   const corpo = document.getElementById('tabelaManutencao');
   if (!corpo) return;
 
@@ -1390,7 +1390,7 @@ let gastoEmEdicao = null;
 
 
 // ✅ Abre janela de cadastro ou edição
-function abrirModalGasto(gasto = null) {
+window.abrirModalGasto = function(gasto = null) {
   gastoEmEdicao = gasto;
   const ehEdicao = !!gasto;
 
@@ -1513,7 +1513,7 @@ function abrirModalGasto(gasto = null) {
 }
 
 // ✅ Exclui gasto
-function excluirGasto(id) {
+window.excluirGasto = function(id) {
   if (confirm('⚠️ Tem certeza que deseja excluir este lançamento?')) {
     if (typeof excluirRegistro === 'function') {
       excluirRegistro('gastos', id);
@@ -1528,7 +1528,7 @@ function excluirGasto(id) {
 }
 
 // ✅ Carrega e exibe tabela com filtro por veículo
-function carregarTabelaGastos(filtroPlaca = 'todos') {
+window.carregarTabelaGastos = function(filtroPlaca = 'todos') {
   const corpo = document.getElementById('tabelaGastos');
   if (!corpo) return;
 
@@ -1582,7 +1582,7 @@ let chamadoEmEdicao = null;
 
 
 // ✅ Abre janela de cadastro ou edição
-function abrirModalChamado(chamado = null) {
+window.abrirModalChamado = function(chamado = null) {
   chamadoEmEdicao = chamado;
   const ehEdicao = !!chamado;
   const modal = document.createElement('div');
@@ -1700,7 +1700,7 @@ function abrirModalChamado(chamado = null) {
 }
 
 // ✅ Excluir chamado
-function excluirChamado(id) {
+window.excluirChamado = function(id) {
   if (confirm('⚠️ Tem certeza que deseja excluir este chamado permanentemente?')) {
     if (typeof excluirRegistro === 'function') {
       excluirRegistro('chamados', id);
@@ -1727,7 +1727,7 @@ function alterarStatusChamado(id, status) {
 }
 
 // ✅ Carregar tabela de chamados
-function carregarTabelaChamados() {
+window.carregarTabelaChamados = function() {
   const corpo = document.getElementById('tabelaChamados');
   if (!corpo) return;
   const ehAdmin = (typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil) === 'admin';
@@ -2097,7 +2097,7 @@ function entrarNoSistema() {
   mostrarSistema();
 }
 
-function sairDoSistema() {
+window.sairDoSistema = function() {
   localStorage.removeItem('sessaoUsuario');
   usuarioAtual = null;
   mostrarLogin();
@@ -2195,7 +2195,7 @@ window.atualizarListasDependentes = function() {
 };
 
 // ✅ Dashboard
-window.atualizarDashboard = window.atualizarDashboard || function() {
+window.atualizarDashboard = function() {
   if (!BD.veiculos) return;
   const elV = document.getElementById('dashVeiculos');
   const elA = document.getElementById('dashAtivos');
@@ -2337,7 +2337,7 @@ window.abrirModalVeiculo = function(veiculo = null) {
   });
 };
 
-window.carregarTabelaVeiculos = window.carregarTabelaVeiculos || async function() {
+window.carregarTabelaVeiculos = async function() {
   const corpo = document.getElementById('tabelaVeiculos');
   if (!corpo) return;
 
@@ -2376,7 +2376,7 @@ window.carregarTabelaVeiculos = window.carregarTabelaVeiculos || async function(
   }).join('');
 };
 
-window.excluirVeiculo = window.excluirVeiculo || async function(identificador) {
+window.excluirVeiculo = async function(identificador) {
   if (!confirm('⚠️ Tem certeza que deseja excluir este veículo?')) return;
   
   BD.veiculos = BD.veiculos.filter(v => v.placa !== identificador && String(v.id) !== String(identificador));
