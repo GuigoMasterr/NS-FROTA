@@ -289,164 +289,21 @@
     </div>
 
     <!-- JAVASCRIPT COMPLETO AQUI -->
+        <!-- ARQUIVOS DE FUNCIONALIDADES ORIGINAIS -->
+    <script src="js/app.js"></script>
+    <script src="js/melhorias-veiculos.js"></script>
+    <script src="js/melhorias-checklist-v2.js"></script>
+    <script src="js/melhorias-dashboard.js"></script>
+
+    <!-- INICIALIZAÇÃO DO DASHBOARD -->
     <script>
-        // BANCO DE DADOS LOCAL
-        const BD = {
-            usuarios: [
-                {usuario: 'admin', senha: 'admin123', nome: 'Administrador', perfil: 'admin', ativo: true},
-                {usuario: 'supervisor', senha: 'super123', nome: 'Supervisor', perfil: 'supervisor', ativo: true},
-                {usuario: 'motorista', senha: 'motor123', nome: 'Motorista', perfil: 'motorista', ativo: true}
-            ],
-            veiculos: [],
-            checklists: [],
-            manutencoes: [],
-            gastos: [],
-            chamados: [],
-            alocacoes: [],
-            locais: [],
-            logs: []
-        };
-
-        let usuarioAtual = null;
-        let graficosCarregados = false;
-
-        // INICIALIZAÇÃO
-        document.addEventListener('DOMContentLoaded', () => {
-            carregarDados();
-            document.getElementById('formLogin').addEventListener('submit', fazerLogin);
-        });
-
-        // LOGIN
-        function fazerLogin(e) {
-            e.preventDefault();
-            const usu = document.getElementById('loginUsuario').value.trim().toLowerCase();
-            const sen = document.getElementById('loginSenha').value;
-            const erro = document.getElementById('erroLogin');
-
-            const encontrado = BD.usuarios.find(u => u.usuario === usu && u.senha === sen && u.ativo);
-            if (encontrado) {
-                usuarioAtual = encontrado;
-                document.getElementById('telaLogin').classList.add('hidden');
-                document.getElementById('sistemaPrincipal').classList.remove('hidden');
-                document.body.classList.add(`usuario-${encontrado.perfil}`);
-                document.getElementById('infoUsuario').textContent = `${encontrado.nome} (${encontrado.perfil})`;
-                navegarPara('dashboard');
-                if (!graficosCarregados) {
-                    setTimeout(carregarGraficosDashboard, 300);
-                    graficosCarregados = true;
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                if (window.inicializarDashboard) {
+                    window.inicializarDashboard();
                 }
-                erro.style.display = 'none';
-            } else {
-                erro.textContent = 'Usuário ou senha incorretos!';
-                erro.style.display = 'block';
-            }
-        }
-
-        // SAIR
-        function sairDoSistema() {
-            usuarioAtual = null;
-            document.getElementById('sistemaPrincipal').classList.add('hidden');
-            document.getElementById('telaLogin').classList.remove('hidden');
-            document.getElementById('formLogin').reset();
-            document.body.className = '';
-        }
-
-        // NAVEGAÇÃO
-        function navegarPara(pagina) {
-            document.querySelectorAll('.pagina').forEach(p => p.classList.remove('ativa'));
-            document.getElementById(`pag-${pagina}`).classList.add('ativa');
-            document.querySelectorAll('.sidebar-link').forEach(b => {
-                b.classList.remove('ativo');
-                if (b.dataset.pagina === pagina) b.classList.add('ativo');
-            });
-            fecharSidebar();
-        }
-
-        // SIDEBAR RESPONSIVA
-        function toggleSidebar() {
-            const barra = document.getElementById('sidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
-            barra.classList.toggle('aberto');
-            overlay.classList.toggle('ativo');
-        }
-        function fecharSidebar() {
-            document.getElementById('sidebar').classList.remove('aberto');
-            document.querySelector('.sidebar-overlay').classList.remove('ativo');
-        }
-
-        // GRÁFICOS DO DASHBOARD
-        function carregarGraficosDashboard() {
-            // Categorias
-            const catEl = document.getElementById('grafico-categorias');
-            if (catEl) {
-                const ec = echarts.init(catEl);
-                ec.setOption({
-                    tooltip: {trigger: 'item'},
-                    series: [{
-                        type: 'pie',
-                        radius: ['40%', '70%'],
-                        data: [
-                            {value:0, name:'Carro'},
-                            {value:0, name:'Caminhão'},
-                            {value:0, name:'Máquina'},
-                            {value:0, name:'Utilitário'}
-                        ]
-                    }]
-                });
-            }
-
-            // Gastos
-            const gastoEl = document.getElementById('grafico-gastos');
-            if (gastoEl) {
-                const eg = echarts.init(gastoEl);
-                eg.setOption({
-                    tooltip: {trigger: 'axis'},
-                    xAxis: {type:'category', data:['Mar','Abr','Mai','Jun','Jul','Ago']},
-                    yAxis: {type:'value', name:'R$'},
-                    series: [{name:'Gastos', type:'bar', data:[0,0,0,0,0,0], color:'#4f46e5'}]
-                });
-            }
-
-            // Status
-            const stEl = document.getElementById('grafico-status');
-            if (stEl) {
-                const es = echarts.init(stEl);
-                es.setOption({
-                    tooltip: {trigger: 'item'},
-                    series: [{
-                        type: 'pie',
-                        radius: ['40%', '70%'],
-                        data: [
-                            {value:0, name:'Operando'},
-                            {value:0, name:'Disponível'},
-                            {value:0, name:'Manutenção'}
-                        ],
-                        color: ['#22c55e','#3b82f6','#f59e0b']
-                    }]
-                });
-            }
-
-            // Atualizar contadores
-            atualizarContadores();
-        }
-
-        function atualizarContadores() {
-            document.getElementById('stat-total').textContent = BD.veiculos.length;
-            document.getElementById('stat-operacao').textContent = '0';
-            document.getElementById('stat-manutencao').textContent = BD.manutencoes.length;
-            document.getElementById('stat-chamados').textContent = BD.chamados.length;
-            document.getElementById('stat-gastos').textContent = 'R$ 0';
-            document.getElementById('stat-km').textContent = '0';
-        }
-
-        // SALVAR/CARREGAR DADOS LOCALSTORAGE
-        function salvarDados() {
-            localStorage.setItem('frota-dados', JSON.stringify(BD));
-        }
-        function carregarDados() {
-            const salvo = localStorage.getItem('frota-dados');
-            if (salvo) Object.assign(BD, JSON.parse(salvo));
-        }
+            }, 300);
+        });
     </script>
 </body>
 </html>
