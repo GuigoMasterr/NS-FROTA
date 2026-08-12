@@ -768,6 +768,26 @@ function salvarChecklist() {
     const cat = sel.options[sel.selectedIndex]?.dataset.categoria;
     const cc = BD.config.categoriasVeiculos.find(c=>c.id===cat);
     
+    // === VALIDAÇÃO DE FOTOS OBRIGATÓRIAS ===
+    const fotosObrigatorias = ['Painel', 'Frente', 'Traseira'];
+    if (cc?.precisaCintas) fotosObrigatorias.push('Cintas');
+    if (cc?.precisaFotosBancos) fotosObrigatorias.push('Banco 1', 'Banco 2');
+    
+    const fotosFaltando = [];
+    if (!document.getElementById('fotoPainel')?.value) fotosFaltando.push('Painel');
+    if (!document.getElementById('fotoFrente')?.value) fotosFaltando.push('Frente');
+    if (!document.getElementById('fotoTraseira')?.value) fotosFaltando.push('Traseira');
+    if (cc?.precisaCintas && !document.getElementById('fotoCintas')?.value) fotosFaltando.push('Cintas');
+    if (cc?.precisaFotosBancos) {
+        if (!document.getElementById('fotoBanco1')?.value) fotosFaltando.push('Banco 1');
+        if (!document.getElementById('fotoBanco2')?.value) fotosFaltando.push('Banco 2');
+    }
+    
+    if (fotosFaltando.length > 0) {
+        mostrarToast('Capture as fotos obrigatórias: ' + fotosFaltando.join(', '), 'erro');
+        return;
+    }
+    
     const fotos = {};
     const obsFotos = {};
     ['fotoPainel','fotoFrente','fotoTraseira'].forEach(c => { const el = document.getElementById(c); if (el?.value) fotos[c] = el.value; });
