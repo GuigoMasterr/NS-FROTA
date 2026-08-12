@@ -551,6 +551,44 @@
             }
         });
     </script>
+    
+    <script>
+    // GARANTIA: Intercepta o formulário de login imediatamente
+    (function() {
+        function configurarLogin() {
+            const form = document.getElementById('formLogin');
+            if (form && !form.__loginConfigurado) {
+                form.__loginConfigurado = true;
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (typeof entrarNoSistema === 'function') {
+                        entrarNoSistema();
+                    } else {
+                        // Fallback se entrarNoSistema ainda não existir
+                        setTimeout(() => {
+                            if (typeof entrarNoSistema === 'function') entrarNoSistema();
+                        }, 100);
+                    }
+                });
+            }
+        }
+        
+        // Tentar configurar imediatamente
+        configurarLogin();
+        
+        // Se o form ainda não existir, tentar novamente em intervalos
+        const tentativas = setInterval(() => {
+            if (document.getElementById('formLogin')) {
+                configurarLogin();
+                clearInterval(tentativas);
+            }
+        }, 50);
+        
+        // Parar após 5 segundos
+        setTimeout(() => clearInterval(tentativas), 5000);
+    })();
+    </script>
+
     <script src="js/app.js"></script>
     </body>
 </html>
