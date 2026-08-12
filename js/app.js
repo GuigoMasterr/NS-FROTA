@@ -12,6 +12,31 @@ function formatarData(d) { return new Date(d).toLocaleDateString('pt-BR'); }
 function formatarDataHora(d) { return new Date(d).toLocaleString('pt-BR'); }
 function formatarMoeda(v) { return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
+function mostrarToast(mensagem, tipo = 'sucesso') {
+    try {
+        const toast = document.createElement('div');
+        const cores = {
+            sucesso: 'linear-gradient(90deg,#10b981,#059669)',
+            erro: 'linear-gradient(90deg,#ef4444,#dc2626)',
+            aviso: 'linear-gradient(90deg,#f59e0b,#d97706)',
+            info: 'linear-gradient(90deg,#3b82f6,#2563eb)'
+        };
+        toast.style.cssText = cores[tipo] + ';color:white;padding:0.875rem 1.5rem;border-radius:0.5rem;position:fixed;top:1.5rem;right:1.5rem;z-index:99999;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,0.25);animation:toastEntrar 0.3s ease;max-width:320px;';
+        toast.textContent = mensagem;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3500);
+    } catch(e) { console.log('Toast:', mensagem); }
+}
+
+// Adicionar animação do toast
+(function() {
+    try {
+        const s = document.createElement('style');
+        s.textContent = '@keyframes toastEntrar{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}} .btn-fechar{font-size:1.5rem !important;cursor:pointer;padding:0.25rem 0.75rem !important;line-height:1;border:none;background:none;color:#64748b;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;}';
+        document.head.appendChild(s);
+    } catch(e) {}
+})();
+
 function registrarLog(acao, detalhes) {
     if (!window.BD) BD = inicializarBD();
     if (!BD.log) BD.log = [];
@@ -168,8 +193,8 @@ function mostrarSistema() {
 let paginaAtual = 'dashboard';
 
 function navegarPara(pagina) {
-    if (['locais', 'usuarios', 'configuracoes', 'log'].includes(pagina) && !ehAdmin()) { alert('❌ Sem permissão!'); return; }
-    if (['manutencao', 'alocacoes'].includes(pagina) && !ehSupervisor() && !ehAdmin()) { alert('❌ Sem permissão!'); return; }
+    if (['locais', 'usuarios', 'configuracoes', 'log'].includes(pagina) && !ehAdmin()) { mostrarToast('Você não tem permissão!', 'erro'); return; }
+    if (['manutencao', 'alocacoes'].includes(pagina) && !ehSupervisor() && !ehAdmin()) { mostrarToast('Você não tem permissão!', 'erro'); return; }
     paginaAtual = pagina;
     document.querySelectorAll('.sidebar-link').forEach(l => l.classList.toggle('ativo', l.dataset.pagina === pagina));
     document.querySelectorAll('.pagina').forEach(p => p.classList.remove('ativa'));
@@ -194,13 +219,29 @@ function carregarDadosPagina(p) {
     }
 }
 
+function popularFiltrosEstaticos() {
+    try {
+        // Filtro de categorias em Veículos
+        const sc = document.getElementById('filtroVeiculoCategoria');
+        if (sc && sc.options.length <= 1 && BD.config?.categoriasVeiculos) {
+            BD.config.categoriasVeiculos.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id; opt.textContent = c.nome;
+                sc.appendChild(opt);
+            });
+        }
+    } catch(e) { console.error('Erro ao popular filtros:', e); }
+}
+
 function carregarDadosIniciais() {
+    popularFiltrosEstaticos();
     atualizarListaVeiculosNosFiltros();
     atualizarListaUsuariosNosFiltros();
     carregarDadosPagina(paginaAtual);
 }
 
 function atualizarListaVeiculosNosFiltros() {
+    popularFiltrosEstaticos();
     const vs = BD.veiculos || [];
     ['filtroChecklistVeiculo', 'filtroManutencaoVeiculo', 'filtroGastosVeiculo', 'filtroChamadosVeiculo', 'filtroAlocacoesVeiculo'].forEach(id => {
         const sel = document.getElementById(id);
@@ -250,7 +291,7 @@ function renderizarAlertasDashboard() {
 
 // ---------- 6. CRUD VEÍCULOS ----------
 function abrirModalVeiculo(v = null) {
-    if (!ehAdmin()) { alert('❌ Sem permissão!'); return; }
+    if (!ehAdmin()) { mostrarToast('Você não tem permissão!', 'erro'); return; }
     const ed = !!v;
     const cats = BD.config.categoriasVeiculos.map(c => `<option value="${c.id}" ${v?.categoria===c.id?'selected':''}>${c.nome}</option>`).join('');
     const sts = Object.entries(BD.config.statusVeiculos).map(([val,nome])=>`<option value="${val}" ${v?.status===val?'selected':''}>${nome}</option>`).join('');
@@ -258,7 +299,7 @@ function abrirModalVeiculo(v = null) {
     const m = document.createElement('div');
     m.className = 'modal-fundo';
     m.onclick = e => { if(e.target===m) fecharModal(); };
-    m.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">${ed?'✏️ Editar':'➕ Cadastrar'} Veículo</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formVeiculo">
+    m.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">${ed?'✏️ Editar':'➕ Cadastrar'} Veículo</h3><button class="btn-fechar" onclick="fecharModal()" title="Fechar">×</button></div><div class="modal-conteudo"><form id="formVeiculo">
         <div class="linha-form"><label>Placa *</label><input type="text" id="vPlaca" style="text-transform:uppercase;" required value="${v?.placa||''}" ${ed?'readonly':''} placeholder="ABC1D23"></div>
         <div class="linha-form"><label>Ano</label><input type="number" id="vAno" value="${v?.ano||''}" min="1990" max="2030"></div>
         <div class="linha-form"><label>Categoria *</label><select id="vCategoria" required><option value="">Selecione</option>${cats}</select></div>
@@ -282,8 +323,13 @@ function abrirModalVeiculo(v = null) {
         const obra = document.getElementById('vObra').value.trim();
         const resp = document.getElementById('vResponsavel').value.trim() || null;
         
-        if (!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(placa) && !/^[A-Z]{3}[0-9]{4}$/.test(placa)) { alert('❌ Placa inválida! ABC1D23 ou ABC1234'); return; }
-        if (!categoria || !modelo || !obra) { alert('❌ Preencha todos os campos!'); return; }
+        // Validação flexível: aceita ABC1D23 (Mercosul), ABC1234 (antigo), com ou sem hífen
+        const placaLimpa = placa.replace(/[^A-Z0-9]/g, '');
+        if (!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(placaLimpa) && !/^[A-Z]{3}[0-9]{4}$/.test(placaLimpa)) {
+            mostrarToast('Placa inválida! Use: ABC1D23 ou ABC1234', 'erro');
+            return;
+        }
+        if (!categoria || !modelo || !obra) { mostrarToast('Preencha todos os campos obrigatórios!', 'aviso'); return; }
         
         const dados = { placa, categoria, modelo, marca: modelo.split(' ')[0], ano, km_atual: km, km_inicial: ed ? (v?.km_inicial||km) : km, status, obra_atual: obra, responsavel: resp };
         
@@ -292,11 +338,11 @@ function abrirModalVeiculo(v = null) {
             if (i!==-1) BD.veiculos[i] = { ...BD.veiculos[i], ...dados };
             registrarLog('edicao', `Editou veículo ${placa}`);
         } else {
-            if (BD.veiculos.some(x => x.placa === placa)) { alert('❌ Já existe veículo com esta placa!'); return; }
+            if (BD.veiculos.some(x => x.placa === placa)) { mostrarToast('Já existe veículo com esta placa!', 'erro'); return; }
             dados.id = gerarId(); BD.veiculos.push(dados);
             registrarLog('criacao', `Cadastrou veículo ${placa}`);
         }
-        salvarDados(); alert('✅ Veículo salvo!'); fecharModal();
+        salvarDados(); mostrarToast('Veículo salvo com sucesso!', 'sucesso'); fecharModal();
         carregarTabelaVeiculos(); atualizarDashboard(); atualizarListaVeiculosNosFiltros();
     });
 }
@@ -308,7 +354,7 @@ function excluirVeiculo(id) {
     BD.veiculos = BD.veiculos.filter(x => x.placa!==id && String(x.id)!==String(id));
     salvarDados();
     if (v) registrarLog('exclusao', `Excluiu veículo ${v.placa}`);
-    alert('✅ Excluído!'); carregarTabelaVeiculos(); atualizarDashboard(); atualizarListaVeiculosNosFiltros();
+    mostrarToast('Registro excluído!', 'sucesso'); carregarTabelaVeiculos(); atualizarDashboard(); atualizarListaVeiculosNosFiltros();
 }
 
 function carregarTabelaVeiculos() {
@@ -343,7 +389,7 @@ function abrirModalUsuario(u = null) {
     const m = document.createElement('div');
     m.className = 'modal-fundo';
     m.onclick = e => { if(e.target===m) fecharModal(); };
-    m.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">${ed?'✏️ Editar':'➕ Novo'} Usuário</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formUsuario">
+    m.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">${ed?'✏️ Editar':'➕ Novo'} Usuário</h3><button class="btn-fechar" onclick="fecharModal()" title="Fechar">×</button></div><div class="modal-conteudo"><form id="formUsuario">
         <div class="linha-form"><label>Nome Completo *</label><input type="text" id="uNome" required value="${u?.nome||''}"></div>
         <div class="linha-form"><label>Usuário (Login) *</label><input type="text" id="uUsuario" required value="${u?.usuario||''}" ${ed?'readonly':''}></div>
         <div class="linha-form"><label>Senha *</label><input type="password" id="uSenha" required value="${u?.senha||''}"></div>
@@ -365,11 +411,11 @@ function abrirModalUsuario(u = null) {
             if (i!==-1) BD.usuarios[i] = { ...BD.usuarios[i], nome, senha, perfil };
             registrarLog('edicao', `Editou usuário ${login}`);
         } else {
-            if (BD.usuarios.some(x=>x.usuario===login)) { alert('❌ Usuário já existe!'); return; }
+            if (BD.usuarios.some(x=>x.usuario===login)) { mostrarToast('Usuário já existe!', 'erro'); return; }
             BD.usuarios.push({ id: gerarId(), nome, usuario: login, senha, perfil, ativo: true });
             registrarLog('criacao', `Criou usuário ${login} (${perfil})`);
         }
-        salvarDados(); alert('✅ Usuário salvo!'); fecharModal();
+        salvarDados(); mostrarToast('Usuário salvo com sucesso!', 'sucesso'); fecharModal();
         carregarTabelaUsuarios(); atualizarListaUsuariosNosFiltros();
     });
 }
@@ -383,11 +429,11 @@ function toggleStatusUsuario(id) {
 function excluirUsuario(id) {
     if (!ehAdmin()) return;
     const u = BD.usuarios.find(x=>String(x.id)===String(id));
-    if (u?.perfil==='admin' && BD.usuarios.filter(x=>x.perfil==='admin').length<=1) { alert('❌ Não pode excluir último admin!'); return; }
+    if (u?.perfil==='admin' && BD.usuarios.filter(x=>x.perfil==='admin').length<=1) { mostrarToast('Não pode excluir o último admin!', 'erro'); return; }
     if (!confirm('⚠️ Excluir este usuário?')) return;
     BD.usuarios = BD.usuarios.filter(x=>String(x.id)!==String(id));
     salvarDados(); if (u) registrarLog('exclusao', `Excluiu ${u.usuario}`);
-    alert('✅ Excluído!'); carregarTabelaUsuarios(); atualizarListaUsuariosNosFiltros();
+    mostrarToast('Registro excluído!', 'sucesso'); carregarTabelaUsuarios(); atualizarListaUsuariosNosFiltros();
 }
 
 function carregarTabelaUsuarios() {
@@ -411,7 +457,7 @@ function abrirModalLocal(l = null) {
     const m = document.createElement('div');
     m.className = 'modal-fundo';
     m.onclick = e => { if(e.target===m) fecharModal(); };
-    m.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">${ed?'✏️ Editar':'➕ Novo'} Local</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formLocal">
+    m.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">${ed?'✏️ Editar':'➕ Novo'} Local</h3><button class="btn-fechar" onclick="fecharModal()" title="Fechar">×</button></div><div class="modal-conteudo"><form id="formLocal">
         <div class="linha-form"><label>Nome *</label><input type="text" id="nomeLocal" required value="${l?.nome||''}"></div>
         <div class="botoes-form"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button><button type="submit" class="btn btn-primary">${ed?'💾 Salvar':'➕ Cadastrar'}</button></div>
     </form></div></div>`;
@@ -426,11 +472,11 @@ function abrirModalLocal(l = null) {
             if (i!==-1) BD.locais[i].nome = nome;
             registrarLog('edicao', `Editou local: ${nome}`);
         } else {
-            if (BD.locais.some(x=>x.nome.toLowerCase()===nome.toLowerCase())) { alert('❌ Já existe!'); return; }
+            if (BD.locais.some(x=>x.nome.toLowerCase()===nome.toLowerCase())) { mostrarToast('Já existe este registro!', 'erro'); return; }
             BD.locais.push({ id: gerarId(), nome });
             registrarLog('criacao', `Cadastrou local: ${nome}`);
         }
-        salvarDados(); alert('✅ Salvo!'); fecharModal(); carregarTabelaLocais();
+        salvarDados(); mostrarToast('Local salvo com sucesso!', 'sucesso'); fecharModal(); carregarTabelaLocais();
     });
 }
 
@@ -453,11 +499,19 @@ function carregarTabelaLocais() {
 }
 
 // ---------- 9. FECHAR MODAL ----------
-function fecharModal() { const m = document.getElementById('modais'); if (m) m.innerHTML = ''; }
+function fecharModal() {
+    try {
+        const m = document.getElementById('modais');
+        if (m) {
+            while (m.firstChild) m.removeChild(m.firstChild);
+        }
+        document.activeElement?.blur?.();
+    } catch(e) { console.error('Erro ao fechar modal:', e); }
+}
 
 // ---------- 10. CHECK-LIST ----------
 function abrirModalChecklist() {
-    if (ehVisitante()) { alert('❌ Sem permissão!'); return; }
+    if (ehVisitante()) { mostrarToast('Você não tem permissão!', 'erro'); return; }
     const vs = BD.veiculos || [];
     if (vs.length === 0) { alert('❌ Cadastre um veículo primeiro!'); navegarPara('veiculos'); return; }
     
@@ -466,7 +520,7 @@ function abrirModalChecklist() {
     const m = document.createElement('div');
     m.className = 'modal-fundo';
     m.onclick = e => { if(e.target===m) fecharModal(); };
-    m.innerHTML = `<div class="modal-corpo largo"><div class="modal-cabecalho"><h3 style="margin:0;">📋 Novo Check-list</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formChecklist">
+    m.innerHTML = `<div class="modal-corpo largo"><div class="modal-cabecalho"><h3 style="margin:0;">📋 Novo Check-list</h3><button class="btn-fechar" onclick="fecharModal()" title="Fechar">×</button></div><div class="modal-conteudo"><form id="formChecklist">
         <div class="linha-form"><label>Veículo *</label><select id="clVeiculo" required onchange="atualizarFormChecklistPorCategoria()"><option value="">Selecione</option>${ops}</select></div>
         <div id="clCamposDinamicos"></div>
         <div class="botoes-form"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button><button type="submit" class="btn btn-primary">💾 Salvar</button></div>
@@ -579,7 +633,7 @@ function obterLocalizacao() {
 
 function salvarChecklist() {
     const veiculo = document.getElementById('clVeiculo').value;
-    if (!veiculo) { alert('❌ Selecione veículo!'); return; }
+    if (!veiculo) { mostrarToast('Selecione um veículo!', 'aviso'); return; }
     
     const sel = document.getElementById('clVeiculo');
     const cat = sel.options[sel.selectedIndex]?.dataset.categoria;
@@ -636,7 +690,7 @@ function salvarChecklist() {
     registrarLog('criacao', `Check-list: ${veiculo}`);
     
     if (dados.alertaGerado) alert('⚠️ Salvo! ATENÇÃO: Alerta de cintas gerado.');
-    else alert('✅ Check-list salvo!');
+    else mostrarToast('Check-list salvo com sucesso!', 'sucesso');
     
     fecharModal(); carregarTabelaChecklist(); atualizarDashboard();
 }
@@ -653,14 +707,14 @@ function resolverAlerta(id) {
     if (!ehSupervisor() && !ehAdmin()) { alert('❌ Apenas gestores!'); return; }
     const obs = prompt('📝 Observações sobre a verificação:');
     if (obs === null) return;
-    if (!obs.trim()) { alert('❌ Observação obrigatória!'); return; }
+    if (!obs.trim()) { mostrarToast('Preencha a observação!', 'aviso'); return; }
     const a = BD.alertas.find(x=>x.id===id);
-    if (a) { a.resolvido = true; a.resolvidoPor = window.usuarioAtual?.nome; a.resolvidoEm = new Date().toISOString(); a.observacaoGestor = obs; salvarDados(); registrarLog('edicao', `Resolveu alerta ${a.veiculo}`); alert('✅ Alerta resolvido!'); verificarAlertasCintas(); atualizarDashboard(); }
+    if (a) { a.resolvido = true; a.resolvidoPor = window.usuarioAtual?.nome; a.resolvidoEm = new Date().toISOString(); a.observacaoGestor = obs; salvarDados(); registrarLog('edicao', `Resolveu alerta ${a.veiculo}`); mostrarToast('Alerta resolvido e registrado!', 'sucesso'); verificarAlertasCintas(); atualizarDashboard(); }
 }
 
 function excluirChecklist(id) {
     const c = BD.checklists.find(x=>x.id===id);
-    if (!ehSupervisor() && !ehAdmin() && !ehProprioRegistro(c)) { alert('❌ Sem permissão!'); return; }
+    if (!ehSupervisor() && !ehAdmin() && !ehProprioRegistro(c)) { mostrarToast('Você não tem permissão!', 'erro'); return; }
     if (!confirm('⚠️ Excluir?')) return;
     BD.checklists = BD.checklists.filter(x=>x.id!==id);
     salvarDados(); registrarLog('exclusao', 'Excluiu check-list'); carregarTabelaChecklist();
@@ -691,7 +745,7 @@ function carregarTabelaChecklist() {
 
 // ---------- 11. MANUTENÇÃO ----------
 function abrirModalManutencao(m = null) {
-    if (!ehSupervisor() && !ehAdmin()) { alert('❌ Sem permissão!'); return; }
+    if (!ehSupervisor() && !ehAdmin()) { mostrarToast('Você não tem permissão!', 'erro'); return; }
     const ed = !!m;
     const vs = BD.veiculos || [];
     if (vs.length === 0) { alert('❌ Cadastre veículo!'); return; }
@@ -700,7 +754,7 @@ function abrirModalManutencao(m = null) {
     const modal = document.createElement('div');
     modal.className = 'modal-fundo';
     modal.onclick = e => { if(e.target===modal) fecharModal(); };
-    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">🔧 ${ed?'Editar':'Nova'} Manutenção</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formManutencao">
+    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">🔧 ${ed?'Editar':'Nova'} Manutenção</h3><button class="btn-fechar" onclick="fecharModal()" title="Fechar">×</button></div><div class="modal-conteudo"><form id="formManutencao">
         <div class="linha-form"><label>Veículo *</label><select id="mVeiculo" required>${ops}</select></div>
         <div class="linha-form"><label>Tipo *</label><select id="mTipo" required><option value="preventiva" ${m?.tipo==='preventiva'?'selected':''}>Preventiva</option><option value="corretiva" ${m?.tipo==='corretiva'?'selected':''}>Corretiva</option><option value="pneus" ${m?.tipo==='pneus'?'selected':''}>Pneus</option><option value="outro" ${m?.tipo==='outro'?'selected':''}>Outro</option></select></div>
         <div class="linha-form"><label>Descrição *</label><textarea id="mDescricao" rows="3" required>${m?.descricao||''}</textarea></div>
@@ -748,7 +802,7 @@ function carregarTabelaManutencao() {
 
 // ---------- 12. GASTOS ----------
 function abrirModalGasto(g = null) {
-    if (ehVisitante()) { alert('❌ Sem permissão!'); return; }
+    if (ehVisitante()) { mostrarToast('Você não tem permissão!', 'erro'); return; }
     const ed = !!g;
     const vs = BD.veiculos || [];
     const ps = BD.postos || [];
@@ -762,7 +816,7 @@ function abrirModalGasto(g = null) {
     const modal = document.createElement('div');
     modal.className = 'modal-fundo';
     modal.onclick = e => { if(e.target===modal) fecharModal(); };
-    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">💳 ${ed?'Editar':'Novo'} Gasto</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo">
+    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">💳 ${ed?'Editar':'Novo'} Gasto</h3><button class="btn-fechar" onclick="fecharModal()" title="Fechar">×</button></div><div class="modal-conteudo">
         ${apComb?'<div style="background:#fef3c7;padding:0.75rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.875rem;color:#92400e;">ℹ️ Você só pode lançar combustível.</div>':''}
         <form id="formGasto">
         <div class="linha-form"><label>Veículo *</label><select id="gVeiculo" required>${opsV}</select></div>
@@ -820,7 +874,7 @@ function carregarTabelaGastos() {
 
 // ---------- 13. CHAMADOS ----------
 function abrirModalChamado(c = null) {
-    if (ehVisitante()) { alert('❌ Sem permissão!'); return; }
+    if (ehVisitante()) { mostrarToast('Você não tem permissão!', 'erro'); return; }
     const ed = !!c;
     const vs = BD.veiculos || [];
     if (vs.length === 0) { alert('❌ Cadastre veículo!'); return; }
@@ -829,7 +883,7 @@ function abrirModalChamado(c = null) {
     const modal = document.createElement('div');
     modal.className = 'modal-fundo';
     modal.onclick = e => { if(e.target===modal) fecharModal(); };
-    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">🔔 ${ed?'Editar':'Abrir'} Chamado</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formChamado">
+    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">🔔 ${ed?'Editar':'Abrir'} Chamado</h3><button class="btn-fechar" onclick="fecharModal()" title="Fechar">×</button></div><div class="modal-conteudo"><form id="formChamado">
         <div class="linha-form"><label>Veículo *</label><select id="chVeiculo" required>${ops}</select></div>
         <div class="linha-form"><label>Título *</label><input type="text" id="chTitulo" required value="${c?.titulo||''}"></div>
         <div class="linha-form"><label>Descrição *</label><textarea id="chDescricao" rows="3" required>${c?.descricao||''}</textarea></div>
@@ -853,7 +907,7 @@ function capturarFotoChamado() { capturarFoto('chFoto'); }
 
 function excluirChamado(id) {
     const c = BD.chamados.find(x=>x.id===id);
-    if (!ehSupervisor() && !ehAdmin() && !ehProprioRegistro(c)) { alert('❌ Sem permissão!'); return; }
+    if (!ehSupervisor() && !ehAdmin() && !ehProprioRegistro(c)) { mostrarToast('Você não tem permissão!', 'erro'); return; }
     if (!confirm('⚠️ Excluir?')) return;
     BD.chamados = BD.chamados.filter(x=>x.id!==id);
     salvarDados(); registrarLog('exclusao', 'Excluiu chamado'); carregarTabelaChamados(); atualizarDashboard();
@@ -884,7 +938,7 @@ function carregarTabelaChamados() {
 
 // ---------- 14. ALOCAÇÕES ----------
 function abrirModalAlocacao(a = null) {
-    if (!ehSupervisor() && !ehAdmin()) { alert('❌ Sem permissão!'); return; }
+    if (!ehSupervisor() && !ehAdmin()) { mostrarToast('Você não tem permissão!', 'erro'); return; }
     const ed = !!a;
     const vs = BD.veiculos || [];
     const ls = BD.locais || [];
@@ -896,7 +950,7 @@ function abrirModalAlocacao(a = null) {
     const modal = document.createElement('div');
     modal.className = 'modal-fundo';
     modal.onclick = e => { if(e.target===modal) fecharModal(); };
-    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">📍 ${ed?'Editar':'Nova'} Alocação</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formAlocacao">
+    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">📍 ${ed?'Editar':'Nova'} Alocação</h3><button class="btn-fechar" onclick="fecharModal()" title="Fechar">×</button></div><div class="modal-conteudo"><form id="formAlocacao">
         <div class="linha-form"><label>Veículo *</label><select id="aVeiculo" required>${opsV}</select></div>
         <div class="linha-form"><label>Origem *</label><select id="aOrigem" required>${opsL}</select></div>
         <div class="linha-form"><label>Destino *</label><select id="aDestino" required>${opsL}</select></div>
@@ -960,10 +1014,10 @@ function adicionarPosto() {
     const inp = document.getElementById('novoPosto');
     const n = inp?.value.trim();
     if (!n) { alert('❌ Digite o nome!'); return; }
-    if (BD.postos.some(p=>p.nome.toLowerCase()===n.toLowerCase())) { alert('❌ Já existe!'); return; }
+    if (BD.postos.some(p=>p.nome.toLowerCase()===n.toLowerCase())) { mostrarToast('Já existe este registro!', 'erro'); return; }
     BD.postos.push({ id: gerarId(), nome: n });
     salvarDados(); registrarLog('criacao', `Posto: ${n}`);
-    inp.value = ''; carregarTelaConfiguracoes(); alert('✅ Adicionado!');
+    inp.value = ''; carregarTelaConfiguracoes(); mostrarToast('Posto adicionado!', 'sucesso');
 }
 
 function excluirPosto(id) {
@@ -999,7 +1053,7 @@ function limparLog() {
     if (!confirm('⚠️ Limpar TODO o log?')) return;
     BD.log = []; salvarDados();
     registrarLog('exclusao', 'Limpou log');
-    carregarLog(); alert('✅ Log limpo!');
+    carregarLog(); mostrarToast('Log limpo!', 'sucesso');
 }
 
 // ---------- 17. INICIALIZAÇÃO ----------
