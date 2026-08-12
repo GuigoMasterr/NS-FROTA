@@ -1,2767 +1,1011 @@
 // ============================================================
-// SISTEMA DE GESTÃO DE FROTAS - ARQUIVO JS CONSOLIDADO
-// Gerado automaticamente - todos os módulos em um único arquivo
-// Ordem de carregamento garantida
+// SISTEMA DE GESTÃO DE FROTAS - VERSÃO 3.0 COMPLETA
 // ============================================================
-// CORREÇÃO: Garantir que DOMContentLoaded funcione mesmo quando
-// o script é carregado no final do body
-// ============================================================
+
+// ---------- 1. FUNÇÕES UTILITÁRIAS ----------
 function quandoDOMPronto(fn) {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', fn);
-    } else {
-        setTimeout(fn, 0);
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+    else setTimeout(fn, 0);
 }
+function gerarId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 9); }
+function formatarData(d) { return new Date(d).toLocaleDateString('pt-BR'); }
+function formatarDataHora(d) { return new Date(d).toLocaleString('pt-BR'); }
+function formatarMoeda(v) { return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-
-// ============================================================
-
-
-
-// ============================================================
-// ARQUIVO: supabase.js
-// ============================================================
-
-// js/supabase.js
-class SupabaseMock {
-  constructor() { this._tabela = ''; this._filtros = []; }
-  from(t) { this._tabela = t; this._filtros = []; return this; }
-  select() { return this._resposta(); }
-  eq(c, v) { this._filtros.push({c, v}); return this; }
-  order() { return this; }
-  single() { return this._resposta(true); }
-  upsert() { return this._resposta(); }
-  delete() { return this._resposta(); }
-  _resposta(unico = false) {
-    return Promise.resolve({ data: unico ? null : [], error: { message: 'Modo local' } });
-  }
-}
-const supabase = new SupabaseMock();
-// export default removido
-
-// ============================================================
-// ARQUIVO: config.js
-// ============================================================
-
-// ==========================================
-// ARQUIVO DE CONFIGURAÇÃO DO SISTEMA
-// ==========================================
-
-const CONFIG = {
-    // Status de Veículos
-    STATUS_VEICULOS: {
-        ATIVO: 'Em Operação',
-        MANUTENCAO: 'Em Manutenção',
-        INATIVO: 'Inativo'
-    },
-
-    // Categorias de Veículos
-    CATEGORIAS_VEICULOS: [
-        'Caminhão',
-        'Carro Passeio',
-        'Utilitário',
-        'Máquina',
-        'Van',
-        'Ônibus',
-        'Moto',
-        'Outro'
-    ],
-
-    // Status de Check-list
-    STATUS_CHECKLIST: {
-        APROVADO: 'Aprovado',
-        PENDENTE: 'Pendente',
-        REPROVADO: 'Reprovado'
-    },
-
-    // Tipos de Manutenção
-    TIPO_MANUTENCAO: {
-        PREVENTIVA: 'Preventiva',
-        CORRETIVA: 'Corretiva',
-        REVISAO: 'Revisão'
-    },
-
-    // Status de Manutenção
-    STATUS_MANUTENCAO: {
-        ABERTA: 'Aberta',
-        ANDAMENTO: 'Em Andamento',
-        CONCLUIDA: 'Concluída',
-        CANCELADA: 'Cancelada'
-    },
-
-    // Tipos de Gastos
-    TIPO_GASTOS: [
-        'Abastecimento',
-        'Peças',
-        'Serviço',
-        'IPVA',
-        'Seguro',
-        'Licenciamento',
-        'Multa',
-        'Outros'
-    ],
-
-    // Perfis de Usuário
-    PERFIS: {
-        ADMIN: 'admin',
-        MOTORISTA: 'motorista'
-    },
-
-    // Credenciais padrão
-    LOGIN: {
-        ADMIN: { usuario: 'admin', senha: 'admin123', nome: 'Administrador', perfil: 'admin' },
-        MOTORISTA: { usuario: 'motorista', senha: 'motorista123', nome: 'Motorista', perfil: 'motorista' }
-    }
-};
-
-// ✅ Disponibiliza globalmente para o HTML
-
-
-// ============================================================
-// COMPATIBILIDADE: Adicionar estrutura CONFIG.STATUS aninhada
-// ============================================================
-if (typeof CONFIG !== 'undefined' && !CONFIG.STATUS) {
-    CONFIG.STATUS = {
-        CHECKLIST: CONFIG.STATUS_CHECKLIST || { APROVADO: 'Aprovado', PENDENTE: 'Pendente', REPROVADO: 'Reprovado' },
-        MANUTENCAO: CONFIG.STATUS_MANUTENCAO || { ABERTA: 'Aberta', ANDAMENTO: 'Em Andamento', CONCLUIDA: 'Concluída' },
-        TIPO_MANUTENCAO: CONFIG.TIPO_MANUTENCAO || { PREVENTIVA: 'Preventiva', CORRETIVA: 'Corretiva', REVISAO: 'Revisão' }
-    };
-}
-window.CONFIG = CONFIG;
-window.CATEGORIAS_VEICULOS = CONFIG.CATEGORIAS_VEICULOS;
-window.STATUS_VEICULOS = CONFIG.STATUS_VEICULOS;
-window.STATUS_CHECKLIST = CONFIG.STATUS_CHECKLIST;
-window.TIPO_MANUTENCAO = CONFIG.TIPO_MANUTENCAO;
-window.STATUS_MANUTENCAO = CONFIG.STATUS_MANUTENCAO;
-window.TIPO_GASTOS = CONFIG.TIPO_GASTOS;
-
-// export default removido
-
-// ============================================================
-// ARQUIVO: banco-dados.js
-// ============================================================
-
-// import removido
-
-// ==================================================
-// 💾 BANCO DE DADOS LOCAL
-// ==================================================
-let BD = {
-    locais: [
-        { id: 'patio-metalica', nome: 'Pátio Metálica' },
-        { id: 'patio-usina-conc', nome: 'Pátio Usina Conc.' },
-        { id: 'obra', nome: 'Obra' }
-    ],
-    veiculos: [],
-    checklists: [],
-    manutencoes: [],
-    gastos: [],
-    chamados: [],
-    alocacoes: [],
-    usuarios: []
-};
-
-function salvarDados() {
-    try {
-        localStorage.setItem('bd_frotas', JSON.stringify(BD));
-    } catch (e) {
-        console.warn('Não foi possível salvar dados locais:', e);
-    }
-}
-
-async function carregarDadosLocais() {
-    try {
-        const salvos = localStorage.getItem('bd_frotas');
-        if (salvos) {
-            const parseados = JSON.parse(salvos);
-            BD = { ...BD, ...parseados };
-        }
-    } catch (e) {
-        console.warn('Erro ao carregar dados locais:', e);
-    }
-}
-
-async function sincronizarBD() {
-    try {
-        const [locais, veiculos, checklists, manutencoes, gastos, chamados, alocacoes] = await Promise.all([
-            obterLocais().catch(() => []),
-            obterVeiculos().catch(() => []),
-            obterChecklists().catch(() => []),
-            obterManutencoes().catch(() => []),
-            obterGastos().catch(() => []),
-            obterChamados().catch(() => []),
-            obterAlocacoes().catch(() => [])
-        ]);
-
-        BD.locais = locais.length > 0 ? locais : BD.locais;
-        BD.veiculos = veiculos;
-        BD.checklists = checklists;
-        BD.manutencoes = manutencoes;
-        BD.gastos = gastos;
-        BD.chamados = chamados;
-        BD.alocacoes = alocacoes;
-
-        salvarDados();
-        console.log('✅ BD sincronizado');
-    } catch (erro) {
-        console.warn('⚠️ Usando dados locais:', erro);
-        await carregarDadosLocais();
-    }
-}
-
-// ==================================================
-// 🔧 FUNÇÕES AUXILIARES
-// ==================================================
-function tratarErro(acao, erro) {
-    if (erro) console.error(`❌ Erro ${acao}:`, erro)
-    return erro ? null : true
-}
-
-// ==================================================
-// 📍 LOCAIS
-// ==================================================
-async function obterLocais() {
-  const { data, error } = await supabase.from('locais').select('*').order('nome')
-  tratarErro('carregar locais', error)
-  return data || BD.locais
-}
-
-async function salvarLocal(local) {
-  const { data, error } = await supabase.from('locais').upsert([local], { onConflict: 'nome' }).select()
-  tratarErro('salvar local', error)
-  if (data?.[0]) return data[0];
-  const idx = BD.locais.findIndex(l => l.id === local.id);
-  if (idx >= 0) BD.locais[idx] = local;
-  else BD.locais.push(local);
-  salvarDados();
-  return local;
-}
-
-// ==================================================
-// 👤 USUÁRIOS
-// ==================================================
-async function obterUsuarios() {
-  const { data, error } = await supabase.from('usuarios').select('*').order('nome')
-  tratarErro('carregar usuários', error)
-  return data || BD.usuarios
-}
-
-async function autenticarUsuario(usuario, senha) {
-  const { data, error } = await supabase
-    .from('usuarios').select('*').eq('usuario', usuario).eq('senha', senha).eq('ativo', true).single()
-  if (!error && data) return data;
-  const { LOGIN } = await import('./config.js').catch(() => ({ LOGIN: null }));
-  if (LOGIN) {
-    if (usuario === LOGIN.ADMIN.usuario && senha === LOGIN.ADMIN.senha) return LOGIN.ADMIN;
-    if (usuario === LOGIN.MOTORISTA.usuario && senha === LOGIN.MOTORISTA.senha) return LOGIN.MOTORISTA;
-  }
-  return null;
-}
-
-// ==================================================
-// 🚗 VEÍCULOS
-// ==================================================
-async function obterVeiculos() {
-  const { data, error } = await supabase.from('veiculos').select('*').order('placa')
-  tratarErro('carregar veículos', error)
-  return data || BD.veiculos
-}
-
-async function obterVeiculoPorPlaca(placa) {
-  const { data, error } = await supabase.from('veiculos').select('*').eq('placa', placa).single()
-  return error ? BD.veiculos.find(v => v.placa === placa) || null : data
-}
-
-async function salvarVeiculo(dados) {
-  const { data, error } = await supabase.from('veiculos').upsert([dados], { onConflict: 'placa' }).select()
-  tratarErro('salvar veículo', error)
-  if (data?.[0]) return data[0];
-  const idx = BD.veiculos.findIndex(v => v.placa === dados.placa);
-  if (idx >= 0) BD.veiculos[idx] = dados;
-  else BD.veiculos.push(dados);
-  salvarDados();
-  return dados;
-}
-
-// ==================================================
-// ✅ CHECK-LIST / OUTRAS FUNÇÕES
-// ==================================================
-async function obterChecklists() { return [] }
-async function salvarChecklist(dados) { BD.checklists.push(dados); salvarDados(); return dados; }
-async function obterAlocacoes() { return BD.alocacoes }
-async function salvarAlocacao(dados) { BD.alocacoes.push(dados); salvarDados(); return dados; }
-async function obterGastos() { return BD.gastos }
-async function salvarGasto(dados) { BD.gastos.push(dados); salvarDados(); return dados; }
-async function obterManutencoes() { return BD.manutencoes }
-async function salvarManutencao(dados) { BD.manutencoes.push(dados); salvarDados(); return dados; }
-async function obterChamados() { return BD.chamados }
-async function abrirChamado(dados) { BD.chamados.push(dados); salvarDados(); return dados; }
-
-// ==================================================
-// ✅ DISPONIBILIZA GLOBALMENTE + EXPORTA (SÓ 1 VEZ!)
-// ==================================================
-window.BD = BD;
-window.salvarDados = salvarDados;
-window.sincronizarBD = sincronizarBD;
-
-// export removido
-
-// ============================================================
-// ARQUIVO: utils.js
-// ============================================================
-
-// js/utils.js
-const Utils = {
-  formatarMoeda(valor) {
-    const n = Number(valor);
-    if (isNaN(n) || n < 0) return "R$ 0,00";
-    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  },
-  formatarData(data) {
-    const d = data ? new Date(data) : new Date();
-    if (isNaN(d.getTime())) return "--/--/----";
-    return d.toLocaleDateString('pt-BR');
-  },
-  gerarId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  },
-  getDataHoraAtual() { return new Date().toLocaleString('pt-BR'); },
-  diasEntre(d1, d2) {
-    const a = new Date(d1), b = new Date(d2);
-    if (isNaN(a.getTime()) || isNaN(b.getTime())) return 0;
-    return Math.ceil(Math.abs(b - a) / 86400000);
-  },
-  limparTexto(t) { return !t ? "" : t.toString().trim().replace(/\s+/g, " "); },
-  extrairNumeros(t) { return !t ? "" : t.toString().replace(/[^0-9]/g, ""); },
-  padronizarPlaca(p) { return !p ? "" : p.toString().toUpperCase().replace(/[^A-Z0-9]/g, ""); }
-};
-window.Utils = Utils;
-// export default removido
-
-// ============================================================
-// ARQUIVO: validacoes.js
-// ============================================================
-
-// js/validacoes.js
-const Validacoes = {
-  placaValida(placa) {
-    if (!placa) return false;
-    const l = placa.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    return /^[A-Z]{3}[0-9]{4}$/.test(l) || /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(l);
-  },
-  camposPreenchidos(campos = []) {
-    return campos.every(c => c !== null && c !== undefined && c.toString().trim() !== "");
-  },
-  kmValido(km) {
-    const n = Number(km);
-    return !isNaN(n) && n >= 0 && Number.isInteger(n);
-  },
-  kmSuperior(nova, anterior) {
-    return Number(nova) >= Number(anterior);
-  },
-  emailValida(email) {
-    return email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  },
-  senhaValida(senha) {
-    return typeof senha === "string" && senha.length >= 6;
-  },
-  dataValida(data) {
-    return data && !isNaN(new Date(data).getTime());
-  },
-  valorMonetarioValido(valor) {
-    const n = Number(valor);
-    return !isNaN(n) && n >= 0;
-  }
-};
-window.Validacoes = Validacoes;
-// export default removido
-
-// ============================================================
-// ARQUIVO: veiculos.js
-// ============================================================
-
-// ==================================================
-// 🚗 CADASTRO E GESTÃO DE VEÍCULOS — SUPABASE + LOCAL
-// ==================================================
-
-// import removido
-// import removido
-// import removido
-
-// ✅ Abre janela de cadastro ou edição
-window.abrirModalVeiculo = function(veiculo = null) {
-  const ehEdicao = !!veiculo;
-
-  const modal = document.createElement('div');
-  modal.className = 'modal-fundo';
-  modal.onclick = (e) => { if (e.target === modal) fecharModal(); };
-  modal.innerHTML = `
-    <div class="modal-corpo">
-      <div class="modal-cabecalho">
-        <h3 style="margin:0; font-size:1.125rem; font-weight:600;">${ehEdicao ? '✏️ Editar' : '➕ Cadastrar'} Veículo</h3>
-        <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
-      </div>
-      <div class="modal-conteudo">
-        <form id="formVeiculo" class="space-y-3">
-          <div class="linha-form">
-            <label>Placa *</label>
-            <input type="text" id="vPlaca" style="text-transform:uppercase;" required value="${veiculo?.placa || ''}" ${ehEdicao ? 'readonly' : ''}>
-          </div>
-          <div class="linha-form">
-            <label>Ano</label>
-            <input type="number" id="vAno" value="${veiculo?.ano || ''}">
-          </div>
-          <div class="linha-form">
-            <label>Categoria *</label>
-            <select id="vCategoria" required>
-              <option value="">Selecione</option>
-              <option value="caminhao" ${veiculo?.categoria === 'caminhao' ? 'selected' : ''}>🚛 Caminhão</option>
-              <option value="utilitario" ${veiculo?.categoria === 'utilitario' ? 'selected' : ''}>🚐 Utilitário</option>
-              <option value="carro" ${veiculo?.categoria === 'carro' ? 'selected' : ''}>🚗 Carro</option>
-              <option value="moto" ${veiculo?.categoria === 'moto' ? 'selected' : ''}>🏍️ Moto</option>
-              <option value="maquina" ${veiculo?.categoria === 'maquina' ? 'selected' : ''}>🚜 Máquina</option>
-              <option value="outro" ${veiculo?.categoria === 'outro' ? 'selected' : ''}>❔ Outro</option>
-            </select>
-          </div>
-          <div class="linha-form">
-            <label>Marca / Modelo *</label>
-            <input type="text" id="vModelo" required value="${veiculo?.modelo || ''}">
-          </div>
-          <div class="linha-form">
-            <label>Km Atual *</label>
-            <input type="number" id="vKm" required value="${veiculo?.km_atual || 0}">
-          </div>
-          <div class="linha-form">
-            <label>Status</label>
-            <select id="vStatus">
-              <option value="disponivel" ${veiculo?.status === 'disponivel' ? 'selected' : ''}>✅ Disponível</option>
-              <option value="alocado" ${veiculo?.status === 'alocado' ? 'selected' : ''}>🚛 Alocado</option>
-              <option value="manutencao" ${veiculo?.status === 'manutencao' ? 'selected' : ''}>🔧 Manutenção</option>
-              <option value="inativo" ${veiculo?.status === 'inativo' ? 'selected' : ''}>⛔ Inativo</option>
-            </select>
-          </div>
-          <div class="linha-form">
-            <label>Obra / Local *</label>
-            <input type="text" id="vObra" required value="${veiculo?.obra_atual || ''}" placeholder="Nome da obra ou local">
-          </div>
-          <div class="linha-form">
-            <label>Responsável</label>
-            <input type="text" id="vResponsavel" value="${veiculo?.responsavel || ''}" placeholder="Nome do motorista responsável">
-          </div>
-          <div class="botoes-form">
-            <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
-            <button type="submit" class="btn btn-primary">${ehEdicao ? '💾 Salvar' : '➕ Cadastrar Veículo'}</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('modais').appendChild(modal);
-
-  // ===== MANIPULAÇÃO DO FORMULÁRIO =====
-  document.getElementById('formVeiculo').addEventListener('submit', async e => {
-    e.preventDefault();
-
-    const placa = document.getElementById('vPlaca').value.toUpperCase().trim();
-    const categoria = document.getElementById('vCategoria').value;
-    const modelo = document.getElementById('vModelo').value.trim();
-    const ano = document.getElementById('vAno').value || null;
-    const kmAtual = parseInt(document.getElementById('vKm').value) || 0;
-    const status = document.getElementById('vStatus').value;
-    const obraAtual = document.getElementById('vObra').value.trim();
-    const responsavel = document.getElementById('vResponsavel').value.trim() || null;
-
-    // ✅ VALIDAÇÕES
-    if (!/^[A-Z]{3}-?[0-9][A-Z0-9][0-9]{2}$/.test(placa.replace('-', '')) && !/^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(placa)) {
-      alert('❌ Placa inválida! Use o formato AAA-1234 ou AAA1A23');
-      return;
-    }
-    if (!categoria || !modelo || !obraAtual) {
-      alert('❌ Preencha todos os campos obrigatórios!');
-      return;
-    }
-    if (kmAtual < 0) {
-      alert('❌ Quilometragem deve ser um número positivo!');
-      return;
-    }
-
-    const dados = { 
-      placa, 
-      categoria, 
-      modelo, 
-      marca: modelo.split(' ')[0],
-      ano, 
-      km_atual: kmAtual,
-      km_inicial: ehEdicao ? (veiculo?.km_inicial || kmAtual) : kmAtual,
-      status, 
-      obra_atual: obraAtual,
-      responsavel
-    };
-
-    if (ehEdicao) {
-      // ✅ Edição
-      dados.id = veiculo.id;
-    } else {
-      // ✅ Novo — Verifica placa duplicada
-      const existe = await obterVeiculoPorPlaca(placa);
-      if (existe) {
-        alert('❌ Já existe um veículo cadastrado com esta placa!');
-        return;
-      }
-    }
-
-    const resultado = await salvarVeiculo(dados);
-
-    if (resultado) {
-      alert('✅ Veículo salvo com sucesso!');
-      fecharModal();
-      await carregarTabelaVeiculos();
-      if (typeof atualizarDashboard === 'function') atualizarDashboard();
-      if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
-    } else {
-      alert('❌ Erro ao salvar veículo! Verifique o console.');
-    }
-  });
-}
-
-// ✅ Carrega e exibe a tabela completa
-window.carregarTabelaVeiculos = async function () {
-  const corpo = document.getElementById('tabelaVeiculos');
-  if (!corpo) return;
-
-  const veiculos = await obterVeiculos();
-
-  if (!veiculos.length) {
-    corpo.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhum veículo cadastrado</td></tr>';
-    return;
-  }
-
-  const statusMap = {
-    disponivel: '<span class="badge badge-success">✅ Disponível</span>',
-    alocado: '<span class="badge" style="background:#dbeafe; color:#1e40af;">🚛 Alocado</span>',
-    manutencao: '<span class="badge badge-warning">🔧 Manutenção</span>',
-    inativo: '<span class="badge badge-danger">⛔ Inativo</span>'
-  };
-
-  const catIcone = {
-    caminhao: '🚛', utilitario: '🚐', carro: '🚗', moto: '🏍️', maquina: '🚜', outro: '❔'
-  };
-
-  corpo.innerHTML = veiculos.map(v => {
-    const seguro = JSON.stringify(v).replace(/"/g, '&quot;');
-    return `<tr>
-      <td class="font-mono">${v.placa}</td>
-      <td>${catIcone[v.categoria] || '❔'} ${v.categoria || '-'}</td>
-      <td>${v.modelo}</td>
-      <td>${Number(v.km_atual || 0).toLocaleString('pt-BR')} km</td>
-      <td>${v.obra_atual || '—'}</td>
-      <td>${statusMap[v.status] || v.status}</td>
-      <td class="admin-only">
-        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fef3c7; color:#92400e; margin-right:0.25rem;" onclick='abrirModalVeiculo(${seguro})'>✏️</button>
-        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fee2e2; color:#991b1b;" onclick="excluirVeiculo('${v.placa || v.id}')">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ✅ Excluir veículo
-window.excluirVeiculo = async function (identificador) {
-  if (!confirm('⚠️ Tem certeza que deseja excluir este veículo?')) return;
-  
-  // Tenta pelo Supabase, senão usa local
-  let sucesso = false;
-  try {
-    const { supabase } = await import('./supabase.js').catch(() => ({ supabase: null }));
-    if (supabase) {
-      await supabase.from('veiculos').delete().eq('placa', identificador);
-      sucesso = true;
-    }
-  } catch {}
-  
-  // Fallback local
-  if (!sucesso) {
-    BD.veiculos = BD.veiculos.filter(v => v.placa !== identificador && String(v.id) !== String(identificador));
+function registrarLog(acao, detalhes) {
+    if (!window.BD) BD = inicializarBD();
+    if (!BD.log) BD.log = [];
+    BD.log.unshift({
+        id: gerarId(), dataHora: new Date().toISOString(),
+        usuario: window.usuarioAtual?.usuario || 'sistema',
+        perfil: window.usuarioAtual?.perfil || 'sistema',
+        acao, detalhes
+    });
     salvarDados();
-  }
-  
-  alert('✅ Veículo excluído!');
-  await carregarTabelaVeiculos();
-  if (typeof atualizarDashboard === 'function') atualizarDashboard();
-  if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
 }
 
-// ✅ Inicialização
-quandoDOMPronto(() => {
-  const originalMostrarPagina = window.mostrarPagina;
-  window.mostrarPagina = async function (pagina) {
-    if (originalMostrarPagina) originalMostrarPagina(pagina);
-    if (pagina === 'veiculos') {
-      await carregarTabelaVeiculos();
+// ---------- 2. BANCO DE DADOS ----------
+const CONFIG_PADRAO = {
+    categoriasVeiculos: [
+        { id: 'caminhao-munck', nome: 'Caminhão Munck', precisaCintas: true },
+        { id: 'caminhao', nome: 'Caminhão', precisaCintas: false },
+        { id: 'guindaste', nome: 'Guindaste', precisaCintas: true },
+        { id: 'pa-carregadeira', nome: 'Pá Carregadeira', precisaCintas: false },
+        { id: 'caminhao-betoneira', nome: 'Caminhão Betoneira', precisaCintas: false },
+        { id: 'carro', nome: 'Carro', precisaCintas: false },
+        { id: 'van', nome: 'Van', precisaCintas: false, precisaFotosBancos: true },
+        { id: 'onibus', nome: 'Ônibus', precisaCintas: false },
+        { id: 'carreta', nome: 'Carreta', precisaCintas: true }
+    ],
+    requisitosCintas: { cintas2m: 2, cintas3m: 2, cintas4m: 2, cintas6m: 2, cintasCatraca: 4, catracas: 4 },
+    statusVeiculos: { disponivel: 'Disponível', alocado: 'Alocado', manutencao: 'Manutenção', inativo: 'Inativo' },
+    tiposGasto: [
+        { id: 'combustivel', nome: 'Combustível' },
+        { id: 'manutencao', nome: 'Manutenção' },
+        { id: 'pneus', nome: 'Pneus' },
+        { id: 'pedagio', nome: 'Pedágio' },
+        { id: 'seguro', nome: 'Seguro' },
+        { id: 'outro', nome: 'Outro' }
+    ],
+    perfis: {
+        admin: { nome: 'Administrador', nivel: 4 },
+        supervisor: { nome: 'Supervisor', nivel: 3 },
+        operacional: { nome: 'Operacional', nivel: 2 },
+        visitante: { nome: 'Visitante', nivel: 1 }
     }
-  };
-});
-
-// ==================================================
-// ✅ DISPONIBILIZA TUDO GLOBALMENTE PARA O HTML
-// ==================================================
-window.BD = BD;
-
-
-// ============================================================
-// COMPATIBILIDADE: Adicionar estrutura CONFIG.STATUS aninhada
-// ============================================================
-if (typeof CONFIG !== 'undefined' && !CONFIG.STATUS) {
-    CONFIG.STATUS = {
-        CHECKLIST: CONFIG.STATUS_CHECKLIST || { APROVADO: 'Aprovado', PENDENTE: 'Pendente', REPROVADO: 'Reprovado' },
-        MANUTENCAO: CONFIG.STATUS_MANUTENCAO || { ABERTA: 'Aberta', ANDAMENTO: 'Em Andamento', CONCLUIDA: 'Concluída' },
-        TIPO_MANUTENCAO: CONFIG.TIPO_MANUTENCAO || { PREVENTIVA: 'Preventiva', CORRETIVA: 'Corretiva', REVISAO: 'Revisão' }
-    };
-}
-window.CONFIG = CONFIG;
-window.abrirModalVeiculo = abrirModalVeiculo;
-window.carregarTabelaVeiculos = carregarTabelaVeiculos;
-window.CATEGORIAS_VEICULOS = CONFIG?.CATEGORIAS_VEICULOS;
-window.excluirVeiculo = excluirVeiculo;
-
-// ============================================================
-// ARQUIVO: checklist.js
-// ============================================================
-
-// ==================================================
-// CHECK-LIST DE VEÍCULOS — Inspeção Diária ✅ CORRIGIDO
-// ==================================================
-
-// ✅ Itens padrão do check-list
-const ITENS_CHECKLIST = [
-  { id: 'pneus', label: '🚛 Pneus e Calibragem' },
-  { id: 'freios', label: '🛑 Freios' },
-  { id: 'oleo', label: '🛢️ Nível de Óleo do Motor' },
-  { id: 'agua', label: '💧 Água / Radiador' },
-  { id: 'farois', label: '💡 Faróis, Lanternas e Sinais' },
-  { id: 'para-brisa', label: '🪟 Para-brisa e Limpadores' },
-  { id: 'espelhos', label: '🪞 Espelhos Retrovisores' },
-  { id: 'buzina', label: '📢 Buzina' },
-  { id: 'extintor', label: '🧯 Extintor de Incêndio' },
-  { id: 'triangulo', label: '⚠️ Triângulo e Sinalização' },
-  { id: 'ferramentas', label: '🔧 Ferramentas e Macaco' },
-  { id: 'documentos', label: '📋 Documentos do Veículo' },
-  { id: 'lataria', label: '🚪 Lataria e Pneus Reserva' },
-  { id: 'sistema-eletrico', label: '⚡ Sistema Elétrico / Bateria' },
-  // ✅ Cintas de Içar Carga — Apenas para: Caminhão Munck, Carreta, Guindaste
-  { id: 'cinta-2m', label: '🪢 Cinta de Içar 2m', tipoItem: 'cinta-icarga', precisaCintas: true, quantidadeObrigatoria: 2 },
-  { id: 'cinta-3m', label: '🪢 Cinta de Içar 3m', tipoItem: 'cinta-icarga', precisaCintas: true, quantidadeObrigatoria: 2 },
-  { id: 'cinta-4m', label: '🪢 Cinta de Içar 4m', tipoItem: 'cinta-icarga', precisaCintas: true, quantidadeObrigatoria: 2 },
-  { id: 'cinta-6m', label: '🪢 Cinta de Içar 6m', tipoItem: 'cinta-icarga', precisaCintas: true, quantidadeObrigatoria: 2 },
-  // ✅ Cintas de Catraca e Catracas — Para: Caminhão, Caminhão Munck, Carreta, Guindaste
-  { id: 'cinta-catraca', label: '🔒 Cinta de Catraca', tipoItem: 'cinta-catraca', precisaCatraca: true, quantidadeObrigatoria: 4 },
-  { id: 'catraca', label: '⚙️ Catraca', tipoItem: 'catraca', precisaCatraca: true, quantidadeObrigatoria: 4 }
-];
-
-// ✅ Fotos Obrigatórias
-const FOTOS_PAINEL = { id: 'foto-painel', label: '📸 Foto do Painel (Km/Horímetro)', obrigatoria: true };
-const FOTOS_FRENTE = { id: 'foto-frente', label: '📸 Foto da Frente do Veículo', obrigatoria: true };
-const FOTOS_TRASEIRA = { id: 'foto-tras', label: '📸 Foto da Traseira do Veículo', obrigatoria: true };
-const FOTOS_CINTAS = { id: 'foto-caixa-cintas', label: '📸 Foto da Caixa de Cintas (comprovar quantidade)', obrigatoria: true };
-
-// ✅ Categorias que precisam de CINTAS DE IÇAR CARGA
-const CATEGORIAS_CINTAS_ICAR = ['caminhao-munck', 'carreta', 'guindaste'];
-// ✅ Categorias que precisam de CINTAS DE CATRACA E CATRACAS
-const CATEGORIAS_CATRACA = ['caminhao', 'caminhao-munck', 'carreta', 'guindaste'];
-
-// ✅ Verifica se precisa de cintas de içar carga
-function precisaCintasIcar(categoriaId) {
-  const lista = ['caminhao-munck', 'carreta', 'guindaste'];
-  const norm = categoriaId.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  return lista.some(c => norm.includes(c) || c.includes(norm));
-}
-
-// ✅ Verifica se precisa de cintas de catraca e catracas
-function precisaCatraca(categoriaId) {
-  const lista = ['caminhao', 'caminhao-munck', 'carreta', 'guindaste'];
-  const norm = categoriaId.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  return lista.some(c => norm.includes(c) || c.includes(norm));
-}
-
-// ✅ Garante que funções auxiliares existam
-function veiculosDoUsuario() {
-  if (!BD.veiculos) return [];
-  if (typeof usuarioAtual === 'undefined' || !usuarioAtual || usuarioAtual.perfil === 'admin') {
-    return BD.veiculos;
-  }
-  const permitidos = usuarioAtual.veiculosPermitidos || [];
-  return BD.veiculos.filter(v => permitidos.includes(v.id));
-}
-
-// ✅ Abre formulário de check-list
-window.abrirModalChecklist = function() {
-  const fotosAtuais = {};
-  let localizacaoAtual = { lat: 'Obtendo...', lng: 'Obtendo...' };
-  const dataHoraRegistro = new Date().toLocaleString('pt-BR');
-
-  // ✅ LOCALIZAÇÃO OBTIDA AUTOMATICAMENTE — NÃO EDITÁVEL
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        localizacaoAtual = {
-          lat: pos.coords.latitude.toFixed(6),
-          lng: pos.coords.longitude.toFixed(6)
-        };
-        // Atualiza valor no input escondido após receber posição
-        const latInput = document.getElementById('clLat');
-        const lngInput = document.getElementById('clLng');
-        if (latInput) latInput.value = localizacaoAtual.lat;
-        if (lngInput) lngInput.value = localizacaoAtual.lng;
-      },
-      () => {
-        localizacaoAtual = { lat: 'Indisponível', lng: 'Indisponível' };
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  } else {
-    localizacaoAtual = { lat: 'Não suportado', lng: 'Não suportado' };
-  }
-
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
-  modal.innerHTML = `
-    <div class="bg-white rounded-xl w-full max-w-2xl p-6 max-h-[92vh] overflow-y-auto">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">📋 Novo Check-list de Veículo</h3>
-        <button type="button" onclick="fecharModal()"><i class="fa-solid fa-times text-slate-400"></i></button>
-      </div>
-      <form id="formChecklist" class="space-y-4">
-        <!-- ✅ LOCALIZAÇÃO — VISÍVEL E NÃO EDITÁVEL -->
-        <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
-          <span class="text-xs font-medium text-slate-500">📍 Localização (obtida automaticamente):</span>
-          <p class="text-sm font-mono mt-1">${localizacaoAtual.lat}, ${localizacaoAtual.lng}</p>
-          <input type="hidden" id="clLat" value="${localizacaoAtual.lat}">
-          <input type="hidden" id="clLng" value="${localizacaoAtual.lng}">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium mb-1">Veículo *</label>
-            <select id="clVeiculo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-              <option value="">Selecione o veículo</option>
-              ${veiculosDoUsuario().map(v => {
-                const cat = typeof getCategoriaVeiculo === 'function' ? getCategoriaVeiculo(v.categoria) : null;
-                return `<option value="${v.id}" data-categoria="${v.categoria || ''}">${cat ? cat.icone + ' ' : ''}${v.placa} — ${v.modelo}</option>`;
-              }).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Quilometragem / Horímetro *</label>
-            <input type="number" id="clKm" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required placeholder="Km atual">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium mb-1">Origem *</label>
-            <select id="clOrigem" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-              <option value="">Selecione a origem</option>
-              ${(BD.origens || []).map(o => `<option value="${o}">${o}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Destino *</label>
-            <select id="clDestino" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-              <option value="">Selecione o destino</option>
-              ${(BD.destinos || []).map(o => `<option value="${o}">${o}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1">Motorista *</label>
-          <input type="text" id="clMotorista" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${(typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || ''}">
-        </div>
-
-        <!-- ✅ ITENS DE VERIFICAÇÃO -->
-        <div id="areaItensChecklist" class="space-y-3 border border-slate-200 rounded-lg p-4">
-          <h4 class="font-medium text-sm">✅ Itens de Verificação</h4>
-          ${ITENS_CHECKLIST.map(item => `
-            <div class="grid grid-cols-12 gap-2 items-center ${(item.precisaCintas || item.precisaCatraca) ? 'cinta-item hidden' : ''}" 
-                 data-tipo="${item.tipoItem || ''}"
-                 data-qtd-obrigatoria="${item.quantidadeObrigatoria || ''}">
-              <label class="col-span-4 text-sm font-medium">${item.label}</label>
-              ${item.quantidadeObrigatoria ? `
-                <input type="number" name="qtd_${item.id}" class="col-span-2 px-2 py-1 border border-slate-200 rounded-lg text-center" min="0" placeholder="Qtd" onchange="verificarQuantidade(this)">
-                <span class="col-span-1 text-xs text-slate-500">/ ${item.quantidadeObrigatoria}</span>
-                <span class="col-span-2 text-xs status-cinta"></span>
-                <input type="text" name="obs_${item.id}" class="col-span-3 px-2 py-1 border border-slate-200 rounded-lg text-sm" placeholder="Obs...">
-              ` : `
-                <select name="status_${item.id}" class="col-span-3 px-2 py-1 border border-slate-200 rounded-lg text-sm">
-                  <option value="ok">✅ OK</option>
-                  <option value="regular">⚠️ Irregular</option>
-                  <option value="na">➖ N/A</option>
-                </select>
-                <input type="text" name="obs_${item.id}" class="col-span-5 px-2 py-1 border border-slate-200 rounded-lg text-sm" placeholder="Observação...">
-              `}
-            </div>
-          `).join('')}
-        </div>
-
-        <div id="alertaCintas" class="hidden bg-red-50 border-2 border-red-300 text-red-800 p-3 rounded-lg font-medium">
-          ⚠️ <strong>ATENÇÃO:</strong> Quantidade insuficiente! Verifique os itens acima.
-        </div>
-
-        <!-- ✅ FOTOS OBRIGATÓRIAS CONFORME CATEGORIA -->
-        <div id="areaFotos" class="space-y-3 border border-slate-200 rounded-lg p-4 hidden">
-          <h4 class="font-medium text-sm">📸 Fotos Obrigatórias</h4>
-          <p id="textoTipoVeiculo" class="text-xs text-slate-500 mb-2"></p>
-          <div id="listaFotos"></div>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1">Observações Gerais</label>
-          <textarea id="clObservacoesGerais" class="w-full px-3 py-2 border border-slate-200 rounded-lg" rows="3" placeholder="Detalhes adicionais..."></textarea>
-        </div>
-
-        <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-lg mt-2">✅ Salvar Check-list</button>
-      </form>
-    </div>
-  `;
-  document.getElementById('modais').appendChild(modal);
-
-      // ✅ Verifica se é Administrador
-function ehAdmin() {
-  return typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'admin';
-}
-
-// ✅ Verifica se é Motorista
-function ehMotorista() {
-  return typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'motorista';
-}
-
-  // ✅ Auto-preenche KM e atualiza itens/fotos conforme veículo
-  document.getElementById('clVeiculo').addEventListener('change', function() {
-    const veic = veiculosDoUsuario().find(v => String(v.id) === this.value);
-    if (veic) document.getElementById('clKm').value = veic.kmAtual || 0;
-    atualizarItensPorCategoria();
-    atualizarFotosObrigatorias();
-  });
-
-  // ✅ Verifica quantidade e exibe status
-  window.verificarQuantidade = function(input) {
-  const qtd = parseInt(input.value) || 0;
-  const elPai = input.closest('[data-qtd-obrigatoria]');
-  const obrig = parseInt(elPai?.dataset?.qtdObrigatoria) || 0;
-  const statusSpan = elPai?.querySelector('.status-cinta');
-  
-  if (statusSpan) {
-    if (qtd >= obrig) {
-      statusSpan.innerHTML = '<span class="text-green-600">✅ OK</span>';
-    } else {
-      statusSpan.innerHTML = `<span class="text-red-600">⚠️ Faltam ${obrig - qtd} — Salvo com pendência</span>`;
-    }
-  }
-  verificarTodosItens();
 };
 
-  function verificarTodosItens() {
-  const itens = document.querySelectorAll('.cinta-item:not(.hidden)');
-  let temFalta = false;
-  itens.forEach(el => {
-    const input = el.querySelector('input[type="number"]');
-    const obrig = parseInt(el.dataset.qtdObrigatoria) || 0;
-    if (input && (parseInt(input.value) || 0) < obrig) temFalta = true;
-  });
-  
-  // ⚠️ Mostra alerta mas NÃO bloqueia nada
-  document.getElementById('alertaCintas').classList.toggle('hidden', !temFalta);
-  
-  // ⚠️ Adiciona aviso claro no alerta
-  if (temFalta) {
-    document.getElementById('alertaCintas').innerHTML = `
-      ⚠️ <strong>ATENÇÃO:</strong> Quantidade abaixo do recomendado! 
-      O check-list será salvo com pendência e o gestor será notificado.
-    `;
-  }
-}
-
-  // ✅ Mostra/esconde itens de cintas conforme CATEGORIA
-window.atualizarItensPorCategoria = function() {
-  const veicId = document.getElementById('clVeiculo').value;
-  if (!veicId) {
-    document.querySelectorAll('.cinta-item').forEach(el => el.classList.add('hidden'));
-    document.getElementById('alertaCintas').classList.add('hidden');
-    return;
-  }
-  
-  const veic = veiculosDoUsuario().find(v => String(v.id) === veicId);
-  let catId = veic?.categoria || '';
-  
-  // ✅ NORMALIZA: remove acentos, espaços, deixa tudo minúsculo
-  catId = catId.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-               .toLowerCase().trim();
-  
-  const precisaIcar = precisaCintasIcar(catId);
-  const precisaCat = precisaCatraca(catId);
-
-  console.log('✅ Categoria normalizada:', catId);
-  console.log('✅ Precisa cintas içar:', precisaIcar);
-  console.log('✅ Precisa cintas catraca:', precisaCat);
-
-  document.querySelectorAll('.cinta-item').forEach(el => {
-    const tipo = el.dataset.tipo;
-    if (tipo === 'cinta-icarga') {
-      el.classList.toggle('hidden', !precisaIcar);
-    } else if (tipo === 'cinta-catraca' || tipo === 'catraca') {
-      el.classList.toggle('hidden', !precisaCat);
-    }
-  });
-
-  document.getElementById('alertaCintas').classList.toggle('hidden', !(precisaIcar || precisaCat));
-};
-
-  // ✅ Atualiza fotos obrigatórias conforme CATEGORIA
-  window.atualizarFotosObrigatorias = function() {
-    const veicId = document.getElementById('clVeiculo').value;
-    if (!veicId) {
-      document.getElementById('areaFotos').classList.add('hidden');
-      return;
-    }
-    const veic = veiculosDoUsuario().find(v => String(v.id) === veicId);
-    const catId = veic?.categoria || '';
-    const cat = typeof getCategoriaVeiculo === 'function' ? getCategoriaVeiculo(catId) : null;
-    const precisaFotoCintas = precisaCintasIcar(catId);
-
-    // ✅ FOTOS OBRIGATÓRIAS PARA TODOS: Painel, Frente, Traseira
-    const fotos = [FOTOS_PAINEL, FOTOS_FRENTE, FOTOS_TRASEIRA];
-    // ✅ Se for categoria com cintas de içar → adiciona foto da caixa de cintas
-    if (precisaFotoCintas) fotos.push(FOTOS_CINTAS);
-
-    document.getElementById('areaFotos').classList.remove('hidden');
-    document.getElementById('textoTipoVeiculo').textContent =
-      `${(cat?.icone || '')} ${(cat?.nome || 'Veículo')} → ${fotos.length} fotos obrigatórias${precisaFotoCintas ? ' (+ foto da caixa de cintas)' : ''}`;
-
-    const localizacaoTexto = `📍 ${localizacaoAtual.lat}, ${localizacaoAtual.lng}`;
-
-    document.getElementById('listaFotos').innerHTML = fotos.map(foto => `
-      <div class="border border-slate-200 rounded-lg p-3 mb-2">
-        <label class="block text-sm font-medium mb-2">${foto.label} *</label>
-        <input type="file" accept="image/*" capture="environment" class="foto-input w-full text-sm mb-2" data-foto-id="${foto.id}">
-        <div class="preview-foto mt-2 hidden">
-          <img class="max-w-full h-40 object-cover rounded border">
-          <p class="text-xs text-slate-500 mt-1 legenda-foto">📅 ${dataHoraRegistro} | ${localizacaoTexto}</p>
-        </div>
-      </div>
-    `).join('');
-
-    // ✅ Processa preview das fotos
-    document.querySelectorAll('.foto-input').forEach(input => {
-      input.addEventListener('change', function() {
-        if (!this.files || !this.files[0]) return;
-        const fotoId = this.dataset.fotoId;
-        const leitor = new FileReader();
-        leitor.onload = e => {
-          const preview = this.parentElement.querySelector('.preview-foto');
-          preview.querySelector('img').src = e.target.result;
-          preview.classList.remove('hidden');
-          fotosAtuais[fotoId] = {
-            base64: e.target.result,
-            legenda: `📅 ${dataHoraRegistro} | ${localizacaoTexto}`
-          };
-        };
-        leitor.readAsDataURL(this.files[0]);
-      });
-    });
-  };
-
-  // ✅ SALVAR CHECK-LIST
-  document.getElementById('formChecklist').addEventListener('submit', e => {
-    e.preventDefault();
-
-    const veicId = document.getElementById('clVeiculo').value;
-    const veiculo = BD.veiculos?.find(v => String(v.id) === veicId);
-    const motorista = document.getElementById('clMotorista').value.trim();
-    const km = parseFloat(document.getElementById('clKm').value);
-    const origem = document.getElementById('clOrigem').value.trim();
-    const destino = document.getElementById('clDestino').value.trim();
-    const catId = veiculo?.categoria || '';
-
-    // ✅ VALIDAÇÕES
-    if (!(typeof Validacoes !== 'undefined' && Validacoes.camposPreenchidos([veicId, motorista, km, origem, destino]))) {
-      alert('❌ Preencha todos os campos obrigatórios!');
-      return;
-    }
-    if (!(typeof Validacoes !== 'undefined' && Validacoes.kmValido(km))) {
-      alert('❌ Quilometragem inválida!');
-      return;
-    }
-
-    // ✅ Define fotos obrigatórias e valida envio
-    const fotosObrigatorias = [FOTOS_PAINEL.id, FOTOS_FRENTE.id, FOTOS_TRASEIRA.id];
-    if (precisaCintasIcar(catId)) fotosObrigatorias.push(FOTOS_CINTAS.id);
-    if (!fotosObrigatorias.every(id => fotosAtuais[id])) {
-      alert(`⚠️ É obrigatório enviar todas as ${fotosObrigatorias.length} fotos indicadas!`);
-      return;
-    }
-
-    // ✅ Coleta todos os itens e verifica irregularidades
-    const itens = {};
-    let temIrregular = false;
-    ITENS_CHECKLIST.forEach(item => {
-      if (item.quantidadeObrigatoria) {
-        const qtd = parseInt(document.querySelector(`input[name="qtd_${item.id}"]`)?.value) || 0;
-        const obs = document.querySelector(`input[name="obs_${item.id}"]`)?.value?.trim() || '';
-        itens[item.id] = {
-          tipo: item.tipoItem,
-          quantidade: qtd,
-          obrigatoria: item.quantidadeObrigatoria,
-          status: qtd >= item.quantidadeObrigatoria ? 'ok' : 'faltando',
-          observacao: obs
-        };
-        if (qtd < item.quantidadeObrigatoria) temIrregular = true;
-      } else {
-        const status = document.querySelector(`select[name="status_${item.id}"]`)?.value || 'na';
-        const obs = document.querySelector(`input[name="obs_${item.id}"]`)?.value?.trim() || '';
-        itens[item.id] = { status, observacao: obs };
-        if (status === 'regular') temIrregular = true;
-      }
-    });
-
-    // ✅ Monta registro final
-    const dados = {
-      veiculoId, // ⚠️ Corrigido: antes usava veiculoId sem declarar
-      placaVeiculo: veiculo?.placa || '',
-      modeloVeiculo: veiculo?.modelo || '',
-      categoriaVeiculo: catId,
-      motorista,
-      km,
-      origem,
-      destino,
-      data: new Date().toISOString(),
-      localizacao: {
-        lat: document.getElementById('clLat').value,
-        lng: document.getElementById('clLng').value
-      },
-      itens,
-      fotos: fotosAtuais,
-      statusGeral: temIrregular ? 'IRREGULAR' : 'OK',
-      observacoesGerais: document.getElementById('clObservacoesGerais').value.trim()
-    };
-
-    // ✅ Salva no banco
-    if (typeof adicionarRegistro === 'function') {
-      adicionarRegistro('checklists', dados);
-    } else {
-      if (!BD.checklists) BD.checklists = [];
-      dados.id = typeof Utils?.gerarId === 'function' ? Utils.gerarId() : Date.now();
-      BD.checklists.push(dados);
-      if (typeof salvarDados === 'function') salvarDados();
-    }
-
-    if (typeof Sincronizacao !== 'undefined' && Sincronizacao?.sincronizarRegistro) {
-      Sincronizacao.sincronizarRegistro('checklists', dados).catch(() => {});
-    }
-
-    fecharModal();
-    if (typeof carregarTabelaChecklist === 'function') carregarTabelaChecklist();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-    if (typeof carregarMeusRegistros === 'function') carregarMeusRegistros();
-    alert(temIrregular ? '⚠️ Check-list salvo com IRREGULARIDADES!' : '✅ Check-list salvo com SUCESSO!');
-  });
-}
-
-// ✅ Exibe detalhes completos
-function verDetalhesChecklist(id) {
-  const cl = (BD.checklists || []).find(c => String(c.id) === String(id));
-  if (!cl) return;
-  const cat = typeof getCategoriaVeiculo === 'function' ? getCategoriaVeiculo(cl.categoriaVeiculo) : null;
-
-  let html = `📋 CHECK-LIST — ${cl.placaVeiculo} | ${(cat?.icone || '')} ${(cat?.nome || 'Veículo')}\n`;
-  html += `📅 ${new Date(cl.data).toLocaleString('pt-BR')}\n`;
-  html += `📍 ${cl.localizacao?.lat || ''}, ${cl.localizacao?.lng || ''}\n`;
-  html += `🚗 Motorista: ${cl.motorista} | Km: ${(cl.km || 0).toLocaleString('pt-BR')}\n`;
-  html += `➡️ Origem: ${cl.origem || '—'} | Destino: ${cl.destino || '—'}\n`;
-  html += `Status: ${cl.statusGeral === 'OK' ? '✅ APROVADO' : '⚠️ IRREGULAR'}\n\n`;
-  html += `📝 ITENS:\n`;
-
-  ITENS_CHECKLIST.forEach(item => {
-    const d = cl.itens?.[item.id];
-    if (!d) return;
-    if (d.tipo === 'cinta-icarga' || d.tipo === 'cinta-catraca' || d.tipo === 'catraca') {
-      html += `${item.label}: ${d.quantidade}/${d.obrigatoria} ${d.status==='ok'?'✅ OK':'❌ FALTANDO!'}`;
-    } else {
-      const ic = { ok:'✅ OK', regular:'⚠️ Irregular', na:'➖ N/A' }[d.status] || d.status;
-      html += `${item.label}: ${ic}`;
-    }
-    if (d.observacao) html += ` | Obs: ${d.observacao}`;
-    html += `\n`;
-  });
-
-  html += `\n📸 Fotos: ${cl.fotos ? Object.keys(cl.fotos).length : 0} foto(s)`;
-  if (cl.observacoesGerais) html += `\n\n📝 OBSERVAÇÕES GERAIS:\n${cl.observacoesGerais}`;
-  alert(html);
-}
-
-// ✅ Exclui check-list
-window.excluirChecklist = function(id) {
-  // 🔒 BLOQUEIA MOTORISTA
-    if (!ehAdmin()) {
-    alert('❌ Acesso restrito ao Administrador!');
-    return;
-  }
-
-    if (confirm('⚠️ Excluir este check-list?')) {
-  }
-  if (confirm('⚠️ Excluir este check-list?')) {
-    if (typeof excluirRegistro === 'function') {
-      excluirRegistro('checklists', id);
-    } else {
-      BD.checklists = (BD.checklists || []).filter(c => String(c.id) !== String(id));
-      if (typeof salvarDados === 'function') salvarDados();
-    }
-    if (typeof carregarTabelaChecklist === 'function') carregarTabelaChecklist();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-  }
-}
-
-// ✅ Carrega tabela com filtro
-window.carregarTabelaChecklist = function(filtroPlaca = 'todos') {
-  const corpo = document.getElementById('tabelaChecklist');
-  if (!corpo) return;
-
-  let dados = BD.checklists || [];
-  if (filtroPlaca !== 'todos') {
-    dados = dados.filter(c => c.placaVeiculo === filtroPlaca);
-  }
-
-  corpo.innerHTML = dados.length ? dados.map(c => {
-    // Na função carregarTabelaChecklist, na linha do status:
-const statusClasse = c.statusGeral === 'OK' ? 'text-green-600' : 'text-red-600 font-bold';
-    return `<tr>
-      <td>${typeof Utils?.formatarData === 'function' ? Utils.formatarData(c.data) : new Date(c.data).toLocaleDateString('pt-BR')}</td>
-      <td class="font-mono font-semibold">${c.placaVeiculo}</td>
-      <td>${c.motorista}</td>
-      <td>${(c.km || 0).toLocaleString('pt-BR')} km</td>
-      <td class="${statusClasse}">${c.statusGeral === 'OK' ? '✅ OK' : '⚠️ Irregular'}</td>
-      <td class="admin-only">
-        <button class="text-blue-600 text-sm mr-1" onclick="verDetalhesChecklist('${c.id}')">👁️ Ver</button>
-        <button class="text-red-600 text-sm" onclick="excluirChecklist('${c.id}')">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('') : `<tr><td colspan="6" class="text-center text-slate-400 py-4">${filtroPlaca === 'todos' ? 'Nenhum check-list registrado' : 'Nenhum registro para este veículo'}</td></tr>`;
-}
-
-// ✅ ===== CONTROLE DE PERMISSÕES POR PERFIL =====
-
-// Verifica se usuário é Administrador
-/* FUNÇÃO DUPLICADA REMOVIDA: ehAdmin */
-
-
-// Verifica se usuário é Motorista
-/* FUNÇÃO DUPLICADA REMOVIDA: ehMotorista */
-
-
-// Aplica classe do perfil no corpo da página ao carregar
-quandoDOMPronto(function() {
-  if (ehAdmin()) {
-    document.body.classList.add('usuario-admin');
-    console.log('🔑 Perfil: Administrador — acesso completo');
-  } else if (ehMotorista()) {
-    document.body.classList.add('usuario-motorista');
-    console.log('🔑 Perfil: Motorista — áreas de admin ocultas');
-  } else {
-    console.log('⚠️ Usuário não identificado');
-  }
-});
-
-// ============================================================
-// ARQUIVO: manutencao.js
-// ============================================================
-
-// ==================================================
-// CONTROLE DE MANUTENÇÃO — Preventiva e Corretiva ✅ CORRIGIDO
-// ==================================================
-
-let manutencaoEmEdicao = null;
-let tipoManutencaoAtual = null;
-
-// ✅ Garante função auxiliar existência
-/* FUNÇÃO DUPLICADA REMOVIDA: veiculosDoUsuario */
-
-
-// ✅ Abre janela de cadastro ou edição
-window.abrirModalManutencao = function(tipo, manutencao = null) {
-  manutencaoEmEdicao = manutencao;
-  tipoManutencaoAtual = tipo || manutencao?.tipo;
-  const ehEdicao = !!manutencao;
-  const ehPreventiva = tipoManutencaoAtual === 'preventiva';
-
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
-  modal.innerHTML = `
-    <div class="bg-white rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">${ehEdicao ? '✏️ Editar' : '➕ Cadastrar'} ${ehPreventiva ? '🔧 Preventiva' : '🛠️ Corretiva'}</h3>
-        <button type="button" onclick="fecharModal()"><i class="fa-solid fa-times text-slate-400"></i></button>
-      </div>
-      <form id="formManutencao" class="space-y-3">
-        <div>
-          <label class="block text-sm font-medium mb-1">Veículo *</label>
-          <select id="mVeiculo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="">Selecione o veículo</option>
-            ${veiculosDoUsuario().map(v => `<option value="${v.id}" ${String(manutencao?.veiculoId) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Serviço / Descrição *</label>
-          <input type="text" id="mServico" class="w-full px-3 py-2 border border-slate-200 rounded-lg" placeholder="Ex: Troca de óleo, Freios..." required value="${manutencao?.servico || ''}">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium mb-1">Data Prevista *</label>
-            <input type="date" id="mData" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${manutencao?.dataPrevista || ''}">
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Km Previsto *</label>
-            <input type="number" id="mKm" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${manutencao?.kmPrevisto || ''}">
-          </div>
-        </div>
-        ${ehPreventiva ? `<div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium mb-1">Repetir a cada (km)</label>
-            <input type="number" id="mIntervaloKm" class="w-full px-3 py-2 border border-slate-200 rounded-lg" value="${manutencao?.intervaloKm || ''}">
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Repetir a cada (dias)</label>
-            <input type="number" id="mIntervaloDias" class="w-full px-3 py-2 border border-slate-200 rounded-lg" value="${manutencao?.intervaloDias || ''}">
-          </div>
-        </div>` : ''}
-        <div>
-          <label class="block text-sm font-medium mb-1">Custo (R$)</label>
-          <input type="number" step="0.01" id="mCusto" class="w-full px-3 py-2 border border-slate-200 rounded-lg" placeholder="0,00" value="${manutencao?.custo || ''}">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Status</label>
-          <select id="mStatus" class="w-full px-3 py-2 border border-slate-200 rounded-lg">
-            <option value="Pendente" ${manutencao?.status === 'Pendente' ? 'selected' : ''}>⏳ Pendente</option>
-            <option value="Em Andamento" ${manutencao?.status === 'Em Andamento' ? 'selected' : ''}>🔧 Em Andamento</option>
-            <option value="Concluída" ${manutencao?.status === 'Concluída' ? 'selected' : ''}>✅ Concluída</option>
-          </select>
-        </div>
-        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg mt-2">
-          ${ehEdicao ? '💾 Salvar' : '➕ Cadastrar'}
-        </button>
-      </form>
-    </div>
-  `;
-  document.getElementById('modais').appendChild(modal);
-
-  // ✅ MANIPULAÇÃO DO FORMULÁRIO
-  document.getElementById('formManutencao').addEventListener('submit', e => {
-    e.preventDefault();
-
-    const veiculoId = document.getElementById('mVeiculo').value;
-    const servico = document.getElementById('mServico').value.trim();
-    const dataPrevista = document.getElementById('mData').value;
-    const kmPrevisto = parseFloat(document.getElementById('mKm').value);
-    const custo = parseFloat(document.getElementById('mCusto').value) || 0;
-    const status = document.getElementById('mStatus').value;
-
-    // ✅ VALIDAÇÕES com verificação segura
-    if (!(typeof Validacoes !== 'undefined' && Validacoes.camposPreenchidos([veiculoId, servico, dataPrevista, kmPrevisto]))) {
-      alert('❌ Preencha todos os campos obrigatórios!');
-      return;
-    }
-    if (!(typeof Validacoes !== 'undefined' && Validacoes.kmValido(kmPrevisto))) {
-      alert('❌ Quilometragem prevista inválida!');
-      return;
-    }
-
-    const dados = {
-      veiculoId,
-      tipo: tipoManutencaoAtual,
-      servico,
-      dataPrevista,
-      kmPrevisto,
-      custo,
-      status,
-      ...(ehPreventiva && {
-        intervaloKm: parseFloat(document.getElementById('mIntervaloKm').value) || null,
-        intervaloDias: parseFloat(document.getElementById('mIntervaloDias').value) || null
-      })
-    };
-
-    if (ehEdicao) {
-      // ✅ Usando função genérica do banco
-      if (typeof atualizarRegistro === 'function') {
-        atualizarRegistro('manutencoes', manutencao.id, dados);
-      } else {
-        const idx = (BD.manutencoes || []).findIndex(m => String(m.id) === String(manutencao.id));
-        if (idx !== -1) {
-          BD.manutencoes[idx] = { ...BD.manutencoes[idx], ...dados };
-          if (typeof salvarDados === 'function') salvarDados();
-        }
-      }
-    } else {
-      // ✅ Usando função genérica do banco
-      dados.criadoPor = (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || 'Sistema';
-      if (typeof adicionarRegistro === 'function') {
-        adicionarRegistro('manutencoes', dados);
-      } else {
-        if (!BD.manutencoes) BD.manutencoes = [];
-        dados.id = (typeof Utils?.gerarId === 'function') ? Utils.gerarId() : Date.now();
-        BD.manutencoes.push(dados);
-        if (typeof salvarDados === 'function') salvarDados();
-      }
-    }
-
-    fecharModal();
-    if (typeof carregarTabelaManutencao === 'function') carregarTabelaManutencao();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-    alert('✅ Manutenção salva com sucesso!');
-  });
-}
-
-// ✅ Exclui manutenção
-window.excluirManutencao = function(id) {
-  if (confirm('⚠️ Tem certeza que deseja excluir esta manutenção?')) {
-    if (typeof excluirRegistro === 'function') {
-      excluirRegistro('manutencoes', id);
-    } else {
-      BD.manutencoes = (BD.manutencoes || []).filter(m => String(m.id) !== String(id));
-      if (typeof salvarDados === 'function') salvarDados();
-    }
-    if (typeof carregarTabelaManutencao === 'function') carregarTabelaManutencao();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-  }
-}
-
-// ✅ Carrega e exibe tabela com filtro por veículo
-window.carregarTabelaManutencao = function(filtroPlaca = 'todos') {
-  const corpo = document.getElementById('tabelaManutencao');
-  if (!corpo) return;
-
-  // ✅ Garante existência da lista
-  let dados = BD.manutencoes || [];
-
-  // ✅ Filtro por veículo — normaliza comparação de ID
-  if (filtroPlaca !== 'todos') {
-    dados = dados.filter(m => {
-      const veiculo = (BD.veiculos || []).find(v => String(v.id) === String(m.veiculoId));
-      return veiculo?.placa === filtroPlaca;
-    });
-  }
-
-  corpo.innerHTML = dados.length ? dados.map(m => {
-    const veic = (BD.veiculos || []).find(v => String(v.id) === String(m.veiculoId));
-    const statusClasse = m.status === 'Concluída' ? 'text-green-600' :
-                          m.status === 'Em Andamento' ? 'text-amber-500' : 'text-slate-500';
-
-    // ✅ JSON SEGURO para edição — escapa corretamente
-    const seguro = JSON.stringify(m).replace(/"/g, '&quot;');
-
-    return `<tr>
-      <td>${typeof Utils?.formatarData === 'function' ? Utils.formatarData(m.dataPrevista) : new Date(m.dataPrevista).toLocaleDateString('pt-BR')}</td>
-      <td class="font-mono font-semibold">${veic?.placa || '—'}</td>
-      <td>${m.tipo === 'preventiva' ? '🔧 Preventiva' : '🛠️ Corretiva'}</td>
-      <td>${m.servico}</td>
-      <td class="${statusClasse}">${m.status}</td>
-      <td>
-        <button class="text-blue-600 text-sm mr-1 admin-only" onclick='abrirModalManutencao("${m.tipo}", ${seguro})'>✏️</button>
-        <button class="text-red-600 text-sm admin-only" onclick="excluirManutencao('${m.id}')">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('') : `<tr><td colspan="6" class="text-center text-slate-400 py-4">${filtroPlaca === 'todos' ? 'Nenhuma solicitação registrada' : 'Nenhum registro para este veículo'}</td></tr>`;
-}
-
-// ============================================================
-// ARQUIVO: gastos.js
-// ============================================================
-
-// ==================================================
-// CONTROLE DE GASTOS E DESPESAS ✅ CORRIGIDO
-// ==================================================
-
-let gastoEmEdicao = null;
-
-// ✅ Garante função auxiliar existência
-/* FUNÇÃO DUPLICADA REMOVIDA: veiculosDoUsuario */
-
-
-// ✅ Abre janela de cadastro ou edição
-window.abrirModalGasto = function(gasto = null) {
-  gastoEmEdicao = gasto;
-  const ehEdicao = !!gasto;
-
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
-  modal.innerHTML = `
-    <div class="bg-white rounded-xl w-full max-w-md p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">💰 ${ehEdicao ? '✏️ Editar' : '➕ Lançar'} Gasto</h3>
-        <button type="button" onclick="fecharModal()"><i class="fa-solid fa-times text-slate-400"></i></button>
-      </div>
-      <form id="formGasto" class="space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium mb-1">Data *</label>
-            <input type="date" id="gData" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${gasto?.data || ''}">
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Valor (R$) *</label>
-            <input type="number" step="0.01" id="gValor" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${gasto?.valor || ''}">
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Veículo *</label>
-          <select id="gVeiculo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="">Selecione o veículo</option>
-            ${veiculosDoUsuario().map(v => `<option value="${v.id}" ${String(gasto?.veiculoId) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Obra / Local *</label>
-          <select id="gObra" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="">Selecione</option>
-            ${(BD.obras || []).map(o => `<option value="${o}" ${gasto?.obra === o ? 'selected' : ''}>${o}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Tipo de Gasto *</label>
-          <select id="gTipo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="Combustível" ${gasto?.tipo === 'Combustível' ? 'selected' : ''}>⛽ Combustível</option>
-            <option value="Manutenção" ${gasto?.tipo === 'Manutenção' ? 'selected' : ''}>🔧 Manutenção</option>
-            <option value="Pneus" ${gasto?.tipo === 'Pneus' ? 'selected' : ''}>🚛 Pneus</option>
-            <option value="Pedágio" ${gasto?.tipo === 'Pedágio' ? 'selected' : ''}>🛣️ Pedágio</option>
-            <option value="Seguro" ${gasto?.tipo === 'Seguro' ? 'selected' : ''}>🛡️ Seguro</option>
-            <option value="Outro" ${gasto?.tipo === 'Outro' ? 'selected' : ''}>📋 Outro</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Observação</label>
-          <input type="text" id="gObs" class="w-full px-3 py-2 border border-slate-200 rounded-lg" placeholder="Detalhes..." value="${gasto?.observacao || ''}">
-        </div>
-        <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-lg mt-2">
-          ${ehEdicao ? '💾 Salvar' : '➕ Salvar Gasto'}
-        </button>
-      </form>
-    </div>
-  `;
-  document.getElementById('modais').appendChild(modal);
-
-  // ✅ MANIPULAÇÃO DO FORMULÁRIO
-  document.getElementById('formGasto').addEventListener('submit', e => {
-    e.preventDefault();
-
-    const data = document.getElementById('gData').value;
-    const veiculoId = document.getElementById('gVeiculo').value;
-    const obra = document.getElementById('gObra').value;
-    const tipo = document.getElementById('gTipo').value;
-    const valor = parseFloat(document.getElementById('gValor').value);
-    const observacao = document.getElementById('gObs').value.trim();
-
-    // ✅ VALIDAÇÕES com verificação segura
-    if (!(typeof Validacoes !== 'undefined' && Validacoes.camposPreenchidos([data, veiculoId, obra, tipo]))) {
-      alert('❌ Preencha todos os campos obrigatórios!');
-      return;
-    }
-    if (!valor || valor <= 0) {
-      alert('❌ O valor deve ser maior que zero!');
-      return;
-    }
-
-    const dados = {
-      data,
-      veiculoId,
-      obra,
-      tipo,
-      valor,
-      observacao,
-      lancadoPor: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || 'Sistema'
-    };
-
-    if (ehEdicao) {
-      // ✅ Usando função genérica do banco com fallback
-      if (typeof atualizarRegistro === 'function') {
-        atualizarRegistro('gastos', gasto.id, dados);
-      } else {
-        const idx = (BD.gastos || []).findIndex(g => String(g.id) === String(gasto.id));
-        if (idx !== -1) {
-          BD.gastos[idx] = { ...BD.gastos[idx], ...dados };
-          if (typeof salvarDados === 'function') salvarDados();
-        }
-      }
-    } else {
-      // ✅ Usando função genérica do banco com fallback
-      if (typeof adicionarRegistro === 'function') {
-        adicionarRegistro('gastos', dados);
-      } else {
-        if (!BD.gastos) BD.gastos = [];
-        dados.id = (typeof Utils?.gerarId === 'function') ? Utils.gerarId() : Date.now();
-        BD.gastos.push(dados);
-        if (typeof salvarDados === 'function') salvarDados();
-      }
-    }
-
-    fecharModal();
-    if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-    alert('✅ Gasto salvo com sucesso!');
-  });
-}
-
-// ✅ Exclui gasto
-window.excluirGasto = function(id) {
-  if (confirm('⚠️ Tem certeza que deseja excluir este lançamento?')) {
-    if (typeof excluirRegistro === 'function') {
-      excluirRegistro('gastos', id);
-    } else {
-      BD.gastos = (BD.gastos || []).filter(g => String(g.id) !== String(id));
-      if (typeof salvarDados === 'function') salvarDados();
-    }
-    if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-  }
-}
-
-// ✅ Carrega e exibe tabela com filtro por veículo
-window.carregarTabelaGastos = function(filtroPlaca = 'todos') {
-  const corpo = document.getElementById('tabelaGastos');
-  if (!corpo) return;
-
-  // ✅ Garante existência da lista
-  let dados = BD.gastos || [];
-
-  // ✅ Filtro corrigido: busca veículo com comparação normalizada
-  if (filtroPlaca !== 'todos') {
-    dados = dados.filter(g => {
-      const veiculo = (BD.veiculos || []).find(v => String(v.id) === String(g.veiculoId));
-      return veiculo?.placa === filtroPlaca;
-    });
-  }
-
-  corpo.innerHTML = dados.length ? dados.map(g => {
-    const veic = (BD.veiculos || []).find(v => String(v.id) === String(g.veiculoId));
-    // ✅ Formatação segura com fallback
-    const dataFormatada = (typeof Utils?.formatarData === 'function')
-      ? Utils.formatarData(g.data)
-      : new Date(g.data).toLocaleDateString('pt-BR');
-    const valorFormatado = (typeof Utils?.formatarMoeda === 'function')
-      ? Utils.formatarMoeda(g.valor)
-      : `R$ ${Number(g.valor).toFixed(2).replace('.', ',')}`;
-    // ✅ JSON SEGURO para edição
-    const seguro = JSON.stringify(g).replace(/"/g, '&quot;');
-
-    return `<tr>
-      <td>${dataFormatada}</td>
-      <td class="font-mono font-semibold">${veic?.placa || '—'}</td>
-      <td>${g.tipo}</td>
-      <td>${valorFormatado}</td>
-      <td>${g.observacao || '—'}</td>
-      <td class="admin-only">
-        <button class="text-blue-600 text-sm mr-1" onclick='abrirModalGasto(${seguro})'>✏️</button>
-        <button class="text-red-600 text-sm" onclick="excluirGasto('${g.id}')">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('') : `<tr><td colspan="6" class="text-center text-slate-400 py-4">${filtroPlaca === 'todos' ? 'Nenhum registro de gasto' : 'Nenhum registro para este veículo'}</td></tr>`;
-}
-
-// ============================================================
-// ARQUIVO: chamados.js
-// ============================================================
-
-// ===== CHAMADOS ✅ CORRIGIDO =====
-
-let chamadoEmEdicao = null;
-
-// ✅ Garante função auxiliar existência
-/* FUNÇÃO DUPLICADA REMOVIDA: veiculosDoUsuario */
-
-
-// ✅ Abre janela de cadastro ou edição
-window.abrirModalChamado = function(chamado = null) {
-  chamadoEmEdicao = chamado;
-  const ehEdicao = !!chamado;
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
-  modal.innerHTML = `
-    <div class="bg-white rounded-xl w-full max-w-md p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">📢 ${ehEdicao ? '✏️ Editar' : '➕ Registrar'} Chamado</h3>
-        <button type="button" onclick="fecharModal()"><i class="fa-solid fa-times text-slate-400"></i></button>
-      </div>
-      <form id="formChamado" class="space-y-3">
-        <div>
-          <label class="block text-sm font-medium mb-1">Veículo *</label>
-          <select id="chVeiculo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="">Selecione o veículo</option>
-            ${veiculosDoUsuario().map(v => `<option value="${v.id}" ${String(chamado?.veiculoId) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Tipo de Ocorrência *</label>
-          <select id="chTipo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="Problema Mecânico" ${chamado?.tipo === 'Problema Mecânico' ? 'selected' : ''}>🔧 Problema Mecânico</option>
-            <option value="Sinistro" ${chamado?.tipo === 'Sinistro' ? 'selected' : ''}>💥 Sinistro / Acidente</option>
-            <option value="Outro" ${chamado?.tipo === 'Outro' ? 'selected' : ''}>📋 Outro</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Obra / Local *</label>
-          <input type="text" id="chObra" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${chamado?.obra || ''}">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Quilometragem *</label>
-          <input type="number" id="chKm" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${chamado?.km || ''}">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Descrição *</label>
-          <textarea id="chDescricao" class="w-full px-3 py-2 border border-slate-200 rounded-lg" rows="3" required>${chamado?.descricao || ''}</textarea>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Status</label>
-          <select id="chStatus" class="w-full px-3 py-2 border border-slate-200 rounded-lg">
-            <option value="Aberto" ${chamado?.status === 'Aberto' ? 'selected' : ''}>🔴 Aberto</option>
-            <option value="Em Andamento" ${chamado?.status === 'Em Andamento' ? 'selected' : ''}>🟡 Em Andamento</option>
-            <option value="Resolvido" ${chamado?.status === 'Resolvido' ? 'selected' : ''}>🟢 Resolvido</option>
-          </select>
-        </div>
-        <button type="submit" class="w-full bg-red-600 text-white py-2 rounded-lg mt-2">${ehEdicao ? '💾 Salvar' : '➕ Registrar'}</button>
-      </form>
-    </div>
-  `;
-  document.getElementById('modais').appendChild(modal);
-
-  // ✅ MANIPULAÇÃO DO FORMULÁRIO
-  document.getElementById('formChamado').addEventListener('submit', e => {
-    e.preventDefault();
-    const veicId = document.getElementById('chVeiculo').value; // ✅ Mantém como string, converte só quando necessário
-    const kmValor = parseFloat(document.getElementById('chKm').value);
-
-    // ✅ Validações com verificação segura
-    if (!(typeof Validacoes !== 'undefined' && Validacoes.camposPreenchidos([veicId, kmValor]))) {
-      alert('❌ Preencha todos os campos obrigatórios!');
-      return;
-    }
-    if (!(typeof Validacoes !== 'undefined' && Validacoes.kmValido(kmValor))) {
-      alert('❌ Quilometragem inválida!');
-      return;
-    }
-
-    const dados = {
-      veiculoId: veicId, // ✅ Mantém tipo original para consistência entre módulos
-      tipo: document.getElementById('chTipo').value,
-      obra: document.getElementById('chObra').value,
-      km: kmValor,
-      descricao: document.getElementById('chDescricao').value.trim(),
-      status: document.getElementById('chStatus').value,
-      responsavel: chamado?.responsavel || ((typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || 'Administrador'),
-      data: chamado?.data || new Date().toISOString()
-    };
-
-    if (ehEdicao) {
-      // ✅ Fallback seguro com funções do banco
-      if (typeof atualizarRegistro === 'function') {
-        atualizarRegistro('chamados', chamado.id, dados);
-      } else {
-        if (!BD.chamados) BD.chamados = [];
-        const idx = BD.chamados.findIndex(c => String(c.id) === String(chamado.id));
-        if (idx !== -1) {
-          BD.chamados[idx] = { ...BD.chamados[idx], ...dados };
-          if (typeof salvarDados === 'function') salvarDados();
-        }
-      }
-    } else {
-      // ✅ Novo registro com fallback seguro
-      if (typeof adicionarRegistro === 'function') {
-        adicionarRegistro('chamados', dados);
-      } else {
-        if (!BD.chamados) BD.chamados = [];
-        dados.id = (typeof Utils?.gerarId === 'function') ? Utils.gerarId() : Date.now();
-        BD.chamados.push(dados);
-        if (typeof salvarDados === 'function') salvarDados();
-      }
-
-      if (typeof Sincronizacao !== 'undefined' && Sincronizacao?.sincronizarRegistro) {
-        Sincronizacao.sincronizarRegistro('chamados', dados).catch(() => {});
-      }
-    }
-
-    fecharModal();
-    if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-    if (typeof carregarMeusRegistros === 'function') carregarMeusRegistros();
-    alert('✅ Chamado salvo com sucesso!');
-  });
-}
-
-// ✅ Excluir chamado
-window.excluirChamado = function(id) {
-  if (confirm('⚠️ Tem certeza que deseja excluir este chamado permanentemente?')) {
-    if (typeof excluirRegistro === 'function') {
-      excluirRegistro('chamados', id);
-    } else {
-      BD.chamados = (BD.chamados || []).filter(c => String(c.id) !== String(id));
-      if (typeof salvarDados === 'function') salvarDados();
-    }
-    if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-  }
-}
-
-// ✅ Alterar status do chamado
-function alterarStatusChamado(id, status) {
-  const chamado = (BD.chamados || []).find(c => String(c.id) === String(id));
-  if (chamado) {
-    chamado.status = status;
-    if (typeof salvarDados === 'function') salvarDados();
-    if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-  }
-}
-
-// ✅ Carregar tabela de chamados
-window.carregarTabelaChamados = function() {
-  const corpo = document.getElementById('tabelaChamados');
-  if (!corpo) return;
-  const ehAdmin = (typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil) === 'admin';
-  const listaBruta = BD.chamados || [];
-  const lista = typeof filtrarPorVeiculosPermitidos === 'function'
-    ? filtrarPorVeiculosPermitidos(listaBruta)
-    : listaBruta;
-
-  corpo.innerHTML = lista.length ? lista.map(c => {
-    const v = (BD.veiculos || []).find(x => String(x.id) === String(c.veiculoId));
-    // ✅ Formatação segura com fallback
-    const dt = (typeof Utils?.formatarData === 'function')
-      ? Utils.formatarData(c.data)
-      : new Date(c.data).toLocaleDateString('pt-BR');
-    const statusLabel = {
-      'Aberto': '<span class="text-red-600">🔴 Aberto</span>',
-      'Em Andamento': '<span class="text-amber-600">🟡 Em Andamento</span>',
-      'Resolvido': '<span class="text-green-600">🟢 Resolvido</span>'
-    }[c.status] || c.status;
-    // ✅ JSON seguro para edição
-    const seguro = JSON.stringify(c).replace(/"/g, '&quot;');
-
-    return `<tr class="border-b hover:bg-slate-50">
-      <td class="px-4 py-3">${dt}</td>
-      <td class="px-4 py-3 font-mono">${v?.placa || '—'}</td>
-      <td class="px-4 py-3">${c.tipo}</td>
-      <td class="px-4 py-3">${c.obra}</td>
-      <td class="px-4 py-3">${statusLabel}</td>
-      <td class="px-4 py-3 admin-only whitespace-nowrap">
-        ${ehAdmin ? `
-          <button class="text-blue-600 text-sm mr-2" onclick='abrirModalChamado(${seguro})'><i class="fa-solid fa-pen-to-square"></i> Editar</button>
-          <button class="text-red-600 text-sm" onclick="excluirChamado('${String(c.id)}')"><i class="fa-solid fa-trash"></i> Excluir</button>
-        ` : ''}
-      </td>
-    </tr>`;
-  }).join('') : '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Nenhum registro disponível</td></tr>';
-}
-
-// ❌ Removida função salvarChamado() duplicada/incorreta — conflitava com o envio do formulário
-
-// ============================================================
-// ARQUIVO: alocacoes.js
-// ============================================================
-
-// import removido
-
-async function carregarSelectLocaisAlocacao() {
-  const locais = await obterLocais();
-  const listaNomes = locais.map(l => l.nome);
-
-  const origemEl = document.getElementById('alocacaoOrigem');
-  const destinoEl = document.getElementById('alocacaoDestino');
-
-  if (origemEl) {
-    origemEl.innerHTML = '<option value="">Selecione origem...</option>';
-    listaNomes.forEach(nome => {
-      const opt = document.createElement('option');
-      opt.value = nome;
-      opt.textContent = nome;
-      origemEl.appendChild(opt);
-    });
-  }
-
-  if (destinoEl) {
-    destinoEl.innerHTML = '<option value="">Selecione destino...</option>';
-    listaNomes.forEach(nome => {
-      const opt = document.createElement('option');
-      opt.value = nome;
-      opt.textContent = nome;
-      destinoEl.appendChild(opt);
-    });
-  }
-}
-
-async function abrirModalAlocacao() {
-  const veiculos = await obterVeiculos();
-  
-  if (!veiculos || veiculos.length === 0) {
-    alert('⚠️ Cadastre um veículo primeiro!');
-    return;
-  }
-
-  const placas = veiculos.map(v => `<option value="${v.placa}">${v.placa}</option>`).join('');
-
-  document.getElementById('modais').innerHTML = `
-    <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
-      <div class="modal-corpo">
-        <div class="modal-cabecalho">
-          <h3 style="margin:0; font-size:1.125rem; font-weight:600;">📍 Nova Alocação</h3>
-          <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
-        </div>
-        <div class="modal-conteudo">
-          <form onsubmit="salvarAlocacaoForm(event)">
-            <div class="linha-form">
-              <label>Veículo (Placa)</label>
-              <select id="alocacaoPlaca" required>${placas}</select>
-            </div>
-            <div class="linha-form">
-              <label>📍 Origem</label>
-              <select id="alocacaoOrigem" required>
-                <option value="">Carregando...</option>
-              </select>
-            </div>
-            <div class="linha-form">
-              <label>📍 Destino</label>
-              <select id="alocacaoDestino" required>
-                <option value="">Carregando...</option>
-              </select>
-            </div>
-            <div class="linha-form">
-              <label>Km Inicial</label>
-              <input type="number" id="alocacaoKmInicial" required placeholder="0">
-            </div>
-            <div class="linha-form">
-              <label>Responsável / Motorista</label>
-              <input type="text" id="alocacaoResponsavel" required placeholder="Nome completo">
-            </div>
-            <div class="linha-form">
-              <label>Observação (opcional)</label>
-              <textarea id="alocacaoObs" rows="2" placeholder="Informações adicionais..."></textarea>
-            </div>
-            <div class="botoes-form">
-              <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
-              <button type="submit" class="btn btn-primary">Salvar Alocação</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>`;
-
-  setTimeout(() => carregarSelectLocaisAlocacao(), 50);
-}
-
-async function salvarAlocacaoForm(event) {
-  event.preventDefault();
-
-  const placa = document.getElementById('alocacaoPlaca').value;
-  const origem = document.getElementById('alocacaoOrigem').value.trim();
-  const destino = document.getElementById('alocacaoDestino').value.trim();
-  const kmInicial = parseInt(document.getElementById('alocacaoKmInicial').value);
-  const responsavel = document.getElementById('alocacaoResponsavel').value.trim();
-  const observacao = document.getElementById('alocacaoObs').value.trim() || '';
-
-  if (!origem || !destino) {
-    alert('⚠️ Selecione Origem e Destino!');
-    return;
-  }
-  if (origem === destino) {
-    alert('⚠️ Origem e Destino não podem ser iguais!');
-    return;
-  }
-
-  const veiculo = await obterVeiculoPorPlaca(placa);
-  if (!veiculo) {
-    alert('⚠️ Veículo não encontrado!');
-    return;
-  }
-
-  const dadosAlocacao = {
-    veiculo_id: veiculo.id,
-    motorista: responsavel,
-    data_saida: new Date().toISOString().split('T')[0],
-    hora_saida: new Date().toTimeString().split(' ')[0].substring(0, 5),
-    km_saida: kmInicial,
-    origem: origem,
-    destino: destino,
-    observacoes: observacao,
-    status: 'ativa'
-  };
-
-  const resultado = await salvarAlocacao(dadosAlocacao);
-  
-  if (resultado) {
-    alert('✅ Alocação salva com sucesso!');
-    fecharModal();
-    carregarTabelaAlocacoes();
-  } else {
-    alert('❌ Erro ao salvar alocação!');
-  }
-}
-
-async function carregarTabelaAlocacoes(filtroVeiculo = 'todos') {
-  const tbody = document.getElementById('tabelaAlocacoes');
-  if (!tbody) return;
-
-  let lista = await obterAlocacoes();
-  
-  if (filtroVeiculo && filtroVeiculo !== 'todos') {
-    lista = lista.filter(a => a.veiculo?.placa === filtroVeiculo);
-  }
-
-  if (lista.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:2rem;">Sem registros de alocação</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = lista.map(a => `
-    <tr>
-      <td><strong>${a.veiculo?.placa || '-'}</strong></td>
-      <td>📍 ${a.origem || '-'} → ${a.destino || '-'}</td>
-      <td>${a.data_saida || '-'}</td>
-      <td>${a.km_saida || '-'}</td>
-      <td>${a.motorista || '-'}</td>
-    </tr>
-  `).join('');
-}
-
-quandoDOMPronto(function() {
-  const originalMostrarPagina = window.mostrarPagina;
-  window.mostrarPagina = async function (pagina) {
-    if (originalMostrarPagina) originalMostrarPagina(pagina);
-    if (pagina === 'alocacoes') {
-      await carregarTabelaAlocacoes();
-      if (typeof atualizarListaVeiculosNosFiltros === 'function') {
-        atualizarListaVeiculosNosFiltros();
-      }
-    }
-  };
-});
-
-window.abrirModalAlocacao = abrirModalAlocacao;
-window.salvarAlocacaoForm = salvarAlocacaoForm;
-window.carregarTabelaAlocacoes = carregarTabelaAlocacoes;
-
-// ============================================================
-// ARQUIVO: sync.js
-// ============================================================
-
-// ==================================================
-// SINCRONIZAÇÃO LOCAL COM BACKEND
-// ==================================================
-const Sincronizacao = {
-  endpoint: localStorage.getItem('gf_sync_url') || 'http://localhost:3000/api',
-  dispositivoId: localStorage.getItem('gf_device_id') || (() => {
-    const id = (typeof Utils !== 'undefined' && Utils.gerarId) ? Utils.gerarId() : Date.now().toString(36);
-    localStorage.setItem('gf_device_id', id);
-    return id;
-  })(),
-
-  async sincronizarRegistro(collection, registro) {
+function inicializarBD() {
     try {
-      await fetch(`${this.endpoint}/sync/push`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          deviceId: this.dispositivoId,
-          collection,
-          registros: [registro]
-        })
-      });
-    } catch (erro) {
-      console.warn('Falha ao sincronizar registro:', erro);
-    }
-  },
-
-  async puxarBase() {
-    try {
-      const resposta = await fetch(`${this.endpoint}/sync/bundle?deviceId=${encodeURIComponent(this.dispositivoId)}`);
-      if (!resposta.ok) return;
-      const dadosServidor = await resposta.json();
-
-      ['checklists', 'chamados'].forEach(lista => {
-        if (!Array.isArray(dadosServidor[lista])) return;
-        const existentes = new Set((BD[lista] || []).map(item => String(item.id)));
-        dadosServidor[lista].forEach(item => {
-          if (!existentes.has(String(item.id))) {
-            BD[lista].push(item);
-          }
-        });
-      });
-
-      if (typeof salvarDados === 'function') salvarDados();
-      if (typeof carregarTabelaChecklist === 'function') carregarTabelaChecklist();
-      if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
-      if (typeof carregarMeusRegistros === 'function') carregarMeusRegistros();
-    } catch (erro) {
-      console.warn('Falha ao buscar dados do servidor:', erro);
-    }
-  },
-
-  iniciar() {
-    const executar = () => this.puxarBase();
-    quandoDOMPronto(executar);
-  }
-};
-
-Sincronizacao.iniciar();
-
-// ============================================================
-// ARQUIVO: auth.js
-// ============================================================
-
-if (typeof window.usuarioAtual === 'undefined') window.usuarioAtual = null;
-var usuarioAtual = window.usuarioAtual;
-window.USUARIOS = window.USUARIOS || [
-  { usuario: 'admin', senha: 'admin123', nome: 'Administrador', perfil: 'admin' },
-  { usuario: 'operador', senha: '1234', nome: 'Operador', perfil: 'operador' }
-];
-
-function verificarSessao() {
-  const sessao = localStorage.getItem('sessaoUsuario');
-  if (sessao) {
-    try {
-      window.usuarioAtual = JSON.parse(sessao);
-      usuarioAtual = window.usuarioAtual;
-      mostrarSistema();
-    } catch {
-      localStorage.removeItem('sessaoUsuario');
-      mostrarLogin();
-    }
-  } else {
-    mostrarLogin();
-  }
+        const salvo = localStorage.getItem('bd_frotas_v3');
+        if (salvo) {
+            const bd = JSON.parse(salvo);
+            if (!bd.config) bd.config = CONFIG_PADRAO;
+            if (!bd.usuarios || bd.usuarios.length === 0) bd.usuarios = [{ id: gerarId(), nome: 'Administrador', usuario: 'admin', senha: 'admin123', perfil: 'admin', ativo: true }];
+            if (!bd.locais) bd.locais = [{ id: 'patio-metalica', nome: 'Pátio Metálica' }, { id: 'patio-usina', nome: 'Pátio Usina' }, { id: 'obra', nome: 'Obra' }];
+            if (!bd.postos) bd.postos = [{ id: gerarId(), nome: 'Posto Guara' }, { id: gerarId(), nome: 'Posto Shell - Centro' }, { id: gerarId(), nome: 'Posto Ipiranga - Rodovia' }];
+            if (!bd.veiculos) bd.veiculos = [];
+            if (!bd.checklists) bd.checklists = [];
+            if (!bd.manutencoes) bd.manutencoes = [];
+            if (!bd.gastos) bd.gastos = [];
+            if (!bd.chamados) bd.chamados = [];
+            if (!bd.alocacoes) bd.alocacoes = [];
+            if (!bd.alertas) bd.alertas = [];
+            if (!bd.log) bd.log = [];
+            return bd;
+        }
+    } catch(e) { console.error(e); }
+    return {
+        config: CONFIG_PADRAO,
+        usuarios: [{ id: gerarId(), nome: 'Administrador', usuario: 'admin', senha: 'admin123', perfil: 'admin', ativo: true }],
+        locais: [{ id: 'patio-metalica', nome: 'Pátio Metálica' }, { id: 'patio-usina', nome: 'Pátio Usina' }, { id: 'obra', nome: 'Obra' }],
+        postos: [{ id: gerarId(), nome: 'Posto Guara' }, { id: gerarId(), nome: 'Posto Shell - Centro' }, { id: gerarId(), nome: 'Posto Ipiranga - Rodovia' }],
+        veiculos: [], checklists: [], manutencoes: [], gastos: [], chamados: [], alocacoes: [], alertas: [], log: []
+    };
 }
 
-function mostrarLogin() {
-  const telaLogin = document.getElementById('telaLogin');
-  const telaSistema = document.getElementById('sistemaPrincipal');
-  if (telaLogin) telaLogin.classList.remove('hidden');
-  if (telaSistema) telaSistema.classList.add('hidden');
+let BD = inicializarBD();
+function salvarDados() { localStorage.setItem('bd_frotas_v3', JSON.stringify(BD)); }
+
+// ---------- 3. AUTENTICAÇÃO E PERMISSÕES ----------
+window.usuarioAtual = null;
+
+function temPermissao(p) {
+    if (!window.usuarioAtual) return false;
+    const n = { visitante: 1, operacional: 2, supervisor: 3, admin: 4 };
+    return n[window.usuarioAtual.perfil] >= n[p];
 }
+function ehAdmin() { return temPermissao('admin'); }
+function ehSupervisor() { return temPermissao('supervisor'); }
+function ehOperacional() { return window.usuarioAtual?.perfil === 'operacional'; }
+function ehVisitante() { return window.usuarioAtual?.perfil === 'visitante'; }
+function ehProprioRegistro(r) { return r && window.usuarioAtual && (r.usuarioId === window.usuarioAtual.id); }
 
-function mostrarSistema() {
-  const telaLogin = document.getElementById('telaLogin');
-  const telaSistema = document.getElementById('sistemaPrincipal');
-  if (telaLogin) telaLogin.classList.add('hidden');
-  if (telaSistema) telaSistema.classList.remove('hidden');
-
-  sincronizarUsuarioNaTela();
-
-  if (typeof carregarDados === 'function') carregarDados();
-  if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
-  if (typeof carregarTabelaChecklist === 'function') carregarTabelaChecklist();
-  if (typeof carregarTabelaManutencao === 'function') carregarTabelaManutencao();
-  if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos();
-  if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
-  if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-  else if (typeof atualizarDashboard === 'function') atualizarDashboard();
+function aplicarPermissoesVisuais() {
+    const body = document.body;
+    body.classList.remove('usuario-admin', 'usuario-supervisor', 'usuario-motorista', 'usuario-visitante');
+    if (!window.usuarioAtual) return;
+    const p = window.usuarioAtual.perfil;
+    if (p === 'admin') body.classList.add('usuario-admin');
+    else if (p === 'supervisor') body.classList.add('usuario-supervisor');
+    else if (p === 'operacional') body.classList.add('usuario-motorista');
+    else if (p === 'visitante') body.classList.add('usuario-visitante');
+    
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        const pg = link.dataset.pagina;
+        if (!pg) return;
+        let mostrar = true;
+        if (['locais', 'usuarios', 'configuracoes', 'log'].includes(pg) && !ehAdmin()) mostrar = false;
+        if (['manutencao', 'alocacoes'].includes(pg) && !ehSupervisor() && !ehAdmin()) mostrar = false;
+        link.style.display = mostrar ? '' : 'none';
+    });
 }
 
 function entrarNoSistema() {
-  const user = (document.getElementById('loginUsuario')?.value || document.getElementById('campoUsuario')?.value || '').trim();
-  const pass = document.getElementById('loginSenha')?.value || document.getElementById('campoSenha')?.value || '';
-  const erroEl = document.getElementById('erroLogin');
-
-  if (erroEl) { erroEl.style.display = 'none'; erroEl.textContent = ''; }
-
-  if (!user || !pass) {
-    if (erroEl) { erroEl.style.display = 'block'; erroEl.textContent = '⚠️ Preencha usuário e senha!'; }
-    else alert('⚠️ Preencha usuário e senha!');
-    return;
-  }
-
-  console.log('Tentativa de login:', user, pass);
-  const encontrado = window.USUARIOS.find(u => u.usuario === user && u.senha === pass);
-
-  if (!encontrado) {
-    const msg = `❌ Usuário ou senha incorretos (usuario='${user}').`;
-    if (erroEl) { erroEl.style.display = 'block'; erroEl.textContent = msg; }
-    else alert(msg);
-    return;
-  }
-
-  window.usuarioAtual = { nome: encontrado.nome, usuario: encontrado.usuario, perfil: encontrado.perfil };
-  usuarioAtual = window.usuarioAtual;
-  localStorage.setItem('sessaoUsuario', JSON.stringify(window.usuarioAtual));
-  mostrarSistema();
+    const u = document.getElementById('loginUsuario').value.trim();
+    const s = document.getElementById('loginSenha').value;
+    const err = document.getElementById('erroLogin');
+    const user = BD.usuarios.find(x => x.usuario === u && x.senha === s && x.ativo);
+    if (!user) { err.textContent = '❌ Usuário ou senha inválidos!'; err.style.display = 'block'; return; }
+    window.usuarioAtual = { id: user.id, nome: user.nome, usuario: user.usuario, perfil: user.perfil };
+    localStorage.setItem('sessaoUsuario', JSON.stringify(window.usuarioAtual));
+    registrarLog('login', `Usuário ${user.usuario} entrou`);
+    err.style.display = 'none';
+    mostrarSistema();
 }
 
-window.sairDoSistema = function() {
-  localStorage.removeItem('sessaoUsuario');
-  usuarioAtual = null;
-  mostrarLogin();
+function sairDoSistema() {
+    if (window.usuarioAtual) registrarLog('logout', `Usuário ${window.usuarioAtual.usuario} saiu`);
+    window.usuarioAtual = null;
+    localStorage.removeItem('sessaoUsuario');
+    mostrarLogin();
 }
 
-function sairSistema() {
-  sairDoSistema();
+function verificarSessao() {
+    const s = localStorage.getItem('sessaoUsuario');
+    if (s) { try { window.usuarioAtual = JSON.parse(s); mostrarSistema(); } catch(e) { localStorage.removeItem('sessaoUsuario'); mostrarLogin(); } }
+    else mostrarLogin();
 }
 
-function sincronizarUsuarioNaTela() {
-  const elNome = document.getElementById('nomeUsuario');
-  if (elNome && window.usuarioAtual) {
-    elNome.textContent = window.usuarioAtual.nome;
-  }
-  const elInfo = document.getElementById('infoUsuario');
-  if (elInfo && window.usuarioAtual) elInfo.textContent = window.usuarioAtual.nome;
+function mostrarLogin() {
+    document.getElementById('telaLogin').style.display = 'flex';
+    document.getElementById('sistemaPrincipal').classList.add('hidden');
 }
 
-quandoDOMPronto(verificarSessao);
+function mostrarSistema() {
+    document.getElementById('telaLogin').style.display = 'none';
+    document.getElementById('sistemaPrincipal').classList.remove('hidden');
+    const el = document.getElementById('infoUsuario');
+    if (el && window.usuarioAtual) {
+        const pn = { admin: 'Administrador', supervisor: 'Supervisor', operacional: 'Operacional', visitante: 'Visitante' };
+        el.textContent = `${window.usuarioAtual.nome} (${pn[window.usuarioAtual.perfil]})`;
+    }
+    aplicarPermissoesVisuais();
+    carregarDadosIniciais();
+}
 
-// Conecta o formulário de login do `index.html` ao fluxo de autenticação
-quandoDOMPronto(() => {
-  const form = document.getElementById('formLogin');
-  if (form) {
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      entrarNoSistema();
+// ---------- 4. NAVEGAÇÃO ----------
+let paginaAtual = 'dashboard';
+
+function navegarPara(pagina) {
+    if (['locais', 'usuarios', 'configuracoes', 'log'].includes(pagina) && !ehAdmin()) { alert('❌ Sem permissão!'); return; }
+    if (['manutencao', 'alocacoes'].includes(pagina) && !ehSupervisor() && !ehAdmin()) { alert('❌ Sem permissão!'); return; }
+    paginaAtual = pagina;
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.toggle('ativo', l.dataset.pagina === pagina));
+    document.querySelectorAll('.pagina').forEach(p => p.classList.remove('ativa'));
+    const pg = document.getElementById(`pag-${pagina}`);
+    if (pg) pg.classList.add('ativa');
+    carregarDadosPagina(pagina);
+}
+
+function carregarDadosPagina(p) {
+    switch(p) {
+        case 'dashboard': atualizarDashboard(); break;
+        case 'veiculos': carregarTabelaVeiculos(); break;
+        case 'checklist': carregarTabelaChecklist(); verificarAlertasCintas(); break;
+        case 'manutencao': carregarTabelaManutencao(); break;
+        case 'gastos': carregarTabelaGastos(); break;
+        case 'chamados': carregarTabelaChamados(); break;
+        case 'alocacoes': carregarTabelaAlocacoes(); break;
+        case 'locais': carregarTabelaLocais(); break;
+        case 'usuarios': carregarTabelaUsuarios(); break;
+        case 'configuracoes': carregarTelaConfiguracoes(); break;
+        case 'log': carregarLog(); break;
+    }
+}
+
+function carregarDadosIniciais() {
+    atualizarListaVeiculosNosFiltros();
+    atualizarListaUsuariosNosFiltros();
+    carregarDadosPagina(paginaAtual);
+}
+
+function atualizarListaVeiculosNosFiltros() {
+    const vs = BD.veiculos || [];
+    ['filtroChecklistVeiculo', 'filtroManutencaoVeiculo', 'filtroGastosVeiculo', 'filtroChamadosVeiculo', 'filtroAlocacoesVeiculo'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const atual = sel.value;
+        sel.innerHTML = '<option value="todos">Todos os Veículos</option>';
+        vs.forEach(v => { sel.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}</option>`; });
+        if (vs.some(v => v.placa === atual)) sel.value = atual;
     });
-  }
-  sincronizarUsuarioNaTela();
-});
-
-// ============================================================
-// ARQUIVO: correcoes.js
-// ============================================================
-
-// js/correcoes.js
-// Este arquivo deve ser carregado DEPOIS de todos os módulos
-
-// ✅ Garante que BD existe e tem todas as propriedades
-window.BD = window.BD || {
-  locais: [{ id: 'patio-metalica', nome: 'Pátio Metálica' }, { id: 'patio-usina-conc', nome: 'Pátio Usina Conc.' }, { id: 'obra', nome: 'Obra' }],
-  veiculos: [], checklists: [], manutencoes: [], gastos: [], chamados: [], alocacoes: [], usuarios: [],
-  origens: ['Pátio Metálica', 'Pátio Usina Conc.', 'Obra'],
-  destinos: ['Pátio Metálica', 'Pátio Usina Conc.', 'Obra'],
-  obras: ['Pátio Metálica', 'Pátio Usina Conc.', 'Obra']
-};
-
-// ✅ Garante que CONFIG existe
-window.CONFIG = window.CONFIG || {
-  STATUS_VEICULOS: { ATIVO: 'Em Operação', MANUTENCAO: 'Em Manutenção', INATIVO: 'Inativo' },
-  CATEGORIAS_VEICULOS: ['Caminhão', 'Carro Passeio', 'Utilitário', 'Máquina', 'Van', 'Ônibus', 'Moto', 'Outro'],
-  STATUS_CHECKLIST: { APROVADO: 'Aprovado', PENDENTE: 'Pendente', REPROVADO: 'Reprovado' },
-  TIPO_MANUTENCAO: { PREVENTIVA: 'Preventiva', CORRETIVA: 'Corretiva', REVISAO: 'Revisão' },
-  STATUS_MANUTENCAO: { ABERTA: 'Aberta', ANDAMENTO: 'Em Andamento', CONCLUIDA: 'Concluída', CANCELADA: 'Cancelada' },
-  TIPO_GASTOS: ['Abastecimento', 'Peças', 'Serviço', 'IPVA', 'Seguro', 'Licenciamento', 'Multa', 'Outros']
-};
-
-// ✅ Função auxiliar para categorias de veículos
-window.getCategoriaVeiculo = function(catId) {
-  const mapa = {
-    caminhao: { icone: '🚛', nome: 'Caminhão' },
-    utilitario: { icone: '🚐', nome: 'Utilitário' },
-    carro: { icone: '🚗', nome: 'Carro' },
-    moto: { icone: '🏍️', nome: 'Moto' },
-    maquina: { icone: '🚜', nome: 'Máquina' },
-    outro: { icone: '❔', nome: 'Outro' }
-  };
-  return mapa[catId] || { icone: '🚗', nome: catId || 'Veículo' };
-};
-
-// ✅ Funções genéricas de registro
-window.adicionarRegistro = function(colecao, dados) {
-  if (!BD[colecao]) BD[colecao] = [];
-  dados.id = dados.id || (window.Utils?.gerarId?.() || Date.now());
-  BD[colecao].push(dados);
-  if (typeof salvarDados === 'function') salvarDados();
-  return dados;
-};
-
-window.excluirRegistro = function(colecao, id) {
-  if (!BD[colecao]) return;
-  BD[colecao] = BD[colecao].filter(item => String(item.id) !== String(id));
-  if (typeof salvarDados === 'function') salvarDados();
-};
-
-// ✅ Atualiza origens/destinos/obras a partir dos locais
-window.atualizarListasDependentes = function() {
-  if (BD.locais && BD.locais.length) {
-    const nomes = BD.locais.map(l => l.nome);
-    BD.origens = nomes;
-    BD.destinos = nomes;
-    BD.obras = nomes;
-  }
-};
-
-// ✅ Dashboard
-window.atualizarDashboard = function() {
-  if (!BD.veiculos) return;
-  const elV = document.getElementById('dashVeiculos');
-  const elA = document.getElementById('dashAtivos');
-  const elM = document.getElementById('dashManutencao');
-  const elC = document.getElementById('dashChamados');
-  if (elV) elV.textContent = BD.veiculos.length;
-  if (elA) elA.textContent = BD.veiculos.filter(v => v.status === 'disponivel' || v.status === 'alocado').length;
-  if (elM) elM.textContent = BD.veiculos.filter(v => v.status === 'manutencao').length;
-  if (elC) elC.textContent = (BD.chamados || []).length;
-};
-window.atualizarDashboardCompleto = window.atualizarDashboardCompleto || window.atualizarDashboard;
-
-// ============================================================
-// ✅ FUNÇÕES DE VEÍCULOS - GARANTIDAS GLOBALMENTE
-// ============================================================
-
-window.abrirModalVeiculo = function(veiculo = null) {
-  const ehEdicao = !!veiculo;
-
-  const modal = document.createElement('div');
-  modal.className = 'modal-fundo';
-  modal.onclick = (e) => { if (e.target === modal) fecharModal(); };
-  modal.innerHTML = `
-    <div class="modal-corpo">
-      <div class="modal-cabecalho">
-        <h3 style="margin:0; font-size:1.125rem; font-weight:600;">${ehEdicao ? '✏️ Editar' : '➕ Cadastrar'} Veículo</h3>
-        <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
-      </div>
-      <div class="modal-conteudo">
-        <form id="formVeiculo">
-          <div class="linha-form">
-            <label>Placa *</label>
-            <input type="text" id="vPlaca" style="text-transform:uppercase;" required value="${veiculo?.placa || ''}" ${ehEdicao ? 'readonly' : ''}>
-          </div>
-          <div class="linha-form">
-            <label>Ano</label>
-            <input type="number" id="vAno" value="${veiculo?.ano || ''}">
-          </div>
-          <div class="linha-form">
-            <label>Categoria *</label>
-            <select id="vCategoria" required>
-              <option value="">Selecione</option>
-              <option value="caminhao" ${veiculo?.categoria === 'caminhao' ? 'selected' : ''}>🚛 Caminhão</option>
-              <option value="utilitario" ${veiculo?.categoria === 'utilitario' ? 'selected' : ''}>🚐 Utilitário</option>
-              <option value="carro" ${veiculo?.categoria === 'carro' ? 'selected' : ''}>🚗 Carro</option>
-              <option value="moto" ${veiculo?.categoria === 'moto' ? 'selected' : ''}>🏍️ Moto</option>
-              <option value="maquina" ${veiculo?.categoria === 'maquina' ? 'selected' : ''}>🚜 Máquina</option>
-              <option value="outro" ${veiculo?.categoria === 'outro' ? 'selected' : ''}>❔ Outro</option>
-            </select>
-          </div>
-          <div class="linha-form">
-            <label>Marca / Modelo *</label>
-            <input type="text" id="vModelo" required value="${veiculo?.modelo || ''}">
-          </div>
-          <div class="linha-form">
-            <label>Km Atual *</label>
-            <input type="number" id="vKm" required value="${veiculo?.km_atual || 0}">
-          </div>
-          <div class="linha-form">
-            <label>Status</label>
-            <select id="vStatus">
-              <option value="disponivel" ${veiculo?.status === 'disponivel' ? 'selected' : ''}>✅ Disponível</option>
-              <option value="alocado" ${veiculo?.status === 'alocado' ? 'selected' : ''}>🚛 Alocado</option>
-              <option value="manutencao" ${veiculo?.status === 'manutencao' ? 'selected' : ''}>🔧 Manutenção</option>
-              <option value="inativo" ${veiculo?.status === 'inativo' ? 'selected' : ''}>⛔ Inativo</option>
-            </select>
-          </div>
-          <div class="linha-form">
-            <label>Obra / Local *</label>
-            <input type="text" id="vObra" required value="${veiculo?.obra_atual || ''}" placeholder="Nome da obra ou local">
-          </div>
-          <div class="linha-form">
-            <label>Responsável</label>
-            <input type="text" id="vResponsavel" value="${veiculo?.responsavel || ''}" placeholder="Nome do motorista responsável">
-          </div>
-          <div class="botoes-form">
-            <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
-            <button type="submit" class="btn btn-primary">${ehEdicao ? '💾 Salvar' : '➕ Cadastrar Veículo'}</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('modais').appendChild(modal);
-
-  document.getElementById('formVeiculo').addEventListener('submit', async e => {
-    e.preventDefault();
-
-    const placa = document.getElementById('vPlaca').value.toUpperCase().trim();
-    const categoria = document.getElementById('vCategoria').value;
-    const modelo = document.getElementById('vModelo').value.trim();
-    const ano = document.getElementById('vAno').value || null;
-    const kmAtual = parseInt(document.getElementById('vKm').value) || 0;
-    const status = document.getElementById('vStatus').value;
-    const obraAtual = document.getElementById('vObra').value.trim();
-    const responsavel = document.getElementById('vResponsavel').value.trim() || null;
-
-    if (!/^[A-Z]{3}-?[0-9][A-Z0-9][0-9]{2}$/.test(placa.replace('-', '')) && !/^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(placa)) {
-      alert('❌ Placa inválida! Use o formato AAA-1234 ou AAA1A23');
-      return;
-    }
-    if (!categoria || !modelo || !obraAtual) {
-      alert('❌ Preencha todos os campos obrigatórios!');
-      return;
-    }
-    if (kmAtual < 0) {
-      alert('❌ Quilometragem deve ser um número positivo!');
-      return;
-    }
-
-    const dados = { 
-      placa, categoria, modelo, marca: modelo.split(' ')[0], ano, 
-      km_atual: kmAtual, km_inicial: ehEdicao ? (veiculo?.km_inicial || kmAtual) : kmAtual,
-      status, obra_atual: obraAtual, responsavel
-    };
-
-    if (ehEdicao) {
-      dados.id = veiculo.id;
-      const idx = BD.veiculos.findIndex(v => String(v.id) === String(veiculo.id));
-      if (idx !== -1) BD.veiculos[idx] = { ...BD.veiculos[idx], ...dados };
-    } else {
-      const existe = BD.veiculos.find(v => v.placa === placa);
-      if (existe) {
-        alert('❌ Já existe um veículo cadastrado com esta placa!');
-        return;
-      }
-      dados.id = window.Utils?.gerarId?.() || Date.now();
-      BD.veiculos.push(dados);
-    }
-
-    if (typeof salvarDados === 'function') salvarDados();
-
-    alert('✅ Veículo salvo com sucesso!');
-    fecharModal();
-    if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
-    if (typeof atualizarDashboard === 'function') atualizarDashboard();
-    if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
-  });
-};
-
-window.carregarTabelaVeiculos = async function() {
-  const corpo = document.getElementById('tabelaVeiculos');
-  if (!corpo) return;
-
-  const veiculos = BD.veiculos || [];
-
-  if (!veiculos.length) {
-    corpo.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhum veículo cadastrado</td></tr>';
-    return;
-  }
-
-  const statusMap = {
-    disponivel: '<span class="badge badge-success">✅ Disponível</span>',
-    alocado: '<span class="badge" style="background:#dbeafe; color:#1e40af;">🚛 Alocado</span>',
-    manutencao: '<span class="badge badge-warning">🔧 Manutenção</span>',
-    inativo: '<span class="badge badge-danger">⛔ Inativo</span>'
-  };
-
-  const catIcone = {
-    caminhao: '🚛', utilitario: '🚐', carro: '🚗', moto: '🏍️', maquina: '🚜', outro: '❔'
-  };
-
-  corpo.innerHTML = veiculos.map(v => {
-    const seguro = JSON.stringify(v).replace(/"/g, '&quot;');
-    return `<tr>
-      <td class="font-mono">${v.placa}</td>
-      <td>${catIcone[v.categoria] || '❔'} ${v.categoria || '-'}</td>
-      <td>${v.modelo}</td>
-      <td>${Number(v.km_atual || 0).toLocaleString('pt-BR')} km</td>
-      <td>${v.obra_atual || '—'}</td>
-      <td>${statusMap[v.status] || v.status}</td>
-      <td class="admin-only">
-        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fef3c7; color:#92400e; margin-right:0.25rem;" onclick='abrirModalVeiculo(${seguro})'>✏️</button>
-        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fee2e2; color:#991b1b;" onclick="excluirVeiculo('${v.placa || v.id}')">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('');
-};
-
-window.excluirVeiculo = async function(identificador) {
-  if (!confirm('⚠️ Tem certeza que deseja excluir este veículo?')) return;
-  
-  BD.veiculos = BD.veiculos.filter(v => v.placa !== identificador && String(v.id) !== String(identificador));
-  if (typeof salvarDados === 'function') salvarDados();
-  
-  alert('✅ Veículo excluído!');
-  if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
-  if (typeof atualizarDashboard === 'function') atualizarDashboard();
-  if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
-};
-
-// ✅ Inicializa listas
-atualizarListasDependentes();
-
-console.log('✅ Correções aplicadas com sucesso!');
-
-
-// ============================================================
-// ARQUIVO: navegacao.js
-// ============================================================
-
-if (!window.__navegacaoInicializada) {
-  window.__navegacaoInicializada = true;
-
-  function mostrarPagina(pagina) {
-  const paginas = document.querySelectorAll('.pagina');
-  const alvo = document.getElementById('pagina-' + pagina);
-
-  paginas.forEach(secao => {
-    secao.classList.remove('ativa');
-    secao.style.display = 'none';
-  });
-
-  if (!alvo) {
-    console.warn('Página não encontrada:', pagina);
-    return;
-  }
-
-  alvo.classList.add('ativa');
-  alvo.style.display = 'block';
-
-  document.querySelectorAll('.sidebar-link').forEach(botao => botao.classList.remove('ativo'));
-  const botaoAtivo = document.querySelector('.sidebar-link[data-pagina="' + pagina + '"]');
-  if (botaoAtivo) botaoAtivo.classList.add('ativo');
-
-  if (pagina === 'veiculos' && typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
-  if (pagina === 'checklist' && typeof carregarTabelaChecklist === 'function') {
-    if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
-    carregarTabelaChecklist();
-  }
-  if (pagina === 'manutencao' && typeof carregarTabelaManutencao === 'function') {
-    if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
-    carregarTabelaManutencao();
-  }
-  if (pagina === 'gastos' && typeof carregarTabelaGastos === 'function') {
-    if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
-    carregarTabelaGastos();
-  }
-  if (pagina === 'chamados' && typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
-  if (pagina === 'alocacoes') {
-    if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
-    if (typeof carregarTabelaAlocacoes === 'function') carregarTabelaAlocacoes();
-  }
-  if (pagina === 'dashboard' && typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-  }
-
-  window.mostrarPagina = mostrarPagina;
-
-  document.addEventListener('click', e => {
-    const link = e.target.closest('.sidebar-link');
-    if (link && link.dataset.pagina) {
-      e.preventDefault();
-      mostrarPagina(link.dataset.pagina);
-    }
-  });
-
-  quandoDOMPronto(() => {
-    if (document.getElementById('sistemaPrincipal')) {
-      mostrarPagina('dashboard');
-    }
-  });
 }
 
+function atualizarListaUsuariosNosFiltros() {
+    const sel = document.getElementById('filtroLogUsuario');
+    if (!sel) return;
+    const atual = sel.value;
+    sel.innerHTML = '<option value="todos">Todos os Usuários</option>';
+    (BD.usuarios || []).forEach(u => { sel.innerHTML += `<option value="${u.usuario}">${u.nome}</option>`; });
+}
 
-// ============================================================
-// FUNÇÕES GLOBAIS DO INDEX.HTML
-// ============================================================
+// ---------- 5. DASHBOARD ----------
+function atualizarDashboard() {
+    const vs = BD.veiculos || [];
+    document.getElementById('stat-total').textContent = vs.length;
+    document.getElementById('stat-operacao').textContent = vs.filter(v => v.status === 'disponivel' || v.status === 'alocado').length;
+    document.getElementById('stat-manutencao').textContent = vs.filter(v => v.status === 'manutencao').length;
+    document.getElementById('stat-chamados').textContent = (BD.chamados || []).filter(c => c.status === 'aberto').length;
+    
+    const rel = document.getElementById('lista-veiculos-recentes');
+    if (vs.length === 0) rel.innerHTML = '<span style="color:#94a3b8;">Nenhum veículo cadastrado.</span>';
+    else rel.innerHTML = vs.slice(-5).reverse().map(v => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid #f1f5f9;"><div><div style="font-weight:600;">${v.placa}</div><div style="font-size:0.8125rem;color:#64748b;">${v.modelo}</div></div><span class="badge ${v.status==='disponivel'?'badge-success':v.status==='manutencao'?'badge-warning':'badge-info'}">${BD.config.statusVeiculos[v.status]||v.status}</span></div>`).join('');
+    
+    const ch = BD.chamados || [];
+    const chel = document.getElementById('lista-chamados-recentes');
+    if (ch.length === 0) chel.innerHTML = '<span style="color:#94a3b8;">Nenhum chamado.</span>';
+    else chel.innerHTML = ch.slice(-5).reverse().map(c => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid #f1f5f9;"><div><div style="font-weight:600;">${c.titulo}</div><div style="font-size:0.8125rem;color:#64748b;">${c.veiculo} - ${formatarData(c.data)}</div></div><span class="badge ${c.status==='aberto'?'badge-danger':c.status==='andamento'?'badge-warning':'badge-success'}">${c.status}</span></div>`).join('');
+    
+    renderizarAlertasDashboard();
+}
 
-        // ========== CONTROLE DE PERMISSÕES POR PERFIL ==========
-        function ehAdmin() {
-            return typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'admin';
+function renderizarAlertasDashboard() {
+    const area = document.getElementById('areaAlertas');
+    if (!area) return;
+    const ativos = (BD.alertas || []).filter(a => !a.resolvido);
+    if (ativos.length === 0) { area.innerHTML = ''; return; }
+    area.innerHTML = `<div class="alerta-destaque"><div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;"><span style="font-size:1.5rem;">⚠️</span><div><strong style="color:#991b1b;">ATENÇÃO: ${ativos.length} alerta(s) pendente(s)!</strong><div style="font-size:0.875rem;color:#7f1d1d;">Verifique a área de Check-list</div></div></div>${ativos.slice(0,3).map(a=>`<div style="background:white;padding:0.75rem;border-radius:0.375rem;margin-bottom:0.5rem;font-size:0.875rem;"><strong>🚛 ${a.veiculo}</strong> - ${a.motivo}<button class="btn btn-warning" style="padding:0.25rem 0.5rem;font-size:0.75rem;margin-left:0.5rem;" onclick="navegarPara('checklist')">Ver</button></div>`).join('')}</div>`;
+}
+
+// ---------- 6. CRUD VEÍCULOS ----------
+function abrirModalVeiculo(v = null) {
+    if (!ehAdmin()) { alert('❌ Sem permissão!'); return; }
+    const ed = !!v;
+    const cats = BD.config.categoriasVeiculos.map(c => `<option value="${c.id}" ${v?.categoria===c.id?'selected':''}>${c.nome}</option>`).join('');
+    const sts = Object.entries(BD.config.statusVeiculos).map(([val,nome])=>`<option value="${val}" ${v?.status===val?'selected':''}>${nome}</option>`).join('');
+    
+    const m = document.createElement('div');
+    m.className = 'modal-fundo';
+    m.onclick = e => { if(e.target===m) fecharModal(); };
+    m.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">${ed?'✏️ Editar':'➕ Cadastrar'} Veículo</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formVeiculo">
+        <div class="linha-form"><label>Placa *</label><input type="text" id="vPlaca" style="text-transform:uppercase;" required value="${v?.placa||''}" ${ed?'readonly':''} placeholder="ABC1D23"></div>
+        <div class="linha-form"><label>Ano</label><input type="number" id="vAno" value="${v?.ano||''}" min="1990" max="2030"></div>
+        <div class="linha-form"><label>Categoria *</label><select id="vCategoria" required><option value="">Selecione</option>${cats}</select></div>
+        <div class="linha-form"><label>Marca / Modelo *</label><input type="text" id="vModelo" required value="${v?.modelo||''}"></div>
+        <div class="linha-form"><label>Km Atual *</label><input type="number" id="vKm" required value="${v?.km_atual||0}" min="0"></div>
+        <div class="linha-form"><label>Status</label><select id="vStatus">${sts}</select></div>
+        <div class="linha-form"><label>Obra / Local *</label><input type="text" id="vObra" required value="${v?.obra_atual||''}"></div>
+        <div class="linha-form"><label>Responsável</label><input type="text" id="vResponsavel" value="${v?.responsavel||''}"></div>
+        <div class="botoes-form"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button><button type="submit" class="btn btn-primary">${ed?'💾 Salvar':'➕ Cadastrar'}</button></div>
+    </form></div></div>`;
+    document.getElementById('modais').appendChild(m);
+    
+    document.getElementById('formVeiculo').addEventListener('submit', e => {
+        e.preventDefault();
+        const placa = document.getElementById('vPlaca').value.toUpperCase().trim();
+        const categoria = document.getElementById('vCategoria').value;
+        const modelo = document.getElementById('vModelo').value.trim();
+        const ano = document.getElementById('vAno').value || null;
+        const km = parseInt(document.getElementById('vKm').value) || 0;
+        const status = document.getElementById('vStatus').value;
+        const obra = document.getElementById('vObra').value.trim();
+        const resp = document.getElementById('vResponsavel').value.trim() || null;
+        
+        if (!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(placa) && !/^[A-Z]{3}[0-9]{4}$/.test(placa)) { alert('❌ Placa inválida! ABC1D23 ou ABC1234'); return; }
+        if (!categoria || !modelo || !obra) { alert('❌ Preencha todos os campos!'); return; }
+        
+        const dados = { placa, categoria, modelo, marca: modelo.split(' ')[0], ano, km_atual: km, km_inicial: ed ? (v?.km_inicial||km) : km, status, obra_atual: obra, responsavel: resp };
+        
+        if (ed) {
+            const i = BD.veiculos.findIndex(x => String(x.id)===String(v.id));
+            if (i!==-1) BD.veiculos[i] = { ...BD.veiculos[i], ...dados };
+            registrarLog('edicao', `Editou veículo ${placa}`);
+        } else {
+            if (BD.veiculos.some(x => x.placa === placa)) { alert('❌ Já existe veículo com esta placa!'); return; }
+            dados.id = gerarId(); BD.veiculos.push(dados);
+            registrarLog('criacao', `Cadastrou veículo ${placa}`);
         }
-        function ehMotorista() {
-            return typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'motorista';
+        salvarDados(); alert('✅ Veículo salvo!'); fecharModal();
+        carregarTabelaVeiculos(); atualizarDashboard(); atualizarListaVeiculosNosFiltros();
+    });
+}
+
+function excluirVeiculo(id) {
+    if (!ehAdmin()) return;
+    if (!confirm('⚠️ Excluir este veículo?')) return;
+    const v = BD.veiculos.find(x => x.placa===id || String(x.id)===String(id));
+    BD.veiculos = BD.veiculos.filter(x => x.placa!==id && String(x.id)!==String(id));
+    salvarDados();
+    if (v) registrarLog('exclusao', `Excluiu veículo ${v.placa}`);
+    alert('✅ Excluído!'); carregarTabelaVeiculos(); atualizarDashboard(); atualizarListaVeiculosNosFiltros();
+}
+
+function carregarTabelaVeiculos() {
+    const corpo = document.getElementById('tabelaVeiculos');
+    if (!corpo) return;
+    let vs = BD.veiculos || [];
+    const fc = document.getElementById('filtroVeiculoCategoria')?.value || 'todas';
+    const fs = document.getElementById('filtroVeiculoStatus')?.value || 'todos';
+    if (fc !== 'todas') vs = vs.filter(v => v.categoria === fc);
+    if (fs !== 'todos') vs = vs.filter(v => v.status === fs);
+    
+    const sc = document.getElementById('filtroVeiculoCategoria');
+    if (sc && sc.options.length <= 1) BD.config.categoriasVeiculos.forEach(c => sc.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
+    
+    if (vs.length === 0) { corpo.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum veículo</td></tr>'; return; }
+    
+    const sm = { disponivel:'<span class="badge badge-success">✅ Disponível</span>', alocado:'<span class="badge badge-info">📍 Alocado</span>', manutencao:'<span class="badge badge-warning">🔧 Manutenção</span>', inativo:'<span class="badge badge-danger">⛔ Inativo</span>' };
+    
+    corpo.innerHTML = vs.map(v => {
+        const cn = BD.config.categoriasVeiculos.find(c=>c.id===v.categoria)?.nome || v.categoria;
+        const seg = JSON.stringify(v).replace(/"/g,'&quot;');
+        return `<tr><td style="font-family:monospace;font-weight:600;">${v.placa}</td><td>${cn}</td><td>${v.modelo}</td><td>${Number(v.km_atual||0).toLocaleString('pt-BR')} km</td><td>${v.obra_atual||'—'}</td><td>${sm[v.status]||v.status}</td><td class="admin-only"><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fef3c7;color:#92400e;margin-right:0.25rem;" onclick='abrirModalVeiculo(${seg})'>✏️</button><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fee2e2;color:#991b1b;" onclick="excluirVeiculo('${v.placa}')">🗑️</button></td></tr>`;
+    }).join('');
+}
+
+// ---------- 7. CRUD USUÁRIOS ----------
+function abrirModalUsuario(u = null) {
+    if (!ehAdmin()) return;
+    const ed = !!u;
+    const perfis = Object.entries(BD.config.perfis).map(([id,p])=>`<option value="${id}" ${u?.perfil===id?'selected':''}>${p.nome}</option>`).join('');
+    
+    const m = document.createElement('div');
+    m.className = 'modal-fundo';
+    m.onclick = e => { if(e.target===m) fecharModal(); };
+    m.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">${ed?'✏️ Editar':'➕ Novo'} Usuário</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formUsuario">
+        <div class="linha-form"><label>Nome Completo *</label><input type="text" id="uNome" required value="${u?.nome||''}"></div>
+        <div class="linha-form"><label>Usuário (Login) *</label><input type="text" id="uUsuario" required value="${u?.usuario||''}" ${ed?'readonly':''}></div>
+        <div class="linha-form"><label>Senha *</label><input type="password" id="uSenha" required value="${u?.senha||''}"></div>
+        <div class="linha-form"><label>Perfil *</label><select id="uPerfil" required>${perfis}</select></div>
+        <div class="botoes-form"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button><button type="submit" class="btn btn-primary">${ed?'💾 Salvar':'➕ Criar'}</button></div>
+    </form></div></div>`;
+    document.getElementById('modais').appendChild(m);
+    
+    document.getElementById('formUsuario').addEventListener('submit', e => {
+        e.preventDefault();
+        const nome = document.getElementById('uNome').value.trim();
+        const login = document.getElementById('uUsuario').value.trim();
+        const senha = document.getElementById('uSenha').value;
+        const perfil = document.getElementById('uPerfil').value;
+        if (!nome||!login||!senha) { alert('❌ Preencha todos!'); return; }
+        
+        if (ed) {
+            const i = BD.usuarios.findIndex(x=>String(x.id)===String(u.id));
+            if (i!==-1) BD.usuarios[i] = { ...BD.usuarios[i], nome, senha, perfil };
+            registrarLog('edicao', `Editou usuário ${login}`);
+        } else {
+            if (BD.usuarios.some(x=>x.usuario===login)) { alert('❌ Usuário já existe!'); return; }
+            BD.usuarios.push({ id: gerarId(), nome, usuario: login, senha, perfil, ativo: true });
+            registrarLog('criacao', `Criou usuário ${login} (${perfil})`);
         }
-        quandoDOMPronto(function() {
-            if (ehAdmin()) {
-                document.body.classList.add('usuario-admin');
-                console.log('🔑 Perfil: Administrador — acesso completo');
-            } else if (ehMotorista()) {
-                document.body.classList.add('usuario-motorista');
-                console.log('🔑 Perfil: Motorista — áreas de admin ocultas');
-            }
-        });
+        salvarDados(); alert('✅ Usuário salvo!'); fecharModal();
+        carregarTabelaUsuarios(); atualizarListaUsuariosNosFiltros();
+    });
+}
 
-        function atualizarNomeUsuarioCabecalho() {
-            const nome = window.usuarioAtual?.nome || 'Carregando...';
-            const infoUsuario = document.getElementById('infoUsuario');
-            if (infoUsuario) infoUsuario.textContent = nome;
+function toggleStatusUsuario(id) {
+    if (!ehAdmin()) return;
+    const u = BD.usuarios.find(x=>String(x.id)===String(id));
+    if (u) { u.ativo = !u.ativo; salvarDados(); registrarLog('edicao', `${u.ativo?'Ativou':'Desativou'} ${u.usuario}`); carregarTabelaUsuarios(); atualizarListaUsuariosNosFiltros(); }
+}
+
+function excluirUsuario(id) {
+    if (!ehAdmin()) return;
+    const u = BD.usuarios.find(x=>String(x.id)===String(id));
+    if (u?.perfil==='admin' && BD.usuarios.filter(x=>x.perfil==='admin').length<=1) { alert('❌ Não pode excluir último admin!'); return; }
+    if (!confirm('⚠️ Excluir este usuário?')) return;
+    BD.usuarios = BD.usuarios.filter(x=>String(x.id)!==String(id));
+    salvarDados(); if (u) registrarLog('exclusao', `Excluiu ${u.usuario}`);
+    alert('✅ Excluído!'); carregarTabelaUsuarios(); atualizarListaUsuariosNosFiltros();
+}
+
+function carregarTabelaUsuarios() {
+    const corpo = document.getElementById('tabelaUsuarios');
+    if (!corpo) return;
+    const us = BD.usuarios || [];
+    if (us.length === 0) { corpo.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum usuário</td></tr>'; return; }
+    
+    corpo.innerHTML = us.map(u => {
+        const pn = BD.config.perfis[u.perfil]?.nome || u.perfil;
+        const pb = u.perfil==='admin'?'badge-danger':u.perfil==='supervisor'?'badge-warning':u.perfil==='operacional'?'badge-info':'badge-success';
+        const seg = JSON.stringify(u).replace(/"/g,'&quot;');
+        return `<tr><td style="font-weight:600;">${u.nome}</td><td style="font-family:monospace;">${u.usuario}</td><td><span class="badge ${pb}">${pn}</span></td><td>${u.ativo?'<span class="badge badge-success">✅ Ativo</span>':'<span class="badge badge-danger">⛔ Inativo</span>'}</td><td><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fef3c7;color:#92400e;margin-right:0.25rem;" onclick='abrirModalUsuario(${seg})'>✏️</button><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#dbeafe;color:#1e40af;margin-right:0.25rem;" onclick="toggleStatusUsuario('${u.id}')">${u.ativo?'⏸️':'▶️'}</button><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fee2e2;color:#991b1b;" onclick="excluirUsuario('${u.id}')">🗑️</button></td></tr>`;
+    }).join('');
+}
+
+// ---------- 8. LOCAIS ----------
+function abrirModalLocal(l = null) {
+    if (!ehAdmin()) return;
+    const ed = !!l;
+    const m = document.createElement('div');
+    m.className = 'modal-fundo';
+    m.onclick = e => { if(e.target===m) fecharModal(); };
+    m.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">${ed?'✏️ Editar':'➕ Novo'} Local</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formLocal">
+        <div class="linha-form"><label>Nome *</label><input type="text" id="nomeLocal" required value="${l?.nome||''}"></div>
+        <div class="botoes-form"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button><button type="submit" class="btn btn-primary">${ed?'💾 Salvar':'➕ Cadastrar'}</button></div>
+    </form></div></div>`;
+    document.getElementById('modais').appendChild(m);
+    
+    document.getElementById('formLocal').addEventListener('submit', e => {
+        e.preventDefault();
+        const nome = document.getElementById('nomeLocal').value.trim();
+        if (!nome) return;
+        if (ed) {
+            const i = BD.locais.findIndex(x=>String(x.id)===String(l.id));
+            if (i!==-1) BD.locais[i].nome = nome;
+            registrarLog('edicao', `Editou local: ${nome}`);
+        } else {
+            if (BD.locais.some(x=>x.nome.toLowerCase()===nome.toLowerCase())) { alert('❌ Já existe!'); return; }
+            BD.locais.push({ id: gerarId(), nome });
+            registrarLog('criacao', `Cadastrou local: ${nome}`);
         }
-        quandoDOMPronto(atualizarNomeUsuarioCabecalho);
+        salvarDados(); alert('✅ Salvo!'); fecharModal(); carregarTabelaLocais();
+    });
+}
 
-        // ========== 📍 CADASTRO DE LOCAIS / OBRAS — ✅ UNIFICADO COM BD ==========
-        function carregarLocaisBD() {
-            return BD.locais || [
-                { id: 'patio-metalica', nome: 'Pátio Metálica' },
-                { id: 'patio-usina-conc', nome: 'Pátio Usina Conc.' },
-                { id: 'obra', nome: 'Obra' }
-            ];
-        }
+function excluirLocal(id) {
+    if (!ehAdmin()) return;
+    if (!confirm('⚠️ Excluir?')) return;
+    BD.locais = BD.locais.filter(l=>String(l.id)!==String(id));
+    salvarDados(); registrarLog('exclusao', 'Excluiu local'); carregarTabelaLocais();
+}
 
-        function abrirModalLocal(idEditar = null) {
-            if (!ehAdmin()) { alert('❌ Apenas Administrador pode cadastrar locais!'); return; }
-            const locais = carregarLocaisBD();
-            const local = idEditar ? locais.find(l => l.id === idEditar) : null;
-            document.getElementById('modais').innerHTML = `
-                <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
-                    <div class="modal-corpo">
-                        <div class="modal-cabecalho">
-                            <h3 style="margin:0; font-size:1.125rem; font-weight:600;">${local ? '✏️ Editar Local' : '📍 Novo Local'}</h3>
-                            <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
-                        </div>
-                        <div class="modal-conteudo">
-                            <form onsubmit="salvarLocal(event, '${idEditar || ''}')">
-                                <div class="linha-form">
-                                    <label>Nome do Local / Obra</label>
-                                    <input type="text" id="nomeLocal" required placeholder="Ex: Pátio Metálica, Usina, Obra..." value="${local?.nome || ''}">
-                                </div>
-                                <div class="botoes-form">
-                                    <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
-                                    <button type="submit" class="btn btn-primary">Salvar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>`;
-        }
-        window.abrirModalLocal = abrirModalLocal;
+function carregarTabelaLocais() {
+    const corpo = document.getElementById('tabelaLocais');
+    if (!corpo) return;
+    const ls = BD.locais || [];
+    if (ls.length === 0) { corpo.innerHTML = '<tr><td colspan="2" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum local</td></tr>'; return; }
+    corpo.innerHTML = ls.map(l => {
+        const seg = JSON.stringify(l).replace(/"/g,'&quot;');
+        return `<tr><td style="font-weight:500;">🏗️ ${l.nome}</td><td class="admin-only"><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fef3c7;color:#92400e;margin-right:0.25rem;" onclick='abrirModalLocal(${seg})'>✏️</button><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fee2e2;color:#991b1b;" onclick="excluirLocal('${l.id}')">🗑️</button></td></tr>`;
+    }).join('');
+}
 
-        function salvarLocal(event, idEditar = null) {
-            event.preventDefault();
-            if (!ehAdmin()) { alert('❌ Sem permissão!'); return; }
-            const nome = document.getElementById('nomeLocal').value.trim();
-            if (!nome) return;
+// ---------- 9. FECHAR MODAL ----------
+function fecharModal() { const m = document.getElementById('modais'); if (m) m.innerHTML = ''; }
 
-            if (idEditar) {
-                const idx = BD.locais.findIndex(l => l.id === idEditar);
-                if (idx !== -1) BD.locais[idx].nome = nome;
-            } else {
-                const id = nome.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-                BD.locais.push({ id, nome });
-            }
+// ---------- 10. CHECK-LIST ----------
+function abrirModalChecklist() {
+    if (ehVisitante()) { alert('❌ Sem permissão!'); return; }
+    const vs = BD.veiculos || [];
+    if (vs.length === 0) { alert('❌ Cadastre um veículo primeiro!'); navegarPara('veiculos'); return; }
+    
+    const ops = vs.map(v => `<option value="${v.placa}" data-categoria="${v.categoria}">${v.placa} - ${v.modelo}</option>`).join('');
+    
+    const m = document.createElement('div');
+    m.className = 'modal-fundo';
+    m.onclick = e => { if(e.target===m) fecharModal(); };
+    m.innerHTML = `<div class="modal-corpo largo"><div class="modal-cabecalho"><h3 style="margin:0;">📋 Novo Check-list</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formChecklist">
+        <div class="linha-form"><label>Veículo *</label><select id="clVeiculo" required onchange="atualizarFormChecklistPorCategoria()"><option value="">Selecione</option>${ops}</select></div>
+        <div id="clCamposDinamicos"></div>
+        <div class="botoes-form"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button><button type="submit" class="btn btn-primary">💾 Salvar</button></div>
+    </form></div></div>`;
+    document.getElementById('modais').appendChild(m);
+    
+    document.getElementById('formChecklist').addEventListener('submit', e => { e.preventDefault(); salvarChecklist(); });
+}
 
-            salvarDados();
-            fecharModal();
-            carregarTabelaLocais();
-            atualizarListaLocaisNosFormularios();
-        }
-        window.salvarLocal = salvarLocal;
+function atualizarFormChecklistPorCategoria() {
+    const sel = document.getElementById('clVeiculo');
+    const cat = sel.options[sel.selectedIndex]?.dataset.categoria;
+    const cont = document.getElementById('clCamposDinamicos');
+    if (!cat || !cont) return;
+    
+    const cc = BD.config.categoriasVeiculos.find(c=>c.id===cat);
+    const pc = cc?.precisaCintas;
+    const pfb = cc?.precisaFotosBancos;
+    const req = BD.config.requisitosCintas;
+    
+    let h = '';
+    h += `<div class="section-title">🔍 Itens de Inspeção</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div><label>Óleo</label><select id="clOleo"><option value="ok">✅ OK</option><option value="baixo">⚠️ Baixo</option><option value="critico">❌ Crítico</option></select></div>
+            <div><label>Água</label><select id="clAgua"><option value="ok">✅ OK</option><option value="baixo">⚠️ Baixo</option><option value="critico">❌ Crítico</option></select></div>
+            <div><label>Pneus</label><select id="clPneus"><option value="ok">✅ OK</option><option value="calibrar">⚠️ Calibrar</option><option value="trocar">❌ Trocar</option></select></div>
+            <div><label>Freios</label><select id="clFreios"><option value="ok">✅ OK</option><option value="verificar">⚠️ Verificar</option><option value="critico">❌ Crítico</option></select></div>
+            <div><label>Luzes</label><select id="clLuzes"><option value="ok">✅ OK</option><option value="queimada">⚠️ Queimada</option></select></div>
+            <div><label>Higiene</label><select id="clHigiene"><option value="ok">✅ Limpo</option><option value="sujo">⚠️ Sujo</option></select></div>
+        </div>
+        <div class="linha-form" style="margin-top:1rem;"><label>Observações Gerais</label><textarea id="clObservacoes" rows="2"></textarea></div>`;
+    
+    if (pc) {
+        h += `<div class="section-title">🔗 Verificação de Cintas</div>
+            <div style="background:#fefce8;padding:1rem;border-radius:0.5rem;border:1px solid #fde68a;margin-bottom:1rem;">
+                <p style="color:#92400e;font-size:0.875rem;margin:0 0 1rem;"><strong>⚠️ Mínimo:</strong> ${req.cintas2m}x 2m | ${req.cintas3m}x 3m | ${req.cintas4m}x 4m | ${req.cintas6m}x 6m | ${req.cintasCatraca}x Catraca | ${req.catracas}x Catracas</p>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;">
+                    <div><label>Cintas 2m</label><input type="number" id="clCintas2m" min="0" value="${req.cintas2m}"></div>
+                    <div><label>Cintas 3m</label><input type="number" id="clCintas3m" min="0" value="${req.cintas3m}"></div>
+                    <div><label>Cintas 4m</label><input type="number" id="clCintas4m" min="0" value="${req.cintas4m}"></div>
+                    <div><label>Cintas 6m</label><input type="number" id="clCintas6m" min="0" value="${req.cintas6m}"></div>
+                    <div><label>Cintas Catraca</label><input type="number" id="clCintasCatraca" min="0" value="${req.cintasCatraca}"></div>
+                    <div><label>Catracas</label><input type="number" id="clCatracas" min="0" value="${req.catracas}"></div>
+                </div>
+            </div>`;
+    }
+    
+    h += `<div class="section-title">📸 Registro Fotográfico</div>
+        <p style="color:#64748b;font-size:0.875rem;margin-bottom:1rem;">Clique para capturar foto no momento.</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+            <div><label style="font-size:0.8125rem;">Painel (km) *</label><div class="foto-container" onclick="capturarFoto('fotoPainel')" id="box-fotoPainel"><div style="font-size:2rem;">📷</div><div style="font-size:0.8125rem;color:#64748b;">Clique para foto</div></div><input type="hidden" id="fotoPainel"><input type="text" id="obsPainel" placeholder="Observação..." style="margin-top:0.5rem;font-size:0.8125rem;"></div>
+            <div><label style="font-size:0.8125rem;">Frente *</label><div class="foto-container" onclick="capturarFoto('fotoFrente')" id="box-fotoFrente"><div style="font-size:2rem;">📷</div><div style="font-size:0.8125rem;color:#64748b;">Clique para foto</div></div><input type="hidden" id="fotoFrente"><input type="text" id="obsFrente" placeholder="Observação..." style="margin-top:0.5rem;font-size:0.8125rem;"></div>
+            <div><label style="font-size:0.8125rem;">Traseira *</label><div class="foto-container" onclick="capturarFoto('fotoTraseira')" id="box-fotoTraseira"><div style="font-size:2rem;">📷</div><div style="font-size:0.8125rem;color:#64748b;">Clique para foto</div></div><input type="hidden" id="fotoTraseira"><input type="text" id="obsTraseira" placeholder="Observação..." style="margin-top:0.5rem;font-size:0.8125rem;"></div>
+        </div>`;
+    
+    if (pc) {
+        h += `<div style="margin-top:1rem;"><label style="font-size:0.8125rem;">Caixa de Cintas *</label><div class="foto-container" onclick="capturarFoto('fotoCintas')" id="box-fotoCintas" style="max-width:33%;"><div style="font-size:2rem;">📷</div><div style="font-size:0.8125rem;color:#64748b;">Foto da caixa</div></div><input type="hidden" id="fotoCintas"><input type="text" id="obsCintas" placeholder="Observação..." style="margin-top:0.5rem;font-size:0.8125rem;max-width:33%;"></div>`;
+    }
+    
+    if (pfb) {
+        h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+            <div><label style="font-size:0.8125rem;">Banco Esq. *</label><div class="foto-container" onclick="capturarFoto('fotoBanco1')" id="box-fotoBanco1"><div style="font-size:2rem;">📷</div><div style="font-size:0.8125rem;color:#64748b;">Clique</div></div><input type="hidden" id="fotoBanco1"></div>
+            <div><label style="font-size:0.8125rem;">Banco Dir. *</label><div class="foto-container" onclick="capturarFoto('fotoBanco2')" id="box-fotoBanco2"><div style="font-size:2rem;">📷</div><div style="font-size:0.8125rem;color:#64748b;">Clique</div></div><input type="hidden" id="fotoBanco2"></div>
+        </div><div class="linha-form" style="margin-top:0.75rem;"><label>Observação dos Bancos</label><textarea id="obsBancos" rows="2"></textarea></div>`;
+    }
+    
+    h += `<div class="section-title">📍 Localização</div>
+        <div id="clLocalizacao" style="background:#f0fdf4;padding:1rem;border-radius:0.5rem;border:1px solid #bbf7d0;"><div style="display:flex;align-items:center;gap:0.5rem;color:#166534;"><span>🔄</span><span>Obtendo localização...</span></div></div>
+        <input type="hidden" id="clLatitude"><input type="hidden" id="clLongitude">`;
+    
+    cont.innerHTML = h;
+    obterLocalizacao();
+}
 
-        function excluirLocal(id) {
-            if (!ehAdmin()) { alert('❌ Apenas Administrador pode excluir!'); return; }
-            if (!confirm('Excluir este local?')) return;
-            BD.locais = BD.locais.filter(l => l.id !== id);
-            salvarDados();
-            carregarTabelaLocais();
-            atualizarListaLocaisNosFormularios();
-        }
-        window.excluirLocal = excluirLocal;
-
-        function carregarTabelaLocais() {
-            const locais = carregarLocaisBD();
-            const tbody = document.getElementById('tabelaLocais');
-            if (!locais.length) {
-                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhum local cadastrado</td></tr>';
-                return;
-            }
-            tbody.innerHTML = locais.map(l => `
-                <tr>
-                    <td><strong>${l.nome}</strong></td>
-                    <td class="admin-only">
-                        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fef3c7; color:#92400e; margin-right:0.25rem;" onclick="abrirModalLocal('${l.id}')">✏️</button>
-                        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fee2e2; color:#991b1b;" onclick="excluirLocal('${l.id}')">🗑️</button>
-                    </td>
-                </tr>`).join('');
-        }
-
-        function atualizarListaLocaisNosFormularios() {
-            const listaNomes = BD.locais.map(l => l.nome);
-            console.log('📍 Locais disponíveis:', listaNomes);
-        }
-
-        // ✅ Carrega tabela ao abrir a página
-        const PaginaOriginal = window.mostrarPagina;
-        window.mostrarPagina = function(pagina) {
-            if (PaginaOriginal) PaginaOriginal(pagina);
-            if (pagina === 'locais') {
-                carregarTabelaLocais();
-            }
+function capturarFoto(campo) {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
+    inp.onchange = e => {
+        const arq = e.target.files[0]; if (!arq) return;
+        const r = new FileReader();
+        r.onload = ev => {
+            const b64 = ev.target.result;
+            document.getElementById(campo).value = b64;
+            const box = document.getElementById('box-' + campo);
+            if (box) { box.innerHTML = `<img src="${b64}" class="foto-preview">`; box.style.padding = '0.25rem'; }
         };
-
-        // ========== ATUALIZA LISTA DE PLACAS NOS FILTROS ==========
-        function atualizarListaVeiculosNosFiltros() {
-            if (!BD.veiculos) return;
-            const placas = BD.veiculos.map(v => v.placa).sort();
-            ['filtroAlocacoes', 'filtroChecklist', 'filtroManutencao', 'filtroGastos'].forEach(id => {
-                const sel = document.getElementById(id);
-                if (!sel) return;
-                const atual = sel.value;
-                sel.innerHTML = '<option value="todos">Todos os Veículos</option>';
-                placas.forEach(p => sel.innerHTML += `<option value="${p}">${p}</option>`);
-                if (placas.includes(atual)) sel.value = atual;
-            });
-        }
-
-        // ========== FUNÇÕES DE FILTRO ==========
-        function aplicarFiltroAlocacoes() {
-            const filtro = document.getElementById('filtroAlocacoes')?.value || 'todos';
-            if (typeof carregarTabelaAlocacoes === 'function') carregarTabelaAlocacoes(filtro);
-        }
-        function aplicarFiltroChecklist() {
-            const filtro = document.getElementById('filtroChecklist')?.value || 'todos';
-            if (typeof carregarTabelaChecklist === 'function') carregarTabelaChecklist(filtro);
-        }
-        function aplicarFiltroManutencao() {
-            const filtro = document.getElementById('filtroManutencao')?.value || 'todos';
-            if (typeof carregarTabelaManutencao === 'function') carregarTabelaManutencao(filtro);
-        }
-        function aplicarFiltroGastos() {
-            const filtro = document.getElementById('filtroGastos')?.value || 'todos';
-            if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos(filtro);
-        }
-
-        // ========== FECHAR MODAL ==========
-        function fecharModal() {
-            document.getElementById('modais').innerHTML = '';
-        }
-
-        // ========== ABERTURA DE MODAIS ==========
-        function abrirModalChecklist() {
-            if (!BD.veiculos || BD.veiculos.length === 0) { alert('Cadastre um veículo primeiro!'); return; }
-            const placas = BD.veiculos.map(v => `<option value="${v.placa}">${v.placa}</option>`).join('');
-            document.getElementById('modais').innerHTML = `
-                <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
-                    <div class="modal-corpo">
-                        <div class="modal-cabecalho">
-                            <h3 style="margin:0; font-size:1.125rem; font-weight:600;">✅ Novo Check-list</h3>
-                            <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
-                        </div>
-                        <div class="modal-conteudo">
-                            <form id="formChecklist" onsubmit="salvarChecklist(event)">
-                                <div class="linha-form"><label>Veículo (Placa)</label><select id="clPlaca" required>${placas}</select></div>
-                                <div class="linha-form"><label>Motorista</label><input type="text" id="clMotorista" required placeholder="Nome do motorista"></div>
-                                <div class="linha-form"><label>Quilometragem Atual</label><input type="number" id="clKm" required placeholder="0"></div>
-                                <div class="linha-form"><label>Status</label>
-                                    <select id="clStatus">
-                                        <option value="${(CONFIG.STATUS?.CHECKLIST?.APROVADO || CONFIG.STATUS_CHECKLIST?.APROVADO || "Aprovado")}">${(CONFIG.STATUS?.CHECKLIST?.APROVADO || CONFIG.STATUS_CHECKLIST?.APROVADO || "Aprovado")}</option>
-                                        <option value="${(CONFIG.STATUS?.CHECKLIST?.PENDENTE || CONFIG.STATUS_CHECKLIST?.PENDENTE || "Pendente")}">${(CONFIG.STATUS?.CHECKLIST?.PENDENTE || CONFIG.STATUS_CHECKLIST?.PENDENTE || "Pendente")}</option>
-                                    </select>
-                                </div>
-                                <div class="botoes-form">
-                                    <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
-                                    <button type="submit" class="btn btn-success">Salvar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>`;
-        }
-        window.abrirModalChecklist = abrirModalChecklist;
-
-        function abrirModalManutencao() {
-            if (!BD.veiculos || BD.veiculos.length === 0) { alert('Cadastre um veículo primeiro!'); return; }
-            const placas = BD.veiculos.map(v => `<option value="${v.placa}">${v.placa}</option>`).join('');
-            document.getElementById('modais').innerHTML = `
-                <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
-                    <div class="modal-corpo">
-                        <div class="modal-cabecalho">
-                            <h3 style="margin:0; font-size:1.125rem; font-weight:600;">🔧 Nova Solicitação</h3>
-                            <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
-                        </div>
-                        <div class="modal-conteudo">
-                            <form id="formManutencao" onsubmit="salvarManutencao(event)">
-                                <div class="linha-form"><label>Veículo (Placa)</label><select id="mnVeiculo" required>${placas}</select></div>
-                                <div class="linha-form"><label>Tipo de Manutenção</label>
-                                    <select id="mnTipo">
-                                        <option value="${(CONFIG.STATUS?.TIPO_MANUTENCAO?.PREVENTIVA || CONFIG.TIPO_MANUTENCAO?.PREVENTIVA || "Preventiva")}">${(CONFIG.STATUS?.TIPO_MANUTENCAO?.PREVENTIVA || CONFIG.TIPO_MANUTENCAO?.PREVENTIVA || "Preventiva")}</option>
-                                        <option value="${(CONFIG.STATUS?.TIPO_MANUTENCAO?.CORRETIVA || CONFIG.TIPO_MANUTENCAO?.CORRETIVA || "Corretiva")}">${(CONFIG.STATUS?.TIPO_MANUTENCAO?.CORRETIVA || CONFIG.TIPO_MANUTENCAO?.CORRETIVA || "Corretiva")}</option>
-                                        <option value="${(CONFIG.STATUS?.TIPO_MANUTENCAO?.REVISAO || CONFIG.TIPO_MANUTENCAO?.REVISAO || "Revisão")}">${(CONFIG.STATUS?.TIPO_MANUTENCAO?.REVISAO || CONFIG.TIPO_MANUTENCAO?.REVISAO || "Revisão")}</option>
-                                    </select>
-                                </div>
-                                <div class="linha-form"><label>Descrição</label><textarea id="mnDescricao" rows="3" required placeholder="Descreva o serviço..."></textarea></div>
-                                <div class="linha-form"><label>Status</label>
-                                    <select id="mnStatus">
-                                        <option value="${(CONFIG.STATUS?.MANUTENCAO?.ABERTA || CONFIG.STATUS_MANUTENCAO?.ABERTA || "Aberta")}">${(CONFIG.STATUS?.MANUTENCAO?.ABERTA || CONFIG.STATUS_MANUTENCAO?.ABERTA || "Aberta")}</option>
-                                        <option value="${(CONFIG.STATUS?.MANUTENCAO?.ANDAMENTO || CONFIG.STATUS_MANUTENCAO?.ANDAMENTO || "Em Andamento")}">${(CONFIG.STATUS?.MANUTENCAO?.ANDAMENTO || CONFIG.STATUS_MANUTENCAO?.ANDAMENTO || "Em Andamento")}</option>
-                                        <option value="${(CONFIG.STATUS?.MANUTENCAO?.CONCLUIDA || CONFIG.STATUS_MANUTENCAO?.CONCLUIDA || "Concluída")}">${(CONFIG.STATUS?.MANUTENCAO?.CONCLUIDA || CONFIG.STATUS_MANUTENCAO?.CONCLUIDA || "Concluída")}</option>
-                                    </select>
-                                </div>
-                                <div class="botoes-form">
-                                    <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
-                                    <button type="submit" class="btn btn-success">Salvar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>`;
-        }
-        window.abrirModalManutencao = abrirModalManutencao;
-    
-
-// ============================================================
-// CORREÇÕES ADICIONAIS - GARANTIR FUNCIONAMENTO COMPLETO
-// ============================================================
-
-// Garantir que salvarDados existe globalmente
-if (typeof window.salvarDados === 'undefined' && typeof salvarDados !== 'undefined') {
-    window.salvarDados = salvarDados;
-}
-
-// Garantir que fecharModal funciona corretamente
-window.fecharModal = function() {
-    const modais = document.getElementById('modais');
-    if (modais) modais.innerHTML = '';
-};
-
-// Correção: atualizarListaVeiculosNosFiltros (usada em vários lugares)
-if (typeof window.atualizarListaVeiculosNosFiltros === 'undefined') {
-    window.atualizarListaVeiculosNosFiltros = function() {
-        if (!window.BD || !BD.veiculos) return;
-        const placas = BD.veiculos.map(v => v.placa).sort();
-        ['filtroAlocacoes', 'filtroChecklist', 'filtroManutencao', 'filtroGastos'].forEach(id => {
-            const sel = document.getElementById(id);
-            if (!sel) return;
-            const atual = sel.value;
-            sel.innerHTML = '<option value="todos">Todos os Veículos</option>';
-            placas.forEach(p => sel.innerHTML += `<option value="${p}">${p}</option>`);
-            if (placas.includes(atual)) sel.value = atual;
-        });
+        r.readAsDataURL(arq);
     };
+    inp.click();
 }
 
-// Correção: função salvarLocal (para funcionar corretamente)
-const _salvarLocalOriginal = window.salvarLocal;
-window.salvarLocal = function(event, idEditar) {
-    if (event && event.preventDefault) event.preventDefault();
-    if (!window.ehAdmin || !ehAdmin()) { alert('❌ Sem permissão!'); return; }
-    
-    const nomeInput = document.getElementById('nomeLocal');
-    if (!nomeInput) return;
-    
-    const nome = nomeInput.value.trim();
-    if (!nome) return;
-
-    if (idEditar) {
-        const idx = BD.locais.findIndex(l => l.id === idEditar);
-        if (idx !== -1) BD.locais[idx].nome = nome;
-    } else {
-        const id = nome.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-        BD.locais.push({ id, nome });
+function obterLocalizacao() {
+    if (!navigator.geolocation) {
+        const el = document.getElementById('clLocalizacao');
+        if (el) el.innerHTML = '<div style="color:#991b1b;">❌ Geolocalização não suportada</div>';
+        return;
     }
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            const lat = pos.coords.latitude, lng = pos.coords.longitude;
+            document.getElementById('clLatitude').value = lat;
+            document.getElementById('clLongitude').value = lng;
+            const el = document.getElementById('clLocalizacao');
+            if (el) el.innerHTML = `<div style="display:flex;align-items:center;gap:0.5rem;color:#166534;"><span>📍</span><span>Localização: <strong>${lat.toFixed(6)}, ${lng.toFixed(6)}</strong></span><a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="margin-left:1rem;color:#2563eb;text-decoration:underline;">Ver Maps →</a></div>`;
+        },
+        () => { const el = document.getElementById('clLocalizacao'); if (el) el.innerHTML = '<div style="color:#92400e;">⚠️ Localização não autorizada</div>'; },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
 
-    if (typeof salvarDados === 'function') salvarDados();
-    fecharModal();
-    if (typeof carregarTabelaLocais === 'function') carregarTabelaLocais();
-    if (typeof atualizarListaLocaisNosFormularios === 'function') atualizarListaLocaisNosFormularios();
-    if (typeof atualizarListasDependentes === 'function') atualizarListasDependentes();
-};
-
-// Correção: garantir que funções de filtro existem
-['aplicarFiltroAlocacoes', 'aplicarFiltroChecklist', 'aplicarFiltroManutencao', 'aplicarFiltroGastos'].forEach(nome => {
-    if (typeof window[nome] === 'undefined') {
-        window[nome] = function() { console.log(nome + ' chamada'); };
+function salvarChecklist() {
+    const veiculo = document.getElementById('clVeiculo').value;
+    if (!veiculo) { alert('❌ Selecione veículo!'); return; }
+    
+    const sel = document.getElementById('clVeiculo');
+    const cat = sel.options[sel.selectedIndex]?.dataset.categoria;
+    const cc = BD.config.categoriasVeiculos.find(c=>c.id===cat);
+    
+    const fotos = {};
+    const obsFotos = {};
+    ['fotoPainel','fotoFrente','fotoTraseira'].forEach(c => { const el = document.getElementById(c); if (el?.value) fotos[c] = el.value; });
+    ['Painel','Frente','Traseira','Cintas','Bancos'].forEach(c => { const el = document.getElementById('obs'+c); if (el?.value) obsFotos[c.toLowerCase()] = el.value; });
+    
+    if (cc?.precisaCintas) { const fc = document.getElementById('fotoCintas'); if (fc?.value) fotos['fotoCintas'] = fc.value; }
+    if (cc?.precisaFotosBancos) { ['fotoBanco1','fotoBanco2'].forEach(c => { const el = document.getElementById(c); if (el?.value) fotos[c] = el.value; }); }
+    
+    const dados = {
+        id: gerarId(), veiculo, categoria: cat,
+        data: new Date().toISOString(),
+        usuarioId: window.usuarioAtual?.id, usuarioNome: window.usuarioAtual?.nome,
+        itens: {
+            oleo: document.getElementById('clOleo')?.value,
+            agua: document.getElementById('clAgua')?.value,
+            pneus: document.getElementById('clPneus')?.value,
+            freios: document.getElementById('clFreios')?.value,
+            luzes: document.getElementById('clLuzes')?.value,
+            higiene: document.getElementById('clHigiene')?.value
+        },
+        observacoes: document.getElementById('clObservacoes')?.value || '',
+        fotos, observacoesFotos: obsFotos,
+        latitude: document.getElementById('clLatitude')?.value || null,
+        longitude: document.getElementById('clLongitude')?.value || null,
+        status: 'concluido'
+    };
+    
+    if (cc?.precisaCintas) {
+        const cintas = {
+            cintas2m: parseInt(document.getElementById('clCintas2m')?.value)||0,
+            cintas3m: parseInt(document.getElementById('clCintas3m')?.value)||0,
+            cintas4m: parseInt(document.getElementById('clCintas4m')?.value)||0,
+            cintas6m: parseInt(document.getElementById('clCintas6m')?.value)||0,
+            cintasCatraca: parseInt(document.getElementById('clCintasCatraca')?.value)||0,
+            catracas: parseInt(document.getElementById('clCatracas')?.value)||0
+        };
+        dados.cintas = cintas;
+        const req = BD.config.requisitosCintas;
+        const faltando = [];
+        Object.entries(req).forEach(([it, min]) => { if ((cintas[it]||0) < min) faltando.push(`${it}: ${cintas[it]||0}/${min}`); });
+        if (faltando.length > 0) {
+            dados.alertaGerado = true;
+            BD.alertas.push({ id: gerarId(), veiculo, data: new Date().toISOString(), motivo: `Cintas em falta: ${faltando.join(', ')}`, detalhes: faltando, resolvido: false, resolvidoPor: null, resolvidoEm: null, observacaoGestor: null });
+        }
     }
+    
+    BD.checklists.push(dados);
+    salvarDados();
+    registrarLog('criacao', `Check-list: ${veiculo}`);
+    
+    if (dados.alertaGerado) alert('⚠️ Salvo! ATENÇÃO: Alerta de cintas gerado.');
+    else alert('✅ Check-list salvo!');
+    
+    fecharModal(); carregarTabelaChecklist(); atualizarDashboard();
+}
+
+function verificarAlertasCintas() {
+    const cont = document.getElementById('alertasCintas');
+    if (!cont) return;
+    const ativos = (BD.alertas||[]).filter(a=>!a.resolvido);
+    if (ativos.length === 0) { cont.innerHTML = ''; return; }
+    cont.innerHTML = `<div class="alerta-destaque"><h4 style="margin:0 0 1rem;color:#991b1b;">⚠️ ALERTAS PENDENTES (${ativos.length})</h4>${ativos.map(a=>`<div style="background:white;padding:1rem;border-radius:0.5rem;margin-bottom:0.75rem;"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;"><div><strong>🚛 ${a.veiculo}</strong><br><strong>📅 ${formatarData(a.data)}</strong><br><strong>⚠️ ${a.motivo}</strong></div><div><button class="btn btn-warning" onclick="resolverAlerta('${a.id}')">✓ Confirmar</button></div></div></div>`).join('')}</div>`;
+}
+
+function resolverAlerta(id) {
+    if (!ehSupervisor() && !ehAdmin()) { alert('❌ Apenas gestores!'); return; }
+    const obs = prompt('📝 Observações sobre a verificação:');
+    if (obs === null) return;
+    if (!obs.trim()) { alert('❌ Observação obrigatória!'); return; }
+    const a = BD.alertas.find(x=>x.id===id);
+    if (a) { a.resolvido = true; a.resolvidoPor = window.usuarioAtual?.nome; a.resolvidoEm = new Date().toISOString(); a.observacaoGestor = obs; salvarDados(); registrarLog('edicao', `Resolveu alerta ${a.veiculo}`); alert('✅ Alerta resolvido!'); verificarAlertasCintas(); atualizarDashboard(); }
+}
+
+function excluirChecklist(id) {
+    const c = BD.checklists.find(x=>x.id===id);
+    if (!ehSupervisor() && !ehAdmin() && !ehProprioRegistro(c)) { alert('❌ Sem permissão!'); return; }
+    if (!confirm('⚠️ Excluir?')) return;
+    BD.checklists = BD.checklists.filter(x=>x.id!==id);
+    salvarDados(); registrarLog('exclusao', 'Excluiu check-list'); carregarTabelaChecklist();
+}
+
+function carregarTabelaChecklist() {
+    const corpo = document.getElementById('tabelaChecklist');
+    if (!corpo) return;
+    let cs = BD.checklists || [];
+    if (ehOperacional() && !ehSupervisor() && !ehAdmin()) cs = cs.filter(c=>c.usuarioId===window.usuarioAtual?.id);
+    
+    const fv = document.getElementById('filtroChecklistVeiculo')?.value || 'todos';
+    const di = document.getElementById('filtroChecklistDataIni')?.value;
+    const df = document.getElementById('filtroChecklistDataFim')?.value;
+    if (fv !== 'todos') cs = cs.filter(c=>c.veiculo===fv);
+    if (di) cs = cs.filter(c=>new Date(c.data)>=new Date(di));
+    if (df) { const f = new Date(df); f.setHours(23,59,59); cs = cs.filter(c=>new Date(c.data)<=f); }
+    
+    if (cs.length === 0) { corpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum check-list</td></tr>'; return; }
+    
+    corpo.innerHTML = cs.slice().reverse().map(c => {
+        const loc = c.latitude ? `<a href="https://www.google.com/maps?q=${c.latitude},${c.longitude}" target="_blank" style="color:#2563eb;">📍 Ver</a>` : '—';
+        const ab = c.alertaGerado ? '<span class="badge badge-danger" style="margin-left:0.5rem;">⚠️ Alerta</span>' : '';
+        const pode = ehAdmin()||ehSupervisor()||ehProprioRegistro(c);
+        return `<tr><td>${formatarDataHora(c.data)}</td><td style="font-weight:600;">${c.veiculo}</td><td>${c.usuarioNome||'—'}</td><td><span class="badge badge-success">✅ Concluído</span>${ab}</td><td>${loc}</td><td>${pode?`<button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fee2e2;color:#991b1b;" onclick="excluirChecklist('${c.id}')">🗑️</button>`:''}</td></tr>`;
+    }).join('');
+}
+
+// ---------- 11. MANUTENÇÃO ----------
+function abrirModalManutencao(m = null) {
+    if (!ehSupervisor() && !ehAdmin()) { alert('❌ Sem permissão!'); return; }
+    const ed = !!m;
+    const vs = BD.veiculos || [];
+    if (vs.length === 0) { alert('❌ Cadastre veículo!'); return; }
+    const ops = vs.map(v=>`<option value="${v.placa}" ${m?.veiculo===v.placa?'selected':''}>${v.placa} - ${v.modelo}</option>`).join('');
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-fundo';
+    modal.onclick = e => { if(e.target===modal) fecharModal(); };
+    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">🔧 ${ed?'Editar':'Nova'} Manutenção</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formManutencao">
+        <div class="linha-form"><label>Veículo *</label><select id="mVeiculo" required>${ops}</select></div>
+        <div class="linha-form"><label>Tipo *</label><select id="mTipo" required><option value="preventiva" ${m?.tipo==='preventiva'?'selected':''}>Preventiva</option><option value="corretiva" ${m?.tipo==='corretiva'?'selected':''}>Corretiva</option><option value="pneus" ${m?.tipo==='pneus'?'selected':''}>Pneus</option><option value="outro" ${m?.tipo==='outro'?'selected':''}>Outro</option></select></div>
+        <div class="linha-form"><label>Descrição *</label><textarea id="mDescricao" rows="3" required>${m?.descricao||''}</textarea></div>
+        <div class="linha-form"><label>Data Prevista</label><input type="date" id="mDataPrevista" value="${m?.dataPrevista||''}"></div>
+        <div class="linha-form"><label>Status</label><select id="mStatus"><option value="aberta" ${m?.status==='aberta'?'selected':''}>Aberta</option><option value="andamento" ${m?.status==='andamento'?'selected':''}>Em Andamento</option><option value="concluida" ${m?.status==='concluida'?'selected':''}>Concluída</option></select></div>
+        <div class="botoes-form"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button><button type="submit" class="btn btn-primary">💾 Salvar</button></div>
+    </form></div></div>`;
+    document.getElementById('modais').appendChild(modal);
+    
+    document.getElementById('formManutencao').addEventListener('submit', e => {
+        e.preventDefault();
+        const d = { veiculo: document.getElementById('mVeiculo').value, tipo: document.getElementById('mTipo').value, descricao: document.getElementById('mDescricao').value.trim(), dataPrevista: document.getElementById('mDataPrevista').value, status: document.getElementById('mStatus').value, usuarioId: window.usuarioAtual?.id, usuarioNome: window.usuarioAtual?.nome };
+        if (ed) { const i = BD.manutencoes.findIndex(x=>String(x.id)===String(m.id)); if(i!==-1) BD.manutencoes[i] = { ...BD.manutencoes[i], ...d }; registrarLog('edicao', `Editou manutenção ${d.veiculo}`); }
+        else { d.id = gerarId(); d.data = new Date().toISOString(); BD.manutencoes.push(d); registrarLog('criacao', `Manutenção: ${d.veiculo}`); }
+        salvarDados(); alert('✅ Salvo!'); fecharModal(); carregarTabelaManutencao(); atualizarDashboard();
+    });
+}
+
+function excluirManutencao(id) {
+    if (!ehSupervisor() && !ehAdmin()) return;
+    if (!confirm('⚠️ Excluir?')) return;
+    BD.manutencoes = BD.manutencoes.filter(x=>x.id!==id);
+    salvarDados(); registrarLog('exclusao', 'Excluiu manutenção'); carregarTabelaManutencao(); atualizarDashboard();
+}
+
+function carregarTabelaManutencao() {
+    const corpo = document.getElementById('tabelaManutencao');
+    if (!corpo) return;
+    let ms = BD.manutencoes || [];
+    const fv = document.getElementById('filtroManutencaoVeiculo')?.value || 'todos';
+    const fs = document.getElementById('filtroManutencaoStatus')?.value || 'todos';
+    if (fv !== 'todos') ms = ms.filter(x=>x.veiculo===fv);
+    if (fs !== 'todos') ms = ms.filter(x=>x.status===fs);
+    
+    if (ms.length === 0) { corpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhuma manutenção</td></tr>'; return; }
+    
+    const sm = { aberta:'<span class="badge badge-danger">🔴 Aberta</span>', andamento:'<span class="badge badge-warning">🟡 Andamento</span>', concluida:'<span class="badge badge-success">🟢 Concluída</span>' };
+    const tm = { preventiva:'Preventiva', corretiva:'Corretiva', pneus:'Pneus', outro:'Outro' };
+    
+    corpo.innerHTML = ms.slice().reverse().map(m => {
+        const seg = JSON.stringify(m).replace(/"/g,'&quot;');
+        return `<tr><td>${formatarData(m.data)}</td><td style="font-weight:600;">${m.veiculo}</td><td>${tm[m.tipo]||m.tipo}</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.descricao}</td><td>${sm[m.status]||m.status}</td><td class="supervisor-only"><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fef3c7;color:#92400e;margin-right:0.25rem;" onclick='abrirModalManutencao(${seg})'>✏️</button><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fee2e2;color:#991b1b;" onclick="excluirManutencao('${m.id}')">🗑️</button></td></tr>`;
+    }).join('');
+}
+
+// ---------- 12. GASTOS ----------
+function abrirModalGasto(g = null) {
+    if (ehVisitante()) { alert('❌ Sem permissão!'); return; }
+    const ed = !!g;
+    const vs = BD.veiculos || [];
+    const ps = BD.postos || [];
+    if (vs.length === 0) { alert('❌ Cadastre veículo!'); return; }
+    
+    const apComb = ehOperacional() && !ehSupervisor() && !ehAdmin();
+    const opsV = vs.map(v=>`<option value="${v.placa}" ${g?.veiculo===v.placa?'selected':''}>${v.placa} - ${v.modelo}</option>`).join('');
+    const opsT = BD.config.tiposGasto.filter(t=>!apComb||t.id==='combustivel').map(t=>`<option value="${t.id}" ${g?.tipo===t.id?'selected':''}>${t.nome}</option>`).join('');
+    const opsP = ps.map(p=>`<option value="${p.nome}" ${g?.posto===p.nome?'selected':''}>${p.nome}</option>`).join('');
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-fundo';
+    modal.onclick = e => { if(e.target===modal) fecharModal(); };
+    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">💳 ${ed?'Editar':'Novo'} Gasto</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo">
+        ${apComb?'<div style="background:#fef3c7;padding:0.75rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.875rem;color:#92400e;">ℹ️ Você só pode lançar combustível.</div>':''}
+        <form id="formGasto">
+        <div class="linha-form"><label>Veículo *</label><select id="gVeiculo" required>${opsV}</select></div>
+        <div class="linha-form"><label>Tipo *</label><select id="gTipo" required onchange="toggleCampoPosto()">${opsT}</select></div>
+        <div class="linha-form" id="campoPosto" style="display:none;"><label>Posto *</label><select id="gPosto"><option value="">Selecione</option>${opsP}</select></div>
+        <div class="linha-form"><label>Descrição</label><input type="text" id="gDescricao" value="${g?.descricao||''}"></div>
+        <div class="linha-form"><label>Valor (R$) *</label><input type="number" id="gValor" step="0.01" min="0" required value="${g?.valor||''}"></div>
+        <div class="linha-form"><label>Data *</label><input type="date" id="gData" required value="${g?.data?.split('T')[0]||new Date().toISOString().split('T')[0]}"></div>
+        <div class="botoes-form"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button><button type="submit" class="btn btn-primary">💾 Salvar</button></div>
+    </form></div></div>`;
+    document.getElementById('modais').appendChild(modal);
+    toggleCampoPosto();
+    
+    document.getElementById('formGasto').addEventListener('submit', e => {
+        e.preventDefault();
+        const tipo = document.getElementById('gTipo').value;
+        const d = { veiculo: document.getElementById('gVeiculo').value, tipo, posto: tipo==='combustivel'?document.getElementById('gPosto').value:null, descricao: document.getElementById('gDescricao').value.trim(), valor: parseFloat(document.getElementById('gValor').value)||0, data: new Date(document.getElementById('gData').value).toISOString(), usuarioId: window.usuarioAtual?.id, usuarioNome: window.usuarioAtual?.nome };
+        if (tipo==='combustivel' && !d.posto) { alert('❌ Selecione o posto!'); return; }
+        if (ed) { const i = BD.gastos.findIndex(x=>String(x.id)===String(g.id)); if(i!==-1) BD.gastos[i] = { ...BD.gastos[i], ...d }; registrarLog('edicao', `Editou gasto ${d.veiculo}`); }
+        else { d.id = gerarId(); BD.gastos.push(d); registrarLog('criacao', `Gasto ${tipo}: ${d.veiculo} R$${d.valor}`); }
+        salvarDados(); alert('✅ Salvo!'); fecharModal(); carregarTabelaGastos();
+    });
+}
+
+function toggleCampoPosto() {
+    const t = document.getElementById('gTipo')?.value;
+    const c = document.getElementById('campoPosto');
+    if (c) c.style.display = t==='combustivel' ? 'block' : 'none';
+}
+
+function excluirGasto(id) {
+    if (!ehSupervisor() && !ehAdmin()) return;
+    if (!confirm('⚠️ Excluir?')) return;
+    BD.gastos = BD.gastos.filter(x=>x.id!==id);
+    salvarDados(); registrarLog('exclusao', 'Excluiu gasto'); carregarTabelaGastos();
+}
+
+function carregarTabelaGastos() {
+    const corpo = document.getElementById('tabelaGastos');
+    if (!corpo) return;
+    let gs = BD.gastos || [];
+    const fv = document.getElementById('filtroGastosVeiculo')?.value || 'todos';
+    const ft = document.getElementById('filtroGastosTipo')?.value || 'todos';
+    if (fv !== 'todos') gs = gs.filter(x=>x.veiculo===fv);
+    if (ft !== 'todos') gs = gs.filter(x=>x.tipo===ft);
+    
+    if (gs.length === 0) { corpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum gasto</td></tr>'; return; }
+    
+    const tm = Object.fromEntries(BD.config.tiposGasto.map(t=>[t.id,t.nome]));
+    corpo.innerHTML = gs.slice().reverse().map(g => {
+        const seg = JSON.stringify(g).replace(/"/g,'&quot;');
+        return `<tr><td>${formatarData(g.data)}</td><td style="font-weight:600;">${g.veiculo}</td><td>${tm[g.tipo]||g.tipo}${g.posto?`<br><small style="color:#64748b;">⛽ ${g.posto}</small>`:''}</td><td>${g.descricao||'—'}</td><td style="font-weight:600;color:#166534;">${formatarMoeda(g.valor)}</td><td class="supervisor-only"><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fef3c7;color:#92400e;margin-right:0.25rem;" onclick='abrirModalGasto(${seg})'>✏️</button><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fee2e2;color:#991b1b;" onclick="excluirGasto('${g.id}')">🗑️</button></td></tr>`;
+    }).join('');
+}
+
+// ---------- 13. CHAMADOS ----------
+function abrirModalChamado(c = null) {
+    if (ehVisitante()) { alert('❌ Sem permissão!'); return; }
+    const ed = !!c;
+    const vs = BD.veiculos || [];
+    if (vs.length === 0) { alert('❌ Cadastre veículo!'); return; }
+    const ops = vs.map(v=>`<option value="${v.placa}" ${c?.veiculo===v.placa?'selected':''}>${v.placa} - ${v.modelo}</option>`).join('');
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-fundo';
+    modal.onclick = e => { if(e.target===modal) fecharModal(); };
+    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">🔔 ${ed?'Editar':'Abrir'} Chamado</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formChamado">
+        <div class="linha-form"><label>Veículo *</label><select id="chVeiculo" required>${ops}</select></div>
+        <div class="linha-form"><label>Título *</label><input type="text" id="chTitulo" required value="${c?.titulo||''}"></div>
+        <div class="linha-form"><label>Descrição *</label><textarea id="chDescricao" rows="3" required>${c?.descricao||''}</textarea></div>
+        <div class="linha-form"><label>Foto (opcional)</label><div class="foto-container" onclick="capturarFotoChamado()" id="box-chFoto" style="max-width:200px;"><div style="font-size:1.5rem;">📷</div><div style="font-size:0.75rem;color:#64748b;">Anexar foto</div></div><input type="hidden" id="chFoto"></div>
+        <div class="linha-form"><label>Status</label><select id="chStatus"><option value="aberto" ${c?.status==='aberto'?'selected':''}>Aberto</option><option value="andamento" ${c?.status==='andamento'?'selected':''}>Em Andamento</option><option value="resolvido" ${c?.status==='resolvido'?'selected':''}>Resolvido</option></select></div>
+        <div class="botoes-form"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button><button type="submit" class="btn btn-primary">💾 Salvar</button></div>
+    </form></div></div>`;
+    document.getElementById('modais').appendChild(modal);
+    if (c?.foto) { const box = document.getElementById('box-chFoto'); if(box){box.innerHTML=`<img src="${c.foto}" class="foto-preview">`;box.style.padding='0.25rem';} document.getElementById('chFoto').value = c.foto; }
+    
+    document.getElementById('formChamado').addEventListener('submit', e => {
+        e.preventDefault();
+        const d = { veiculo: document.getElementById('chVeiculo').value, titulo: document.getElementById('chTitulo').value.trim(), descricao: document.getElementById('chDescricao').value.trim(), foto: document.getElementById('chFoto').value||null, status: document.getElementById('chStatus').value, usuarioId: window.usuarioAtual?.id, usuarioNome: window.usuarioAtual?.nome };
+        if (ed) { const i = BD.chamados.findIndex(x=>String(x.id)===String(c.id)); if(i!==-1) BD.chamados[i] = { ...BD.chamados[i], ...d }; registrarLog('edicao', `Editou chamado ${d.veiculo}`); }
+        else { d.id = gerarId(); d.data = new Date().toISOString(); BD.chamados.push(d); registrarLog('criacao', `Chamado: ${d.veiculo} - ${d.titulo}`); }
+        salvarDados(); alert('✅ Salvo!'); fecharModal(); carregarTabelaChamados(); atualizarDashboard();
+    });
+}
+
+function capturarFotoChamado() { capturarFoto('chFoto'); }
+
+function excluirChamado(id) {
+    const c = BD.chamados.find(x=>x.id===id);
+    if (!ehSupervisor() && !ehAdmin() && !ehProprioRegistro(c)) { alert('❌ Sem permissão!'); return; }
+    if (!confirm('⚠️ Excluir?')) return;
+    BD.chamados = BD.chamados.filter(x=>x.id!==id);
+    salvarDados(); registrarLog('exclusao', 'Excluiu chamado'); carregarTabelaChamados(); atualizarDashboard();
+}
+
+function carregarTabelaChamados() {
+    const corpo = document.getElementById('tabelaChamados');
+    if (!corpo) return;
+    let cs = BD.chamados || [];
+    if (ehOperacional() && !ehSupervisor() && !ehAdmin()) cs = cs.filter(c=>c.usuarioId===window.usuarioAtual?.id);
+    
+    const fv = document.getElementById('filtroChamadosVeiculo')?.value || 'todos';
+    const fs = document.getElementById('filtroChamadosStatus')?.value || 'todos';
+    if (fv !== 'todos') cs = cs.filter(x=>x.veiculo===fv);
+    if (fs !== 'todos') cs = cs.filter(x=>x.status===fs);
+    
+    if (cs.length === 0) { corpo.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum chamado</td></tr>'; return; }
+    
+    const sm = { aberto:'<span class="badge badge-danger">🔴 Aberto</span>', andamento:'<span class="badge badge-warning">🟡 Andamento</span>', resolvido:'<span class="badge badge-success">🟢 Resolvido</span>' };
+    
+    corpo.innerHTML = cs.slice().reverse().map(c => {
+        const seg = JSON.stringify(c).replace(/"/g,'&quot;');
+        const pode = ehAdmin()||ehSupervisor()||ehProprioRegistro(c);
+        const tf = c.foto ? ' 📷' : '';
+        return `<tr><td>${formatarData(c.data)}</td><td style="font-weight:600;">${c.veiculo}</td><td>${c.titulo}${tf}</td><td>${sm[c.status]||c.status}</td><td>${pode?`<button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fef3c7;color:#92400e;margin-right:0.25rem;" onclick='abrirModalChamado(${seg})'>✏️</button><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fee2e2;color:#991b1b;" onclick="excluirChamado('${c.id}')">🗑️</button>`:''}</td></tr>`;
+    }).join('');
+}
+
+// ---------- 14. ALOCAÇÕES ----------
+function abrirModalAlocacao(a = null) {
+    if (!ehSupervisor() && !ehAdmin()) { alert('❌ Sem permissão!'); return; }
+    const ed = !!a;
+    const vs = BD.veiculos || [];
+    const ls = BD.locais || [];
+    if (vs.length === 0) { alert('❌ Cadastre veículo!'); return; }
+    
+    const opsV = vs.map(v=>`<option value="${v.placa}" ${a?.veiculo===v.placa?'selected':''}>${v.placa} - ${v.modelo}</option>`).join('');
+    const opsL = ls.map(l=>`<option value="${l.nome}">${l.nome}</option>`).join('');
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-fundo';
+    modal.onclick = e => { if(e.target===modal) fecharModal(); };
+    modal.innerHTML = `<div class="modal-corpo"><div class="modal-cabecalho"><h3 style="margin:0;">📍 ${ed?'Editar':'Nova'} Alocação</h3><button class="btn-fechar" onclick="fecharModal()">×</button></div><div class="modal-conteudo"><form id="formAlocacao">
+        <div class="linha-form"><label>Veículo *</label><select id="aVeiculo" required>${opsV}</select></div>
+        <div class="linha-form"><label>Origem *</label><select id="aOrigem" required>${opsL}</select></div>
+        <div class="linha-form"><label>Destino *</label><select id="aDestino" required>${opsL}</select></div>
+        <div class="linha-form"><label>Data Início *</label><input type="date" id="aDataInicio" required value="${a?.dataInicio?.split('T')[0]||new Date().toISOString().split('T')[0]}"></div>
+        <div class="linha-form"><label>Data Fim</label><input type="date" id="aDataFim" value="${a?.dataFim?.split('T')[0]||''}"></div>
+        <div class="botoes-form"><button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button><button type="submit" class="btn btn-primary">💾 Salvar</button></div>
+    </form></div></div>`;
+    document.getElementById('modais').appendChild(modal);
+    
+    document.getElementById('formAlocacao').addEventListener('submit', e => {
+        e.preventDefault();
+        const d = { veiculo: document.getElementById('aVeiculo').value, origem: document.getElementById('aOrigem').value, destino: document.getElementById('aDestino').value, dataInicio: new Date(document.getElementById('aDataInicio').value).toISOString(), dataFim: document.getElementById('aDataFim').value?new Date(document.getElementById('aDataFim').value).toISOString():null, usuarioId: window.usuarioAtual?.id, usuarioNome: window.usuarioAtual?.nome };
+        if (ed) { const i = BD.alocacoes.findIndex(x=>String(x.id)===String(a.id)); if(i!==-1) BD.alocacoes[i] = { ...BD.alocacoes[i], ...d }; registrarLog('edicao', `Editou alocação ${d.veiculo}`); }
+        else { d.id = gerarId(); BD.alocacoes.push(d); registrarLog('criacao', `Alocação: ${d.veiculo} ${d.origem}→${d.destino}`); }
+        salvarDados(); alert('✅ Salvo!'); fecharModal(); carregarTabelaAlocacoes();
+    });
+}
+
+function excluirAlocacao(id) {
+    if (!ehSupervisor() && !ehAdmin()) return;
+    if (!confirm('⚠️ Excluir?')) return;
+    BD.alocacoes = BD.alocacoes.filter(x=>x.id!==id);
+    salvarDados(); registrarLog('exclusao', 'Excluiu alocação'); carregarTabelaAlocacoes();
+}
+
+function carregarTabelaAlocacoes() {
+    const corpo = document.getElementById('tabelaAlocacoes');
+    if (!corpo) return;
+    let as = BD.alocacoes || [];
+    const fv = document.getElementById('filtroAlocacoesVeiculo')?.value || 'todos';
+    if (fv !== 'todos') as = as.filter(x=>x.veiculo===fv);
+    
+    if (as.length === 0) { corpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhuma alocação</td></tr>'; return; }
+    
+    corpo.innerHTML = as.slice().reverse().map(a => {
+        const seg = JSON.stringify(a).replace(/"/g,'&quot;');
+        return `<tr><td style="font-weight:600;">${a.veiculo}</td><td>📍 ${a.origem}</td><td>➡️ ${a.destino}</td><td>${formatarData(a.dataInicio)}</td><td>${a.dataFim?formatarData(a.dataFim):'—'}</td><td class="supervisor-only"><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fef3c7;color:#92400e;margin-right:0.25rem;" onclick='abrirModalAlocacao(${seg})'>✏️</button><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fee2e2;color:#991b1b;" onclick="excluirAlocacao('${a.id}')">🗑️</button></td></tr>`;
+    }).join('');
+}
+
+// ---------- 15. CONFIGURAÇÕES ----------
+function carregarTelaConfiguracoes() {
+    const lp = document.getElementById('listaPostos');
+    if (lp) {
+        const ps = BD.postos || [];
+        lp.innerHTML = ps.length === 0 ? '<p style="color:#94a3b8;">Nenhum posto.</p>' : ps.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem;background:#f8fafc;border-radius:0.5rem;margin-bottom:0.5rem;"><span style="font-weight:500;">⛽ ${p.nome}</span><button class="btn" style="padding:0.25rem 0.5rem;font-size:0.75rem;background:#fee2e2;color:#991b1b;" onclick="excluirPosto('${p.id}')">🗑️</button></div>`).join('');
+    }
+    
+    const lc = document.getElementById('listaCategoriasConfig');
+    if (lc) lc.innerHTML = BD.config.categoriasVeiculos.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem;background:#f8fafc;border-radius:0.5rem;margin-bottom:0.5rem;"><div><span style="font-weight:600;">🚛 ${c.nome}</span>${c.precisaCintas?'<span class="badge badge-warning" style="margin-left:0.5rem;">🔗 Cintas</span>':''}${c.precisaFotosBancos?'<span class="badge badge-info" style="margin-left:0.5rem;">🪑 Bancos</span>':''}</div></div>`).join('');
+    
+    const cc = document.getElementById('configCintas');
+    if (cc) {
+        const r = BD.config.requisitosCintas;
+        const n = { cintas2m:'Cintas 2m', cintas3m:'Cintas 3m', cintas4m:'Cintas 4m', cintas6m:'Cintas 6m', cintasCatraca:'Cintas Catraca', catracas:'Catracas' };
+        cc.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">${Object.entries(n).map(([k,v])=>`<div class="linha-form" style="margin:0;"><label>${v}</label><input type="number" min="0" value="${r[k]}" onchange="atualizarRequisitoCinta('${k}',this.value)"></div>`).join('')}</div>`;
+    }
+}
+
+function adicionarPosto() {
+    const inp = document.getElementById('novoPosto');
+    const n = inp?.value.trim();
+    if (!n) { alert('❌ Digite o nome!'); return; }
+    if (BD.postos.some(p=>p.nome.toLowerCase()===n.toLowerCase())) { alert('❌ Já existe!'); return; }
+    BD.postos.push({ id: gerarId(), nome: n });
+    salvarDados(); registrarLog('criacao', `Posto: ${n}`);
+    inp.value = ''; carregarTelaConfiguracoes(); alert('✅ Adicionado!');
+}
+
+function excluirPosto(id) {
+    if (!confirm('⚠️ Excluir posto?')) return;
+    BD.postos = BD.postos.filter(p=>p.id!==id);
+    salvarDados(); registrarLog('exclusao', 'Excluiu posto'); carregarTelaConfiguracoes();
+}
+
+function atualizarRequisitoCinta(chave, valor) {
+    BD.config.requisitosCintas[chave] = parseInt(valor) || 0;
+    salvarDados();
+}
+
+// ---------- 16. LOG ----------
+function carregarLog() {
+    const corpo = document.getElementById('tabelaLog');
+    if (!corpo) return;
+    let logs = BD.log || [];
+    const fu = document.getElementById('filtroLogUsuario')?.value || 'todos';
+    const fa = document.getElementById('filtroLogAcao')?.value || 'todas';
+    if (fu !== 'todos') logs = logs.filter(l=>l.usuario===fu);
+    if (fa !== 'todas') logs = logs.filter(l=>l.acao===fa);
+    
+    if (logs.length === 0) { corpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhuma ação</td></tr>'; return; }
+    
+    const am = { login:'<span class="badge badge-success">🔑 Login</span>', logout:'<span class="badge badge-info">🚪 Logout</span>', criacao:'<span class="badge badge-info">➕ Criação</span>', edicao:'<span class="badge badge-warning">✏️ Edição</span>', exclusao:'<span class="badge badge-danger">🗑️ Exclusão</span>' };
+    
+    corpo.innerHTML = logs.slice(0, 200).map(l=>`<tr><td style="white-space:nowrap;">${formatarDataHora(l.dataHora)}</td><td style="font-weight:600;">${l.usuario} <small style="color:#64748b;">(${l.perfil})</small></td><td>${am[l.acao]||l.acao}</td><td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.detalhes}</td></tr>`).join('');
+}
+
+function limparLog() {
+    if (!ehAdmin()) return;
+    if (!confirm('⚠️ Limpar TODO o log?')) return;
+    BD.log = []; salvarDados();
+    registrarLog('exclusao', 'Limpou log');
+    carregarLog(); alert('✅ Log limpo!');
+}
+
+// ---------- 17. INICIALIZAÇÃO ----------
+quandoDOMPronto(function() {
+    const fl = document.getElementById('formLogin');
+    if (fl) fl.addEventListener('submit', e => { e.preventDefault(); entrarNoSistema(); });
+    verificarSessao();
+    console.log('✅ Sistema Gestão de Frotas v3.0 carregado!');
 });
-
-console.log('✅ Sistema carregado com sucesso!');
-    
