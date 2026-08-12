@@ -8,7 +8,7 @@
 // ============================================================
 function quandoDOMPronto(fn) {
     if (document.readyState === 'loading') {
-        quandoDOMPronto(fn);
+        document.addEventListener('DOMContentLoaded', fn);
     } else {
         setTimeout(fn, 0);
     }
@@ -2764,3 +2764,4 @@ window.salvarLocal = function(event, idEditar) {
 });
 
 console.log('✅ Sistema carregado com sucesso!');
+    
