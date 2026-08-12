@@ -27,17 +27,56 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
         body { background-color: #f8fafc; color: #1e293b; margin: 0; }
+        
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 16.5rem;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 200;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-size: 1.25rem;
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 90;
+        }
+        .sidebar-overlay.ativo { display: block; }
+        
         .sidebar-link {
             display: flex; align-items: center; gap: 0.875rem; padding: 0.75rem 1rem;
             margin: 0.25rem 0.75rem; border-radius: 0.625rem; cursor: pointer;
             transition: all 0.2s ease; color: #64748b; text-decoration: none;
-            font-size: 0.9375rem; font-weight: 500; border: none; background: transparent; width: calc(100% - 1.5rem); text-align: left;
+            font-size: 0.9375rem; font-weight: 500; border: none; background: transparent; 
+            width: calc(100% - 1.5rem); text-align: left;
         }
         .sidebar-link:hover { background: #eef2ff; color: #4f46e5; }
         .sidebar-link.ativo { background: linear-gradient(90deg, #4f46e5, #6366f1); color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); }
+        
+        /* ===== CARDS E LAYOUT ===== */
         .card { background: white; border-radius: 0.875rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.2s; }
         .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); border-color: #cbd5e1; }
         .stat-card { border-radius: 0.875rem; padding: 1.25rem; position: relative; overflow: hidden; }
@@ -47,26 +86,32 @@
         .btn-success { background: linear-gradient(90deg, #10b981, #059669); color: white; }
         .btn-warning { background: linear-gradient(90deg, #f59e0b, #d97706); color: white; }
         .btn-danger { background: linear-gradient(90deg, #ef4444, #dc2626); color: white; }
-        table { width: 100%; border-collapse: collapse; }
+        
+        /* ===== TABELAS ===== */
+        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { padding: 0.875rem 1rem; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
-        th { background: #f8fafc; font-weight: 600; color: #475569; font-size: 0.8125rem; }
+        th { background: #f8fafc; font-weight: 600; color: #475569; font-size: 0.8125rem; white-space: nowrap; }
         tr:hover { background: #f8fafc; }
+        
         .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
         .badge-success { background: #dcfce7; color: #166534; }
         .badge-warning { background: #fef3c7; color: #92400e; }
         .badge-danger { background: #fee2e2; color: #991b1b; }
-        .alerta { border-left: 4px solid; padding: 0.875rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin-bottom: 0.75rem; }
-        .alerta-critico { border-color: #ef4444; background: #fef2f2; }
-        .alerta-atencao { border-color: #f59e0b; background: #fffbeb; }
+        
         .pagina { display: none; }
         .pagina.ativa { display: block; animation: aparecer 0.3s ease; }
         .hidden { display: none !important; }
         @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        
         .sidebar-icon { width: 1.25rem; height: 1.25rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .modal-fundo { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-corpo { background: white; border-radius: 1rem; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        
+        /* ===== MODAIS ===== */
+        .modal-fundo { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+        .modal-corpo { background: white; border-radius: 1rem; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
         .modal-cabecalho { padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
         .modal-conteudo { padding: 1.5rem; }
+        
         input, select, textarea { border-radius: 0.5rem; border: 1px solid #cbd5e1; padding: 0.625rem 0.875rem; font-size: 0.9375rem; transition: all 0.2s; width: 100%; box-sizing: border-box; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.15); }
         label { display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.375rem; color: #334155; }
@@ -80,14 +125,78 @@
         .btn-fechar { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #94a3b8; }
         .btn-fechar:hover { color: #1e293b; }
         .linha-form { margin-bottom: 1rem; }
-        .botoes-form { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
-        @media (max-width: 768px) { 
-            .admin-only { display: none !important; } 
+        .botoes-form { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap; }
+        
+        /* ===== GRID RESPONSIVO ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            background: #f8fafc;
+            min-width: 0;
+        }
+        .main-wrapper {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        /* ===== RESPONSIVIDADE ===== */
+        @media (max-width: 1200px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (max-width: 1024px) {
+            .content-grid { grid-template-columns: 1fr; }
+            .sidebar { width: 15rem; }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar-toggle { display: block; }
+            .sidebar {
+                position: fixed;
+                height: 100vh;
+                left: 0;
+                top: 0;
+                transform: translateX(-100%);
+            }
+            .sidebar.aberto { transform: translateX(0); }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .admin-only { display: none !important; }
             .filtro-area { flex-wrap: wrap; }
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .main-content { padding-top: 4rem !important; }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .modal-corpo { max-width: 100%; }
+            .botoes-form { flex-direction: column; }
+            .botoes-form .btn { width: 100%; }
         }
     </style>
+    
 </head>
-<body>
+<body><button class="sidebar-toggle" onclick="toggleSidebar()">☰</button><div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <!-- TELA DE LOGIN -->
     <div id="telaLogin">
@@ -127,9 +236,9 @@
     </div>
 
     <!-- SISTEMA PRINCIPAL -->
-    <div id="sistemaPrincipal" class="hidden flex h-screen w-full overflow-hidden">
+    <div id="sistemaPrincipal" class="hidden main-wrapper">
         <!-- BARRA LATERAL -->
-        <aside style="width: 16.5rem; background: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0;">
+        <aside class="sidebar" id="sidebar">
             <div style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <div style="width: 2.5rem; height: 2.5rem; background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 0.625rem; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.125rem;">🚛</div>
@@ -163,16 +272,16 @@
         </aside>
 
         <!-- CONTEÚDO PRINCIPAL -->
-        <main style="flex: 1; overflow-y: auto; background: #f8fafc;">
+        <main class="main-content">
             <!-- DASHBOARD -->
             <section id="pagina-dashboard" class="pagina ativa">
-                <div style="padding: 1.5rem 2rem;">
+                <div style="padding: 1.5rem;">
                     <div style="margin-bottom: 2rem;">
                         <h2 style="font-size: 1.625rem; font-weight: 700; color: #1e293b; margin: 0 0 0.25rem 0;">Bem-vindo de volta! 👋</h2>
                         <p style="color: #64748b; margin: 0;">Aqui está o resumo da sua frota hoje — <span id="dataAtual"></span></p>
                     </div>
                     <div id="areaAlertas" style="margin-bottom: 2rem;"></div>
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
+                    <div class="stats-grid">
                         <div class="stat-card" style="background: linear-gradient(135deg, #eef2ff, #e0e7ff);">
                             <p style="font-size: 0.875rem; color: #4f46e5; font-weight: 600; margin: 0 0 0.5rem 0;">Total de Veículos</p>
                             <p style="font-size: 2rem; font-weight: 700; color: #3730a3; margin: 0;" id="dashVeiculos">0</p>
@@ -194,7 +303,7 @@
                             <p style="font-size: 0.75rem; color: #ef4444; margin: 0.25rem 0 0 0;">pendentes de resolução</p>
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="content-grid">
                         <div class="card p-5">
                             <h3 style="font-size: 1rem; font-weight: 600; color: #334155; margin: 0 0 1rem 0;">🚛 Veículos Recentes</h3>
                             <div id="ultimosVeiculos">
@@ -213,15 +322,15 @@
 
             <!-- VEÍCULOS -->
             <section id="pagina-veiculos" class="pagina">
-                <div style="padding: 1.5rem 2rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div style="padding: 1.5rem;">
+                    <div class="page-header">
                         <div>
                             <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">🚛 Cadastro de Veículos</h2>
                             <p style="color: #64748b; margin: 0;">Gerencie toda a frota da empresa</p>
                         </div>
                         <button type="button" onclick="abrirModalVeiculo()" class="btn btn-primary admin-only">➕ Novo Veículo</button>
                     </div>
-                    <div class="card">
+                    <div class="card table-container">
                         <table>
                             <thead>
                                 <tr><th>Placa</th><th>Categoria</th><th>Modelo</th><th>Km Atual</th><th>Obra</th><th>Status</th><th class="admin-only">Ações</th></tr>
@@ -236,8 +345,8 @@
 
             <!-- CHECK-LIST COM FILTRO -->
             <section id="pagina-checklist" class="pagina">
-                <div style="padding: 1.5rem 2rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="padding: 1.5rem;">
+                    <div class="page-header">
                         <div>
                             <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">✅ Check-list de Veículos</h2>
                             <p style="color: #64748b; margin: 0;">Inspeções e verificações diárias</p>
@@ -250,7 +359,7 @@
                             <option value="todos">Todos os Veículos</option>
                         </select>
                     </div>
-                    <div class="card">
+                    <div class="card table-container">
                         <table>
                             <thead>
                                 <tr><th>Data</th><th>Placa</th><th>Motorista</th><th>Km</th><th>Status</th><th>Ações</th></tr>
@@ -265,8 +374,8 @@
 
             <!-- MANUTENÇÃO COM FILTRO -->
             <section id="pagina-manutencao" class="pagina">
-                <div style="padding: 1.5rem 2rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="padding: 1.5rem;">
+                    <div class="page-header">
                         <div>
                             <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">🔧 Controle de Manutenção</h2>
                             <p style="color: #64748b; margin: 0;">Solicitações e serviços em andamento</p>
@@ -279,7 +388,7 @@
                             <option value="todos">Todos os Veículos</option>
                         </select>
                     </div>
-                    <div class="card">
+                    <div class="card table-container">
                         <table>
                             <thead>
                                 <tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th class="admin-only">Ações</th></tr>
@@ -294,8 +403,8 @@
 
             <!-- GASTOS COM FILTRO -->
             <section id="pagina-gastos" class="pagina">
-                <div style="padding: 1.5rem 2rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="padding: 1.5rem;">
+                    <div class="page-header">
                         <div>
                             <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">⛽ Gastos e Abastecimento</h2>
                             <p style="color: #64748b; margin: 0;">Registros de despesas com veículos</p>
@@ -308,7 +417,7 @@
                             <option value="todos">Todos os Veículos</option>
                         </select>
                     </div>
-                    <div class="card">
+                    <div class="card table-container">
                         <table>
                             <thead>
                                 <tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Valor</th><th>Observação</th></tr>
@@ -323,7 +432,7 @@
 
             <!-- CHAMADOS -->
             <section id="pagina-chamados" class="pagina">
-                <div style="padding: 1.5rem 2rem;">
+                <div style="padding: 1.5rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                         <div>
                             <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">🔔 Chamados e Ocorrências</h2>
@@ -331,7 +440,7 @@
                         </div>
                         <button type="button" onclick="abrirModalChamado()" class="btn btn-danger">➕ Novo Chamado</button>
                     </div>
-                    <div class="card">
+                    <div class="card table-container">
                         <table>
                             <thead>
                                 <tr><th>Data</th><th>Veículo</th><th>Assunto</th><th>Status</th><th>Ações</th></tr>
@@ -346,8 +455,8 @@
 
             <!-- ALOCAÇÕES COM FILTRO + BOTÃO NOVO -->
             <section id="pagina-alocacoes" class="pagina">
-                <div style="padding: 1.5rem 2rem;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div style="padding: 1.5rem;">
+                    <div class="page-header">
                         <h2 style="font-size:1.5rem; font-weight:700; margin:0;">📍 Alocações de Veículos</h2>
                         <button type="button" onclick="abrirModalAlocacao()" class="btn btn-primary">➕ Nova Alocação</button>
                     </div>
@@ -357,7 +466,7 @@
                             <option value="todos">Todos os Veículos</option>
                         </select>
                     </div>
-                    <div class="card">
+                    <div class="card table-container">
                         <table>
                             <thead>
                                 <tr><th>Placa</th><th>Origem → Destino</th><th>Data de Início</th><th>Km Inicial</th><th>Responsável</th></tr>
@@ -372,15 +481,15 @@
 
             <!-- 📍 LOCAIS / OBRAS -->
             <section id="pagina-locais" class="pagina">
-                <div style="padding: 1.5rem 2rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div style="padding: 1.5rem;">
+                    <div class="page-header">
                         <div>
                             <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">📍 Cadastro de Locais / Obras</h2>
                             <p style="color: #64748b; margin: 0;">Locais que aparecem como Origem e Destino</p>
                         </div>
                         <button type="button" onclick="abrirModalLocal()" class="btn btn-primary admin-only">➕ Novo Local</button>
                     </div>
-                    <div class="card">
+                    <div class="card table-container">
                         <table>
                             <thead>
                                 <tr>
@@ -405,257 +514,43 @@
 
     <!-- ORDEM OBRIGATÓRIA — ✅ Adicionado alocacoes.js -->
         <!-- ✅ ORDEM CORRETA: módulos primeiro -->
-    <script type="module" src="js/config.js"></script>
-    <script type="module" src="js/banco-dados.js"></script>
-    <script type="module" src="js/utils.js"></script>
-    <script type="module" src="js/validacoes.js"></script>
-    <script type="module" src="js/veiculos.js"></script>
-    <script type="module" src="js/checklist.js"></script>
-    <script type="module" src="js/manutencao.js"></script>
-    <script type="module" src="js/gastos.js"></script>
-    <script type="module" src="js/chamados.js"></script>
-    <script type="module" src="js/alocacoes.js"></script>
-    <script type="module" src="js/sync.js"></script>
-    <script type="module" src="js/auth.js"></script>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     <!-- Estes NÃO são módulos → ficam por último -->
     
-    <script src="js/correcoes.js"></script>
-    <script src="js/navegacao.js"></script>
+    
+    
 
     <!-- FUNÇÕES GLOBAIS + CADASTRO DE LOCAIS + PERMISSÕES -->
+    
+
     <script>
-        // ========== CONTROLE DE PERMISSÕES POR PERFIL ==========
-        function ehAdmin() {
-            return typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'admin';
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar) sidebar.classList.toggle('aberto');
+            if (overlay) overlay.classList.toggle('ativo');
         }
-        function ehMotorista() {
-            return typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil === 'motorista';
-        }
-        document.addEventListener('DOMContentLoaded', function () {
-            if (ehAdmin()) {
-                document.body.classList.add('usuario-admin');
-                console.log('🔑 Perfil: Administrador — acesso completo');
-            } else if (ehMotorista()) {
-                document.body.classList.add('usuario-motorista');
-                console.log('🔑 Perfil: Motorista — áreas de admin ocultas');
+        
+        // Fechar sidebar ao clicar em um link (mobile)
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('.sidebar-link');
+            if (link && window.innerWidth <= 768) {
+                toggleSidebar();
             }
         });
-
-        function atualizarNomeUsuarioCabecalho() {
-            const nome = window.usuarioAtual?.nome || 'Carregando...';
-            const infoUsuario = document.getElementById('infoUsuario');
-            if (infoUsuario) infoUsuario.textContent = nome;
-        }
-        window.addEventListener('DOMContentLoaded', atualizarNomeUsuarioCabecalho);
-
-        // ========== 📍 CADASTRO DE LOCAIS / OBRAS — ✅ UNIFICADO COM BD ==========
-        function carregarLocaisBD() {
-            return BD.locais || [
-                { id: 'patio-metalica', nome: 'Pátio Metálica' },
-                { id: 'patio-usina-conc', nome: 'Pátio Usina Conc.' },
-                { id: 'obra', nome: 'Obra' }
-            ];
-        }
-
-        function abrirModalLocal(idEditar = null) {
-            if (!ehAdmin()) { alert('❌ Apenas Administrador pode cadastrar locais!'); return; }
-            const locais = carregarLocaisBD();
-            const local = idEditar ? locais.find(l => l.id === idEditar) : null;
-            document.getElementById('modais').innerHTML = `
-                <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
-                    <div class="modal-corpo">
-                        <div class="modal-cabecalho">
-                            <h3 style="margin:0; font-size:1.125rem; font-weight:600;">${local ? '✏️ Editar Local' : '📍 Novo Local'}</h3>
-                            <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
-                        </div>
-                        <div class="modal-conteudo">
-                            <form onsubmit="salvarLocal(event, '${idEditar || ''}')">
-                                <div class="linha-form">
-                                    <label>Nome do Local / Obra</label>
-                                    <input type="text" id="nomeLocal" required placeholder="Ex: Pátio Metálica, Usina, Obra..." value="${local?.nome || ''}">
-                                </div>
-                                <div class="botoes-form">
-                                    <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
-                                    <button type="submit" class="btn btn-primary">Salvar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>`;
-        }
-        window.abrirModalLocal = abrirModalLocal;
-
-        function salvarLocal(event, idEditar = null) {
-            event.preventDefault();
-            if (!ehAdmin()) { alert('❌ Sem permissão!'); return; }
-            const nome = document.getElementById('nomeLocal').value.trim();
-            if (!nome) return;
-
-            if (idEditar) {
-                const idx = BD.locais.findIndex(l => l.id === idEditar);
-                if (idx !== -1) BD.locais[idx].nome = nome;
-            } else {
-                const id = nome.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-                BD.locais.push({ id, nome });
-            }
-
-            salvarDados();
-            fecharModal();
-            carregarTabelaLocais();
-            atualizarListaLocaisNosFormularios();
-        }
-        window.salvarLocal = salvarLocal;
-
-        function excluirLocal(id) {
-            if (!ehAdmin()) { alert('❌ Apenas Administrador pode excluir!'); return; }
-            if (!confirm('Excluir este local?')) return;
-            BD.locais = BD.locais.filter(l => l.id !== id);
-            salvarDados();
-            carregarTabelaLocais();
-            atualizarListaLocaisNosFormularios();
-        }
-        window.excluirLocal = excluirLocal;
-
-        function carregarTabelaLocais() {
-            const locais = carregarLocaisBD();
-            const tbody = document.getElementById('tabelaLocais');
-            if (!locais.length) {
-                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhum local cadastrado</td></tr>';
-                return;
-            }
-            tbody.innerHTML = locais.map(l => `
-                <tr>
-                    <td><strong>${l.nome}</strong></td>
-                    <td class="admin-only">
-                        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fef3c7; color:#92400e; margin-right:0.25rem;" onclick="abrirModalLocal('${l.id}')">✏️</button>
-                        <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem; background:#fee2e2; color:#991b1b;" onclick="excluirLocal('${l.id}')">🗑️</button>
-                    </td>
-                </tr>`).join('');
-        }
-
-        function atualizarListaLocaisNosFormularios() {
-            const listaNomes = BD.locais.map(l => l.nome);
-            console.log('📍 Locais disponíveis:', listaNomes);
-        }
-
-        // ✅ Carrega tabela ao abrir a página
-        const PaginaOriginal = window.mostrarPagina;
-        window.mostrarPagina = function(pagina) {
-            if (PaginaOriginal) PaginaOriginal(pagina);
-            if (pagina === 'locais') {
-                carregarTabelaLocais();
-            }
-        };
-
-        // ========== ATUALIZA LISTA DE PLACAS NOS FILTROS ==========
-        function atualizarListaVeiculosNosFiltros() {
-            if (!BD.veiculos) return;
-            const placas = BD.veiculos.map(v => v.placa).sort();
-            ['filtroAlocacoes', 'filtroChecklist', 'filtroManutencao', 'filtroGastos'].forEach(id => {
-                const sel = document.getElementById(id);
-                if (!sel) return;
-                const atual = sel.value;
-                sel.innerHTML = '<option value="todos">Todos os Veículos</option>';
-                placas.forEach(p => sel.innerHTML += `<option value="${p}">${p}</option>`);
-                if (placas.includes(atual)) sel.value = atual;
-            });
-        }
-
-        // ========== FUNÇÕES DE FILTRO ==========
-        function aplicarFiltroAlocacoes() {
-            const filtro = document.getElementById('filtroAlocacoes')?.value || 'todos';
-            if (typeof carregarTabelaAlocacoes === 'function') carregarTabelaAlocacoes(filtro);
-        }
-        function aplicarFiltroChecklist() {
-            const filtro = document.getElementById('filtroChecklist')?.value || 'todos';
-            if (typeof carregarTabelaChecklist === 'function') carregarTabelaChecklist(filtro);
-        }
-        function aplicarFiltroManutencao() {
-            const filtro = document.getElementById('filtroManutencao')?.value || 'todos';
-            if (typeof carregarTabelaManutencao === 'function') carregarTabelaManutencao(filtro);
-        }
-        function aplicarFiltroGastos() {
-            const filtro = document.getElementById('filtroGastos')?.value || 'todos';
-            if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos(filtro);
-        }
-
-        // ========== FECHAR MODAL ==========
-        function fecharModal() {
-            document.getElementById('modais').innerHTML = '';
-        }
-
-        // ========== ABERTURA DE MODAIS ==========
-        function abrirModalChecklist() {
-            if (!BD.veiculos || BD.veiculos.length === 0) { alert('Cadastre um veículo primeiro!'); return; }
-            const placas = BD.veiculos.map(v => `<option value="${v.placa}">${v.placa}</option>`).join('');
-            document.getElementById('modais').innerHTML = `
-                <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
-                    <div class="modal-corpo">
-                        <div class="modal-cabecalho">
-                            <h3 style="margin:0; font-size:1.125rem; font-weight:600;">✅ Novo Check-list</h3>
-                            <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
-                        </div>
-                        <div class="modal-conteudo">
-                            <form id="formChecklist" onsubmit="salvarChecklist(event)">
-                                <div class="linha-form"><label>Veículo (Placa)</label><select id="clPlaca" required>${placas}</select></div>
-                                <div class="linha-form"><label>Motorista</label><input type="text" id="clMotorista" required placeholder="Nome do motorista"></div>
-                                <div class="linha-form"><label>Quilometragem Atual</label><input type="number" id="clKm" required placeholder="0"></div>
-                                <div class="linha-form"><label>Status</label>
-                                    <select id="clStatus">
-                                        <option value="${CONFIG.STATUS.CHECKLIST.APROVADO}">${CONFIG.STATUS.CHECKLIST.APROVADO}</option>
-                                        <option value="${CONFIG.STATUS.CHECKLIST.PENDENTE}">${CONFIG.STATUS.CHECKLIST.PENDENTE}</option>
-                                    </select>
-                                </div>
-                                <div class="botoes-form">
-                                    <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
-                                    <button type="submit" class="btn btn-success">Salvar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>`;
-        }
-        window.abrirModalChecklist = abrirModalChecklist;
-
-        function abrirModalManutencao() {
-            if (!BD.veiculos || BD.veiculos.length === 0) { alert('Cadastre um veículo primeiro!'); return; }
-            const placas = BD.veiculos.map(v => `<option value="${v.placa}">${v.placa}</option>`).join('');
-            document.getElementById('modais').innerHTML = `
-                <div class="modal-fundo" onclick="if(event.target===this)fecharModal()">
-                    <div class="modal-corpo">
-                        <div class="modal-cabecalho">
-                            <h3 style="margin:0; font-size:1.125rem; font-weight:600;">🔧 Nova Solicitação</h3>
-                            <button type="button" class="btn-fechar" onclick="fecharModal()">&times;</button>
-                        </div>
-                        <div class="modal-conteudo">
-                            <form id="formManutencao" onsubmit="salvarManutencao(event)">
-                                <div class="linha-form"><label>Veículo (Placa)</label><select id="mnVeiculo" required>${placas}</select></div>
-                                <div class="linha-form"><label>Tipo de Manutenção</label>
-                                    <select id="mnTipo">
-                                        <option value="${CONFIG.STATUS.TIPO_MANUTENCAO.PREVENTIVA}">${CONFIG.STATUS.TIPO_MANUTENCAO.PREVENTIVA}</option>
-                                        <option value="${CONFIG.STATUS.TIPO_MANUTENCAO.CORRETIVA}">${CONFIG.STATUS.TIPO_MANUTENCAO.CORRETIVA}</option>
-                                        <option value="${CONFIG.STATUS.TIPO_MANUTENCAO.REVISAO}">${CONFIG.STATUS.TIPO_MANUTENCAO.REVISAO}</option>
-                                    </select>
-                                </div>
-                                <div class="linha-form"><label>Descrição</label><textarea id="mnDescricao" rows="3" required placeholder="Descreva o serviço..."></textarea></div>
-                                <div class="linha-form"><label>Status</label>
-                                    <select id="mnStatus">
-                                        <option value="${CONFIG.STATUS.MANUTENCAO.ABERTA}">${CONFIG.STATUS.MANUTENCAO.ABERTA}</option>
-                                        <option value="${CONFIG.STATUS.MANUTENCAO.ANDAMENTO}">${CONFIG.STATUS.MANUTENCAO.ANDAMENTO}</option>
-                                        <option value="${CONFIG.STATUS.MANUTENCAO.CONCLUIDA}">${CONFIG.STATUS.MANUTENCAO.CONCLUIDA}</option>
-                                    </select>
-                                </div>
-                                <div class="botoes-form">
-                                    <button type="button" class="btn" style="background:#f1f5f9; color:#475569;" onclick="fecharModal()">Cancelar</button>
-                                    <button type="submit" class="btn btn-success">Salvar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>`;
-        }
-        window.abrirModalManutencao = abrirModalManutencao;
     </script>
-</body>
+    <script src="js/app.js"></script>
+    </body>
 </html>
