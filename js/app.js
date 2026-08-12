@@ -38,7 +38,7 @@ function mostrarToast(mensagem, tipo = 'sucesso') {
 })();
 
 function registrarLog(acao, detalhes) {
-    if (!window.BD) BD = inicializarBD();
+    if (!BD) BD = inicializarBD();
     if (!BD.log) BD.log = [];
     BD.log.unshift({
         id: gerarId(), dataHora: new Date().toISOString(),
@@ -109,7 +109,7 @@ function inicializarBD() {
     };
 }
 
-let BD = inicializarBD();
+let BD = inicializarBD(); window.BD = BD;
 function salvarDados() { localStorage.setItem('bd_frotas_v3', JSON.stringify(BD)); }
 
 // ---------- 3. AUTENTICAÇÃO E PERMISSÕES ----------
