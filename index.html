@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Frotas | Sistema Veicular v3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <style>
         * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
         body { background-color: #f8fafc; color: #1e293b; margin: 0; }
@@ -50,58 +49,58 @@
         body.usuario-visitante .admin-only, body.usuario-visitante .supervisor-only { display: none !important; }
         body.usuario-supervisor .admin-only { display: none !important; }
         .filtro-area { 
-            display: flex; 
-            gap: 1rem; 
-            align-items: flex-end; 
-            margin-bottom: 1.25rem; 
-            padding: 1.25rem; 
-            background: #ffffff; 
-            border-radius: 0.875rem; 
-            flex-wrap: wrap; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-            border: 1px solid #e2e8f0;
-            border-left: 4px solid #4f46e5;
-        }
-        .filtro-area .filtro-titulo { 
-            display: flex; 
-            align-items: center; 
-            gap: 0.5rem; 
-            font-weight: 600; 
-            color: #334155; 
-            font-size: 0.9rem; 
-            margin-right: 0.5rem;
-        }
-        .filtro-area .filtro-grupo { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 0.35rem; 
-            min-width: 180px;
-        }
-        .filtro-area .filtro-grupo label { 
-            font-size: 0.75rem; 
-            font-weight: 600; 
-            color: #64748b; 
-            margin-bottom: 0; 
-            text-transform: uppercase; 
-            letter-spacing: 0.03em;
-        }
-        .filtro-area .filtro-grupo select,
-        .filtro-area .filtro-grupo input { 
-            min-width: 180px; 
-            margin: 0;
-        }
-        .filtro-area .filtro-separador { 
-            color: #94a3b8; 
-            font-size: 0.875rem; 
-            padding-bottom: 0.5rem;
-        }
+    display: flex; 
+    gap: 1rem; 
+    align-items: flex-end; 
+    margin-bottom: 1.25rem; 
+    padding: 1.25rem; 
+    background: #ffffff; 
+    border-radius: 0.875rem; 
+    flex-wrap: wrap; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #4f46e5;
+}
+.filtro-area .filtro-titulo { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.5rem; 
+    font-weight: 600; 
+    color: #334155; 
+    font-size: 0.9rem; 
+    margin-right: 0.5rem;
+}
+.filtro-area .filtro-grupo { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0.35rem; 
+    min-width: 180px;
+}
+.filtro-area .filtro-grupo label { 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    color: #64748b; 
+    margin-bottom: 0; 
+    text-transform: uppercase; 
+    letter-spacing: 0.03em;
+}
+.filtro-area .filtro-grupo select,
+.filtro-area .filtro-grupo input { 
+    min-width: 180px; 
+    margin: 0;
+}
+.filtro-area .filtro-separador { 
+    color: #94a3b8; 
+    font-size: 0.875rem; 
+    padding-bottom: 0.5rem;
+}
         .btn-fechar { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #94a3b8; }
         .linha-form { margin-bottom: 1rem; }
         .botoes-form { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap; }
-        .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
         .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-        .main-content { flex: 1; overflow-y: auto; background: #f8fafc; min-width: 0; padding: 1.5rem; }
+        .main-content { flex: 1; overflow-y: auto; background: #f8fafc; min-width: 0; }
         .main-wrapper { display: flex; height: 100vh; width: 100%; overflow: hidden; }
         .alerta-destaque { background: linear-gradient(90deg, #fef2f2, #fee2e2); border-left: 4px solid #dc2626; padding: 1rem 1.25rem; border-radius: 0.5rem; margin-bottom: 1rem; animation: piscar 2s infinite; }
         @keyframes piscar { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
@@ -109,30 +108,15 @@
         .foto-container:hover { border-color: #4f46e5; background: #eef2ff; }
         .foto-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 0.375rem; }
         .section-title { font-size: 0.875rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin: 1.5rem 0 0.75rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; }
-        .dashboard-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-        .dashboard-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
-        .mini-stat { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
-        .mini-stat:last-child { border-bottom: none; }
-        .mini-stat .label { color: #64748b; }
-        .mini-stat .valor { font-weight: 600; color: #1e293b; }
-        .alerta-item { padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; border-left: 3px solid; }
-        .alerta-item.critico { background: #fef2f2; border-color: #dc2626; }
-        .alerta-item.atencao { background: #fefce8; border-color: #f59e0b; }
-        .alerta-item.info { background: #eff6ff; border-color: #3b82f6; }
-        .progress-ring-container { position: relative; display: inline-block; }
-        .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
-        .progress-text .numero { font-size: 1.75rem; font-weight: 700; color: #1e293b; }
-        .progress-text .sub { font-size: 0.75rem; color: #64748b; }
-        @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 1024px) { .content-grid { grid-template-columns: 1fr; } .sidebar { width: 15rem; } .dashboard-grid-3 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 1024px) { .content-grid { grid-template-columns: 1fr; } .sidebar { width: 15rem; } }
         @media (max-width: 768px) {
             .sidebar-toggle { display: block; }
             .sidebar { position: fixed; height: 100vh; left: 0; top: 0; transform: translateX(-100%); }
             .sidebar.aberto { transform: translateX(0); }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
             .admin-only, .supervisor-only { display: none !important; }
             .main-content { padding-top: 4rem !important; }
-            .dashboard-grid-3 { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } .modal-corpo { max-width: 100%; } .botoes-form { flex-direction: column; } .botoes-form .btn { width: 100%; } }
     </style>
@@ -144,7 +128,7 @@
     <!-- LOGIN -->
     <div id="telaLogin" style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, #1e1b4b, #4338ca);">
         <div class="card" style="width:100%; max-width:420px; padding:2.5rem; text-align:center; margin:1rem;">
-            <div style="width:64px; height:64px; background:linear-gradient(135deg, #4f46e5, #6366f1); border-radius:1rem; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 1.5rem;">🚛</div>
+            <div style="width:64px; height:64px; background:linear-gradient(135deg, #4f46e5, #6366f1); border-radius:1rem; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 1.5rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></div>
             <h1 style="font-size:1.75rem; font-weight:700; color:#1e293b; margin-bottom:0.5rem;">Gestão de Frotas</h1>
             <p style="color:#64748b; margin-bottom:2rem;">Controle inteligente de veículos</p>
             <form id="formLogin">
@@ -154,7 +138,7 @@
                 <button type="submit" class="btn btn-primary" style="width:100%; padding:0.875rem; font-size:1rem;">Entrar no Sistema</button>
             </form>
             <div style="margin-top:1.5rem; padding:1rem; background:#f8fafc; border-radius:0.5rem; text-align:left; font-size:0.875rem;">
-                <p style="font-weight:600; color:#475569; margin-bottom:0.5rem;">🔑 Credenciais:</p>
+                <p style="font-weight:600; color:#475569; margin-bottom:0.5rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6"/><path d="M15.5 7.5l3 3L22 7l-3-3"/></svg> Credenciais:</p>
                 <p style="color:#64748b; margin:0.25rem 0;"><strong>Admin:</strong> admin / admin123</p>
             </div>
             <p style="margin-top:2rem; font-size:0.8125rem; color:#94a3b8;">© 2026 Gestão de Frotas — Versão 3.0</p>
@@ -166,223 +150,127 @@
         <aside class="sidebar" id="sidebar">
             <div style="padding:1.5rem 1.25rem; border-bottom:1px solid #e2e8f0;">
                 <div style="display:flex; align-items:center; gap:0.75rem;">
-                    <div style="width:40px; height:40px; background:linear-gradient(135deg, #4f46e5, #6366f1); border-radius:0.75rem; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">🚛</div>
+                    <div style="width:40px; height:40px; background:linear-gradient(135deg, #4f46e5, #6366f1); border-radius:0.75rem; display:flex; align-items:center; justify-content:center; font-size:1.25rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></div>
                     <div><div style="font-weight:700; color:#1e293b;">Gestão de Frotas</div><div style="font-size:0.75rem; color:#94a3b8;">Painel de Controle</div></div>
                 </div>
             </div>
             <nav style="flex:1; padding:0.75rem 0; overflow-y:auto;">
-                <button class="sidebar-link ativo" onclick="navegarPara('dashboard')" data-pagina="dashboard">📊 Dashboard</button>
-                <button class="sidebar-link" onclick="navegarPara('veiculos')" data-pagina="veiculos">🚛 Veículos</button>
-                <button class="sidebar-link" onclick="navegarPara('checklist')" data-pagina="checklist">✅ Check-list</button>
-                <button class="sidebar-link supervisor-only" onclick="navegarPara('manutencao')" data-pagina="manutencao">🔧 Manutenção</button>
-                <button class="sidebar-link" onclick="navegarPara('gastos')" data-pagina="gastos">💰 Gastos</button>
-                <button class="sidebar-link" onclick="navegarPara('chamados')" data-pagina="chamados">🔔 Chamados</button>
-                <button class="sidebar-link supervisor-only" onclick="navegarPara('alocacoes')" data-pagina="alocacoes">📍 Alocações</button>
-                <button class="sidebar-link admin-only" onclick="navegarPara('locais')" data-pagina="locais">🏗️ Locais / Obras</button>
-                <button class="sidebar-link admin-only" onclick="navegarPara('usuarios')" data-pagina="usuarios">👤 Usuários</button>
-                <button class="sidebar-link admin-only" onclick="navegarPara('configuracoes')" data-pagina="configuracoes">⚙️ Configurações</button>
-                <button class="sidebar-link admin-only" onclick="navegarPara('log')" data-pagina="log">📝 Log de Registros</button>
+                <button class="sidebar-link ativo" onclick="navegarPara('dashboard')" data-pagina="dashboard"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span> Dashboard</button>
+                <button class="sidebar-link" onclick="navegarPara('veiculos')" data-pagina="veiculos"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span> Veículos</button>
+                <button class="sidebar-link" onclick="navegarPara('checklist')" data-pagina="checklist"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Check-list</button>
+                <button class="sidebar-link supervisor-only" onclick="navegarPara('manutencao')" data-pagina="manutencao"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span> Manutenção</button>
+                <button class="sidebar-link" onclick="navegarPara('gastos')" data-pagina="gastos"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span> Gastos</button>
+                <button class="sidebar-link" onclick="navegarPara('chamados')" data-pagina="chamados"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span> Chamados</button>
+                <button class="sidebar-link supervisor-only" onclick="navegarPara('alocacoes')" data-pagina="alocacoes"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span> Alocações</button>
+                <button class="sidebar-link admin-only" onclick="navegarPara('locais')" data-pagina="locais"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg></span> Locais / Obras</button>
+                <button class="sidebar-link admin-only" onclick="navegarPara('usuarios')" data-pagina="usuarios"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Usuários</button>
+                <button class="sidebar-link admin-only" onclick="navegarPara('configuracoes')" data-pagina="configuracoes"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Configurações</button>
+                <button class="sidebar-link admin-only" onclick="navegarPara('log')" data-pagina="log"><span><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span> Log de Registros</button>
             </nav>
             <div style="padding:1rem; border-top:1px solid #e2e8f0;">
                 <div style="padding:0.75rem; background:#f8fafc; border-radius:0.5rem; margin-bottom:0.75rem;">
                     <div style="font-size:0.75rem; color:#94a3b8;">Usuário conectado</div>
                     <div id="infoUsuario" style="font-weight:600; color:#1e293b;">—</div>
                 </div>
-                <button class="btn" style="width:100%; background:#fef2f2; color:#dc2626;" onclick="sairDoSistema()">🚪 Sair</button>
+                <button class="btn" style="width:100%; background:#fef2f2; color:#dc2626;" onclick="sairDoSistema()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg> Sair</button>
             </div>
         </aside>
 
         <main class="main-content">
-            <!-- DASHBOARD NOVO -->
-            <div id="pag-dashboard" class="pagina ativa">
-                <div class="page-header">
-                    <div>
-                        <h2 style="font-size:1.75rem; font-weight:700; margin:0;">Bem-vindo de volta! 👋</h2>
-                        <p style="color:#64748b; margin:0.25rem 0 0;">Resumo da sua frota hoje</p>
+            <div style="padding:1.5rem;">
+                
+                <!-- DASHBOARD -->
+                <div id="pag-dashboard" class="pagina ativa">
+                    <div class="page-header"><div><h2 style="font-size:1.75rem; font-weight:700; margin:0;">Bem-vindo de volta! <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></h2><p style="color:#64748b; margin:0.25rem 0 0;">Resumo da sua frota hoje</p></div></div>
+                    <div id="areaAlertas"></div>
+                    <div class="stats-grid">
+                        <div class="stat-card" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);"><div style="color:#4f46e5; font-weight:600; font-size:0.875rem;">Total de Veículos</div><div id="stat-total" style="font-size:2.5rem; font-weight:700; color:#4338ca; margin:0.5rem 0;">0</div><div style="color:#6366f1; font-size:0.8125rem;">cadastrados</div></div>
+                        <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);"><div style="color:#166534; font-weight:600; font-size:0.875rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="20 6 9 17 4 12"/></svg> Em Operação</div><div id="stat-operacao" style="font-size:2.5rem; font-weight:700; color:#15803d; margin:0.5rem 0;">0</div><div style="color:#22c55e; font-size:0.8125rem;">veículos ativos</div></div>
+                        <div class="stat-card" style="background:linear-gradient(135deg,#fefce8,#fef3c7);"><div style="color:#92400e; font-weight:600; font-size:0.875rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Em Manutenção</div><div id="stat-manutencao" style="font-size:2.5rem; font-weight:700; color:#b45309; margin:0.5rem 0;">0</div><div style="color:#f59e0b; font-size:0.8125rem;">precisam de atenção</div></div>
+                        <div class="stat-card" style="background:linear-gradient(135deg,#fef2f2,#fee2e2);"><div style="color:#991b1b; font-weight:600; font-size:0.875rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Chamados Abertos</div><div id="stat-chamados" style="font-size:2.5rem; font-weight:700; color:#b91c1c; margin:0.5rem 0;">0</div><div style="color:#ef4444; font-size:0.8125rem;">pendentes</div></div>
+                    </div>
+                    <div class="content-grid">
+                        <div class="card" style="padding:1.25rem;"><h3 style="font-weight:600; margin:0 0 1rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg> Veículos Recentes</h3><div id="lista-veiculos-recentes" style="color:#94a3b8;">Nenhum veículo.</div></div>
+                        <div class="card" style="padding:1.25rem;"><h3 style="font-weight:600; margin:0 0 1rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Últimos Chamados</h3><div id="lista-chamados-recentes" style="color:#94a3b8;">Nenhum chamado.</div></div>
                     </div>
                 </div>
 
-                <div id="areaAlertas"></div>
-
-                <!-- Cards de Estatísticas -->
-                <div class="stats-grid">
-                    <div class="stat-card" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);">
-                        <div style="color:#4f46e5; font-weight:600; font-size:0.875rem;">🚛 Total de Veículos</div>
-                        <div id="stat-total" style="font-size:2rem; font-weight:700; color:#4338ca; margin:0.5rem 0;">0</div>
-                        <div style="color:#6366f1; font-size:0.8125rem;">cadastrados</div>
-                    </div>
-                    <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
-                        <div style="color:#166534; font-weight:600; font-size:0.875rem;">✅ Em Operação</div>
-                        <div id="stat-operacao" style="font-size:2rem; font-weight:700; color:#15803d; margin:0.5rem 0;">0</div>
-                        <div style="color:#22c55e; font-size:0.8125rem;">ativos</div>
-                    </div>
-                    <div class="stat-card" style="background:linear-gradient(135deg,#fefce8,#fef3c7);">
-                        <div style="color:#92400e; font-weight:600; font-size:0.875rem;">🔧 Manutenção</div>
-                        <div id="stat-manutencao" style="font-size:2rem; font-weight:700; color:#b45309; margin:0.5rem 0;">0</div>
-                        <div style="color:#f59e0b; font-size:0.8125rem;">pendentes</div>
-                    </div>
-                    <div class="stat-card" style="background:linear-gradient(135deg,#fef2f2,#fee2e2);">
-                        <div style="color:#991b1b; font-weight:600; font-size:0.875rem;">🔔 Chamados</div>
-                        <div id="stat-chamados" style="font-size:2rem; font-weight:700; color:#b91c1c; margin:0.5rem 0;">0</div>
-                        <div style="color:#ef4444; font-size:0.8125rem;">abertos</div>
-                    </div>
-                    <div class="stat-card" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);">
-                        <div style="color:#4f46e5; font-weight:600; font-size:0.875rem;">💰 Gastos/Mês</div>
-                        <div id="stat-gastos" style="font-size:2rem; font-weight:700; color:#4338ca; margin:0.5rem 0;">R$ 0</div>
-                        <div style="color:#6366f1; font-size:0.8125rem;">neste mês</div>
-                    </div>
-                    <div class="stat-card" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);">
-                        <div style="color:#1d4ed8; font-weight:600; font-size:0.875rem;">📊 Km/Mês</div>
-                        <div id="stat-km" style="font-size:2rem; font-weight:700; color:#1e40af; margin:0.5rem 0;">0</div>
-                        <div style="color:#3b82f6; font-size:0.8125rem;">percorridos</div>
-                    </div>
+                <!-- VEÍCULOS -->
+                <div id="pag-veiculos" class="pagina">
+                    <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg> Cadastro de Veículos</h2><p style="color:#64748b; margin:0.25rem 0 0;">Gerencie toda a frota</p></div><button class="btn btn-primary admin-only" onclick="abrirModalVeiculo()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Veículo</button></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Categoria</label><select id="filtroVeiculoCategoria" onchange="carregarTabelaVeiculos()"><option value="todas">Todas Categorias</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroVeiculoStatus" onchange="carregarTabelaVeiculos()"><option value="todos">Todos Status</option><option value="disponivel">Disponível</option><option value="alocado">Alocado</option><option value="manutencao">Manutenção</option><option value="inativo">Inativo</option></select></div></div>
+                    <div class="card table-container"><table><thead><tr><th>Placa</th><th>Categoria</th><th>Modelo</th><th>Km Atual</th><th>Obra</th><th>Status</th><th class="admin-only">Ações</th></tr></thead><tbody id="tabelaVeiculos"></tbody></table></div>
                 </div>
 
-                <!-- Gráficos -->
-                <div class="dashboard-grid-3">
-                    <div class="card" style="padding:1.25rem;">
-                        <h3 style="font-weight:600; margin:0 0 1rem;">🚛 Frota por Categoria</h3>
-                        <div id="grafico-categorias" style="width:100%; height:220px;"></div>
-                    </div>
-                    <div class="card" style="padding:1.25rem;">
-                        <h3 style="font-weight:600; margin:0 0 1rem;">💰 Gastos dos Últimos 6 Meses</h3>
-                        <div id="grafico-gastos" style="width:100%; height:220px;"></div>
-                    </div>
-                    <div class="card" style="padding:1.25rem;">
-                        <h3 style="font-weight:600; margin:0 0 1rem;">📋 Check-list</h3>
-                        <div style="display:flex; align-items:center; gap:1rem;">
-                            <div class="progress-ring-container">
-                                <svg width="100" height="100" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" stroke-width="8"/>
-                                    <circle id="anel-progresso" cx="50" cy="50" r="45" fill="none" stroke="#4f46e5" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283" transform="rotate(-90 50 50)"/>
-                                </svg>
-                                <div class="progress-text">
-                                    <div class="numero" id="checklist-num">0%</div>
-                                    <div class="sub">concluído</div>
-                                </div>
-                            </div>
-                            <div style="flex:1;">
-                                <div class="mini-stat"><span class="label">✅ Concluídos</span><span class="valor" id="checklist-concluidos">0</span></div>
-                                <div class="mini-stat"><span class="label">⏳ Pendentes</span><span class="valor" id="checklist-pendentes">0</span></div>
-                                <div class="mini-stat"><span class="label">📋 Total Hoje</span><span class="valor" id="checklist-total">0</span></div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- CHECK-LIST -->
+                <div id="pag-checklist" class="pagina">
+                    <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Check-list de Inspeção</h2><p style="color:#64748b; margin:0.25rem 0 0;">Inspeções diárias</p></div><button class="btn btn-primary" onclick="abrirModalChecklist()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Check-list</button></div>
+                    <div id="alertasCintas"></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroChecklistVeiculo" onchange="carregarTabelaChecklist()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Data Início</label><input type="date" id="filtroChecklistDataIni" onchange="carregarTabelaChecklist()"></div><div class="filtro-separador">até</div><div class="filtro-grupo"><label>Data Fim</label><input type="date" id="filtroChecklistDataFim" onchange="carregarTabelaChecklist()"></div></div>
+                    <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Motorista</th><th>Status</th><th>Localização</th><th>Ações</th></tr></thead><tbody id="tabelaChecklist"></tbody></table></div>
                 </div>
 
-                <div class="dashboard-grid-2">
-                    <div class="card" style="padding:1.25rem;">
-                        <h3 style="font-weight:600; margin:0 0 1rem;">📊 Disponibilidade da Frota</h3>
-                        <div id="grafico-status" style="width:100%; height:200px;"></div>
-                    </div>
-                    <div class="card" style="padding:1.25rem;">
-                        <h3 style="font-weight:600; margin:0 0 1rem;">⚠️ Alertas de Gestão</h3>
-                        <div id="lista-alertas">
-                            <div class="alerta-item info">
-                                <div class="titulo">✅ Sistema operacional</div>
-                                <div class="detalhe">Nenhum alerta crítico no momento</div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- MANUTENÇÃO -->
+                <div id="pag-manutencao" class="pagina">
+                    <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Manutenção</h2><p style="color:#64748b; margin:0.25rem 0 0;">Solicitações e serviços</p></div><button class="btn btn-primary" onclick="abrirModalManutencao()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nova Solicitação</button></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroManutencaoVeiculo" onchange="carregarTabelaManutencao()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroManutencaoStatus" onchange="carregarTabelaManutencao()"><option value="todos">Todos Status</option><option value="aberta">Aberta</option><option value="andamento">Em Andamento</option><option value="concluida">Concluída</option></select></div></div>
+                    <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaManutencao"></tbody></table></div>
                 </div>
 
-                <div class="card" style="padding:1.25rem; margin-top:1.5rem;">
-                    <h3 style="font-weight:600; margin:0 0 1rem;">📝 Atividades Recentes</h3>
-                    <div class="table-container">
-                        <table style="margin:0;">
-                            <thead>
-                                <tr>
-                                    <th>Data/Hora</th>
-                                    <th>Veículo</th>
-                                    <th>Tipo</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabela-atividades">
-                                <tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:1rem;">Nenhuma atividade registrada</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <!-- GASTOS -->
+                <div id="pag-gastos" class="pagina">
+                    <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> Gastos</h2><p style="color:#64748b; margin:0.25rem 0 0;">Registro de despesas</p></div><button class="btn btn-primary" onclick="abrirModalGasto()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Gasto</button></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroGastosVeiculo" onchange="carregarTabelaGastos()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Tipo</label><select id="filtroGastosTipo" onchange="carregarTabelaGastos()"><option value="todos">Todos Tipos</option><option value="combustivel">Combustível</option><option value="manutencao">Manutenção</option><option value="pneus">Pneus</option><option value="pedagio">Pedágio</option><option value="seguro">Seguro</option><option value="outro">Outro</option></select></div></div>
+                    <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaGastos"></tbody></table></div>
                 </div>
-            </div>
 
-            <!-- === TODAS AS OUTRAS PÁGINAS ORIGINAIS === -->
-            <!-- VEÍCULOS -->
-            <div id="pag-veiculos" class="pagina">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">🚛 Cadastro de Veículos</h2><p style="color:#64748b; margin:0.25rem 0 0;">Gerencie toda a frota</p></div><button class="btn btn-primary admin-only" onclick="abrirModalVeiculo()">➕ Novo Veículo</button></div>
-                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Categoria</label><select id="filtroVeiculoCategoria" onchange="carregarTabelaVeiculos()"><option value="todas">Todas Categorias</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroVeiculoStatus" onchange="carregarTabelaVeiculos()"><option value="todos">Todos Status</option><option value="disponivel">Disponível</option><option value="alocado">Alocado</option><option value="manutencao">Manutenção</option><option value="inativo">Inativo</option></select></div></div>
-                <div class="card table-container"><table><thead><tr><th>Placa</th><th>Categoria</th><th>Modelo</th><th>Km Atual</th><th>Obra</th><th>Status</th><th class="admin-only">Ações</th></tr></thead><tbody id="tabelaVeiculos"></tbody></table></div>
-            </div>
+                <!-- CHAMADOS -->
+                <div id="pag-chamados" class="pagina">
+                    <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Chamados</h2><p style="color:#64748b; margin:0.25rem 0 0;">Ocorrências registradas</p></div><button class="btn btn-primary" onclick="abrirModalChamado()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Abrir Chamado</button></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroChamadosVeiculo" onchange="carregarTabelaChamados()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroChamadosStatus" onchange="carregarTabelaChamados()"><option value="todos">Todos Status</option><option value="aberto">Aberto</option><option value="andamento">Em Andamento</option><option value="resolvido">Resolvido</option></select></div></div>
+                    <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Título</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaChamados"></tbody></table></div>
+                </div>
 
-            <!-- CHECK-LIST -->
-            <div id="pag-checklist" class="pagina">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">✅ Check-list de Inspeção</h2><p style="color:#64748b; margin:0.25rem 0 0;">Inspeções diárias</p></div><button class="btn btn-primary" onclick="abrirModalChecklist()">➕ Novo Check-list</button></div>
-                <div id="alertasCintas"></div>
-                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroChecklistVeiculo" onchange="carregarTabelaChecklist()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Data Início</label><input type="date" id="filtroChecklistDataIni" onchange="carregarTabelaChecklist()"></div><div class="filtro-separador">até</div><div class="filtro-grupo"><label>Data Fim</label><input type="date" id="filtroChecklistDataFim" onchange="carregarTabelaChecklist()"></div></div>
-                <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Motorista</th><th>Status</th><th>Localização</th><th>Ações</th></tr></thead><tbody id="tabelaChecklist"></tbody></table></div>
-            </div>
+                <!-- ALOCAÇÕES -->
+                <div id="pag-alocacoes" class="pagina">
+                    <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Alocações</h2><p style="color:#64748b; margin:0.25rem 0 0;">Alocação de veículos</p></div><button class="btn btn-primary" onclick="abrirModalAlocacao()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nova Alocação</button></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroAlocacoesVeiculo" onchange="carregarTabelaAlocacoes()"><option value="todos">Todos Veículos</option></select></div></div>
+                    <div class="card table-container"><table><thead><tr><th>Veículo</th><th>Origem</th><th>Destino</th><th>Data Início</th><th>Data Fim</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaAlocacoes"></tbody></table></div>
+                </div>
 
-            <!-- MANUTENÇÃO -->
-            <div id="pag-manutencao" class="pagina">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">🔧 Manutenção</h2><p style="color:#64748b; margin:0.25rem 0 0;">Solicitações e serviços</p></div><button class="btn btn-primary" onclick="abrirModalManutencao()">➕ Nova Solicitação</button></div>
-                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroManutencaoVeiculo" onchange="carregarTabelaManutencao()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroManutencaoStatus" onchange="carregarTabelaManutencao()"><option value="todos">Todos Status</option><option value="aberta">Aberta</option><option value="andamento">Em Andamento</option><option value="concluida">Concluída</option></select></div></div>
-                <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaManutencao"></tbody></table></div>
-            </div>
+                <!-- LOCAIS -->
+                <div id="pag-locais" class="pagina">
+                    <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg> Locais / Obras</h2><p style="color:#64748b; margin:0.25rem 0 0;">Cadastro de locais</p></div><button class="btn btn-primary admin-only" onclick="abrirModalLocal()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Local</button></div>
+                    <div class="card table-container"><table><thead><tr><th>Nome</th><th class="admin-only">Ações</th></tr></thead><tbody id="tabelaLocais"></tbody></table></div>
+                </div>
 
-            <!-- GASTOS -->
-            <div id="pag-gastos" class="pagina">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">💰 Gastos</h2><p style="color:#64748b; margin:0.25rem 0 0;">Registro de despesas</p></div><button class="btn btn-primary" onclick="abrirModalGasto()">➕ Novo Gasto</button></div>
-                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroGastosVeiculo" onchange="carregarTabelaGastos()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Tipo</label><select id="filtroGastosTipo" onchange="carregarTabelaGastos()"><option value="todos">Todos Tipos</option><option value="combustivel">Combustível</option><option value="manutencao">Manutenção</option><option value="pneus">Pneus</option><option value="pedagio">Pedágio</option><option value="seguro">Seguro</option><option value="outro">Outro</option></select></div></div>
-                <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaGastos"></tbody></table></div>
-            </div>
+                <!-- USUÁRIOS -->
+                <div id="pag-usuarios" class="pagina admin-only">
+                    <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Gerenciar Usuários</h2><p style="color:#64748b; margin:0.25rem 0 0;">Cadastre e gerencie acessos</p></div><button class="btn btn-primary" onclick="abrirModalUsuario()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Usuário</button></div>
+                    <div class="card table-container"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaUsuarios"></tbody></table></div>
+                </div>
 
-            <!-- CHAMADOS -->
-            <div id="pag-chamados" class="pagina">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">🔔 Chamados</h2><p style="color:#64748b; margin:0.25rem 0 0;">Ocorrências registradas</p></div><button class="btn btn-primary" onclick="abrirModalChamado()">➕ Abrir Chamado</button></div>
-                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroChamadosVeiculo" onchange="carregarTabelaChamados()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroChamadosStatus" onchange="carregarTabelaChamados()"><option value="todos">Todos Status</option><option value="aberto">Aberto</option><option value="andamento">Em Andamento</option><option value="resolvido">Resolvido</option></select></div></div>
-                <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Título</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaChamados"></tbody></table></div>
-            </div>
+                <!-- CONFIGURAÇÕES -->
+                <div id="pag-configuracoes" class="pagina admin-only">
+                    <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Configurações</h2><p style="color:#64748b; margin:0.25rem 0 0;">Parâmetros do sistema</p></div></div>
+                    <div class="card" style="padding:1.5rem; margin-bottom:1.5rem;"><h3 style="font-weight:600; margin:0 0 1rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M3 22V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17"/><line x1="3" y1="22" x2="15" y2="22"/><path d="M17 10h1a2 2 0 0 1 2 2v6a1 1 0 0 0 1 1h0a1 1 0 0 0 1-1v-7.5L17 7"/></svg> Postos de Abastecimento</h3><div style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;"><input type="text" id="novoPosto" placeholder="Nome do posto" style="flex:1; min-width:200px;"><button class="btn btn-primary" onclick="adicionarPosto()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar</button></div><div id="listaPostos"></div></div>
+                    <div class="card" style="padding:1.5rem; margin-bottom:1.5rem;"><h3 style="font-weight:600; margin:0 0 1rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg> Categorias de Veículos</h3><div id="listaCategoriasConfig"></div></div>
+                    <div class="card" style="padding:1.5rem;"><h3 style="font-weight:600; margin:0 0 1rem;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Requisitos de Cintas</h3><p style="color:#64748b; font-size:0.875rem; margin-bottom:1rem;">Quantidades mínimas para categorias especiais</p><div id="configCintas"></div></div>
+                </div>
 
-            <!-- ALOCAÇÕES -->
-            <div id="pag-alocacoes" class="pagina">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">📍 Alocações</h2><p style="color:#64748b; margin:0.25rem 0 0;">Alocação de veículos</p></div><button class="btn btn-primary" onclick="abrirModalAlocacao()">➕ Nova Alocação</button></div>
-                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroAlocacoesVeiculo" onchange="carregarTabelaAlocacoes()"><option value="todos">Todos Veículos</option></select></div></div>
-                <div class="card table-container"><table><thead><tr><th>Veículo</th><th>Origem</th><th>Destino</th><th>Data Início</th><th>Data Fim</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaAlocacoes"></tbody></table></div>
-            </div>
+                <!-- LOG -->
+                <div id="pag-log" class="pagina admin-only">
+                    <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg> Log de Registros</h2><p style="color:#64748b; margin:0.25rem 0 0;">Histórico de ações</p></div><button class="btn btn-secondary" onclick="limparLog()"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Limpar Log</button></div>
+                    <div class="filtro-area"><div class="filtro-titulo"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> Filtrar</div><div class="filtro-grupo"><label>Usuário</label><select id="filtroLogUsuario" onchange="carregarLog()"><option value="todos">Todos Usuários</option></select></div><div class="filtro-grupo"><label>Ação</label><select id="filtroLogAcao" onchange="carregarLog()"><option value="todas">Todas Ações</option><option value="login">Login</option><option value="criacao">Criação</option><option value="edicao">Edição</option><option value="exclusao">Exclusão</option></select></div></div>
+                    <div class="card table-container"><table><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead><tbody id="tabelaLog"></tbody></table></div>
+                </div>
 
-            <!-- LOCAIS -->
-            <div id="pag-locais" class="pagina">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">🏗️ Locais / Obras</h2><p style="color:#64748b; margin:0.25rem 0 0;">Cadastro de locais</p></div><button class="btn btn-primary admin-only" onclick="abrirModalLocal()">➕ Novo Local</button></div>
-                <div class="card table-container"><table><thead><tr><th>Nome</th><th class="admin-only">Ações</th></tr></thead><tbody id="tabelaLocais"></tbody></table></div>
             </div>
-
-            <!-- USUÁRIOS -->
-            <div id="pag-usuarios" class="pagina admin-only">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">👤 Gerenciar Usuários</h2><p style="color:#64748b; margin:0.25rem 0 0;">Cadastre e gerencie acessos</p></div><button class="btn btn-primary" onclick="abrirModalUsuario()">➕ Novo Usuário</button></div>
-                <div class="card table-container"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaUsuarios"></tbody></table></div>
-            </div>
-
-            <!-- CONFIGURAÇÕES -->
-            <div id="pag-configuracoes" class="pagina admin-only">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">⚙️ Configurações</h2><p style="color:#64748b; margin:0.25rem 0 0;">Parâmetros do sistema</p></div></div>
-                <div class="card" style="padding:1.5rem; margin-bottom:1.5rem;"><h3 style="font-weight:600; margin:0 0 1rem;">⛽ Postos de Abastecimento</h3><div style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;"><input type="text" id="novoPosto" placeholder="Nome do posto" style="flex:1; min-width:200px;"><button class="btn btn-primary" onclick="adicionarPosto()">➕ Adicionar</button></div><div id="listaPostos"></div></div>
-                <div class="card" style="padding:1.5rem; margin-bottom:1.5rem;"><h3 style="font-weight:600; margin:0 0 1rem;">🚛 Categorias de Veículos</h3><div id="listaCategoriasConfig"></div></div>
-                <div class="card" style="padding:1.5rem;"><h3 style="font-weight:600; margin:0 0 1rem;">🔗 Requisitos de Cintas</h3><p style="color:#64748b; font-size:0.875rem; margin-bottom:1rem;">Quantidades mínimas para categorias especiais</p><div id="configCintas"></div></div>
-            </div>
-
-            <!-- LOG -->
-            <div id="pag-log" class="pagina admin-only">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">📝 Log de Registros</h2><p style="color:#64748b; margin:0.25rem 0 0;">Histórico de ações</p></div><button class="btn btn-secondary" onclick="limparLog()">🗑️ Limpar Log</button></div>
-                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Usuário</label><select id="filtroLogUsuario" onchange="carregarLog()"><option value="todos">Todos Usuários</option></select></div><div class="filtro-grupo"><label>Ação</label><select id="filtroLogAcao" onchange="carregarLog()"><option value="todas">Todas Ações</option><option value="login">Login</option><option value="criacao">Criação</option><option value="edicao">Edição</option><option value="exclusao">Exclusão</option></select></div></div>
-                <div class="card table-container"><table><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead><tbody id="tabelaLog"></tbody></table></div>
-            </div>
-
         </main>
     </div>
 
     <div id="modais"></div>
 
-    <!-- SIDEBAR TOGGLE -->
     <script>
         function toggleSidebar() {
             const s = document.getElementById('sidebar');
@@ -394,71 +282,9 @@
             const l = e.target.closest('.sidebar-link');
             if (l && window.innerWidth <= 768) toggleSidebar();
         });
-
-        // Inicializar gráficos do dashboard após carregar app.js
-        let graficosCarregados = false;
-        function carregarGraficosDashboard() {
-            if (graficosCarregados) return;
-            graficosCarregados = true;
-
-            // Gráfico Categorias
-            const catEl = document.getElementById('grafico-categorias');
-            if (catEl && window.echarts) {
-                const ec = echarts.init(catEl);
-                ec.setOption({
-                    tooltip: {trigger: 'item'},
-                    series: [{
-                        type: 'pie',
-                        radius: ['40%', '70%'],
-                        data: [
-                            {value:0, name:'Carro'},
-                            {value:0, name:'Caminhão'},
-                            {value:0, name:'Máquina'},
-                            {value:0, name:'Utilitário'}
-                        ]
-                    }]
-                });
-            }
-
-            // Gráfico Gastos
-            const gastoEl = document.getElementById('grafico-gastos');
-            if (gastoEl && window.echarts) {
-                const eg = echarts.init(gastoEl);
-                eg.setOption({
-                    tooltip: {trigger: 'axis'},
-                    xAxis: {type:'category', data:['Mar','Abr','Mai','Jun','Jul','Ago']},
-                    yAxis: {type:'value', name:'R$'},
-                    series: [{name:'Gastos', type:'bar', data:[0,0,0,0,0,0], color:'#4f46e5'}]
-                });
-            }
-
-            // Gráfico Status
-            const stEl = document.getElementById('grafico-status');
-            if (stEl && window.echarts) {
-                const es = echarts.init(stEl);
-                es.setOption({
-                    tooltip: {trigger: 'item'},
-                    series: [{
-                        type: 'pie',
-                        radius: ['40%', '70%'],
-                        data: [
-                            {value:0, name:'Operando'},
-                            {value:0, name:'Disponível'},
-                            {value:0, name:'Manutenção'}
-                        ],
-                        color: ['#22c55e','#3b82f6','#f59e0b']
-                    }]
-                });
-            }
-        }
-
-        // Carregar gráficos após app.js inicializar
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                if (window.echarts) carregarGraficosDashboard();
-            }, 500);
-        });
     </script>
-    <script src="app.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/melhorias-veiculos.js"></script>
+    <script src="js/melhorias-checklist-v2.js"></script>
 </body>
 </html>
