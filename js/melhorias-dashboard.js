@@ -206,7 +206,7 @@ function inicializarChartStatus() {
 // CARREGAR DADOS REAIS DO SISTEMA
 // ============================================================
 function carregarDadosDashboardAprimorado() {
-    // Tenta buscar dados do sistema existente (Supabase ou localStorage)
+    // Tenta buscar dados do sistema existente (localStorage ou variáveis globais)
     const veiculos = buscarDados('veiculos') || [];
     const gastos = buscarDados('gastos') || [];
     const chamados = buscarDados('chamados') || [];
@@ -228,22 +228,38 @@ function carregarDadosDashboardAprimorado() {
     }
 }
 
-// Função auxiliar para buscar dados (compatível com localStorage e Supabase)
+// Função auxiliar para buscar dados (compatível com localStorage e variáveis globais)
 function buscarDados(tabela) {
     try {
         // Tenta localStorage primeiro
         const dados = localStorage.getItem('frota_' + tabela);
         if (dados) return JSON.parse(dados);
         
-        // Tenta variáveis globais do app.js
-        if (window['dados' + tabela.charAt(0).toUpperCase() + tabela.slice(1)]) {
-            return window['dados' + tabela.charAt(0).toUpperCase() + tabela.slice(1)];
+        // Tenta variáveis globais do app.js (várias convenções de nome)
+        const nomesVariaveis = [
+            'lista' + tabela.charAt(0).toUpperCase() + tabela.slice(1),
+            'dados' + tabela.charAt(0).toUpperCase() + tabela.slice(1),
+            tabela,
+            tabela + 'Lista'
+        ];
+        
+        for (const nome of nomesVariaveis) {
+            if (window[nome] && Array.isArray(window[nome])) {
+                return window[nome];
+            }
         }
         
         return [];
     } catch (e) {
+        console.warn('Erro ao buscar dados de', tabela, ':', e);
         return [];
     }
+}
+
+// Função auxiliar para definir texto em elementos
+function definirTexto(id, texto) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = texto;
 }
 
 // ============================================================
@@ -260,13 +276,35 @@ function atualizarStatsComDadosReais(veiculos, gastos, chamados) {
     const mesAtual = hoje.getMonth();
     const anoAtual = hoje.getFullYear();
     const gastosMes = gastos.filter(g => {
-        const data = new Date(g.data);
+        const data = new Date(g.data || g.data_criacao || g.dataCriacao || Date.now());
         return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
     });
     const totalGastos = gastosMes.reduce((soma, g) => soma + (parseFloat(g.valor) || 0), 0);
     
+    // Gastos do mês anterior para comparação
+    const mesAnterior = mesAtual === 0 ? 11 : mesAtual - 1;
+    const anoAnterior = mesAtual === 0 ? anoAtual - 1 : anoAtual;
+    const gastosMesAnterior = gastos.filter(g => {
+        const data = new Date(g.data || g.data_criacao || g.dataCriacao || Date.now());
+        return data.getMonth() === mesAnterior && data.getFullYear() === anoAnterior;
+    });
+    const totalGastosAnterior = gastosMesAnterior.reduce((soma, g) => soma + (parseFloat(g.valor) || 0), 0);
+    
+    // Tendência de gastos
+    let tendencia = '—';
+    if (totalGastosAnterior > 0) {
+        const variacao = ((totalGastos - totalGastosAnterior) / totalGastosAnterior * 100).toFixed(1);
+        if (variacao > 0) {
+            tendencia = '▲ ' + Math.abs(variacao) + '% vs mês anterior';
+        } else if (variacao < 0) {
+            tendencia = '▼ ' + Math.abs(variacao) + '% vs mês anterior';
+        } else {
+            tendencia = '→ Igual ao mês anterior';
+        }
+    }
+    
     // KM total
-    const kmTotal = veiculos.reduce((soma, v) => soma + (parseFloat(v.km_atual) || 0), 0);
+    const kmTotal = veiculos.reduce((soma, v) => soma + (parseFloat(v.km_atual || v.kmAtual || v.quilometragem) || 0), 0);
     const custoKm = totalGastos > 0 && kmTotal > 0 ? (totalGastos / kmTotal) : 0;
     
     // Atualiza elementos
@@ -275,6 +313,7 @@ function atualizarStatsComDadosReais(veiculos, gastos, chamados) {
     definirTexto('stat-manutencao', manutencao);
     definirTexto('stat-chamados', chamadosAbertos);
     definirTexto('stat-gastos', 'R$ ' + totalGastos.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+    definirTexto('stat-gastos-tendencia', tendencia);
     definirTexto('stat-km', kmTotal.toLocaleString('pt-BR'));
     definirTexto('stat-custo-km', 'Custo/km: R$ ' + custoKm.toFixed(2));
     
@@ -320,13 +359,13 @@ function atualizarGraficosComDadosReais(veiculos, gastos) {
         const ano = data.getFullYear();
         
         const gastosMes = gastos.filter(g => {
-            const d = new Date(g.data);
+            const d = new Date(g.data || g.data_criacao || g.dataCriacao || Date.now());
             return d.getMonth() === mes && d.getFullYear() === ano;
         });
         
-        dadosCombustivel.push(gastosMes.filter(g => g.tipo === 'combustivel').reduce((s, g) => s + (parseFloat(g.valor) || 0), 0));
-        dadosManutencao.push(gastosMes.filter(g => g.tipo === 'manutencao').reduce((s, g) => s + (parseFloat(g.valor) || 0), 0));
-        dadosOutros.push(gastosMes.filter(g => g.tipo !== 'combustivel' && g.tipo !== 'manutencao').reduce((s, g) => s + (parseFloat(g.valor) || 0), 0));
+        dadosCombustivel.push(gastosMes.filter(g => (g.tipo || '').toLowerCase() === 'combustivel').reduce((s, g) => s + (parseFloat(g.valor) || 0), 0));
+        dadosManutencao.push(gastosMes.filter(g => (g.tipo || '').toLowerCase() === 'manutencao').reduce((s, g) => s + (parseFloat(g.valor) || 0), 0));
+        dadosOutros.push(gastosMes.filter(g => (g.tipo || '').toLowerCase() !== 'combustivel' && (g.tipo || '').toLowerCase() !== 'manutencao').reduce((s, g) => s + (parseFloat(g.valor) || 0), 0));
     }
     
     if (chartGastos) {
@@ -365,9 +404,12 @@ function atualizarGraficosComDadosReais(veiculos, gastos) {
 // ============================================================
 function atualizarChecklist(checklists) {
     const hoje = new Date().toISOString().split('T')[0];
-    const checklistsHoje = checklists.filter(c => c.data === hoje);
+    const checklistsHoje = checklists.filter(c => {
+        const data = new Date(c.data || c.data_criacao || c.dataCriacao || Date.now());
+        return data.toISOString().split('T')[0] === hoje;
+    });
     
-    const concluidos = checklistsHoje.filter(c => c.status === 'concluido').length;
+    const concluidos = checklistsHoje.filter(c => (c.status || '').toLowerCase() === 'concluido' || (c.status || '').toLowerCase() === 'concluído').length;
     const total = checklistsHoje.length;
     const percent = total > 0 ? Math.round((concluidos / total) * 100) : 0;
     
@@ -387,7 +429,7 @@ function atualizarChecklist(checklists) {
     const container = document.getElementById('checklistDetalhes');
     if (container) {
         const pendentes = total - concluidos;
-        const comPendencias = checklistsHoje.filter(c => c.status === 'pendencia').length;
+        const comPendencias = checklistsHoje.filter(c => (c.status || '').toLowerCase() === 'pendencia' || (c.status || '').toLowerCase() === 'pendente').length;
         
         container.innerHTML = `
             <div class="mini-stat">
@@ -416,54 +458,41 @@ function atualizarAlertas(veiculos, manutencoes) {
     veiculos.filter(v => v.status === 'manutencao').forEach(v => {
         alertas.push({
             tipo: 'atencao',
-            titulo: `${v.placa} — Em manutenção`,
-            detalhe: `${v.categoria || ''} ${v.modelo || ''}`
+            titulo: `${v.placa || 'Veículo'} — Em manutenção`,
+            detalhe: `${v.categoria || 'Categoria'} · ${v.modelo || ''}`
         });
     });
     
-    // Manutenções preventivas próximas (baseado em KM)
-    veiculos.forEach(v => {
-        const km = parseFloat(v.km_atual) || 0;
-        if (km > 0 && km % 10000 > 9500) {
-            alertas.push({
-                tipo: 'info',
-                titulo: `${v.placa} — Revisão próxima`,
-                detalhe: `KM atual: ${km.toLocaleString('pt-BR')}`
-            });
-        }
-    });
-    
-    // Chamados abertos críticos
-    const chamados = buscarDados('chamados') || [];
-    chamados.filter(c => c.status === 'aberto').forEach(c => {
+    // Manutenções abertas/andamento
+    manutencoes.filter(m => {
+        const status = (m.status || '').toLowerCase();
+        return status === 'aberta' || status === 'andamento' || status === 'pendente';
+    }).slice(0, 3).forEach(m => {
         alertas.push({
             tipo: 'critico',
-            titulo: `${c.veiculo || 'Veículo'} — ${c.titulo || 'Chamado aberto'}`,
-            detalhe: c.descricao || 'Sem descrição'
+            titulo: `${m.veiculo || m.placa || 'Veículo'} — ${m.tipo || 'Manutenção'}`,
+            detalhe: m.descricao || 'Serviço pendente'
         });
     });
     
-    // Limita a 5 alertas
-    const alertasExibidos = alertas.slice(0, 5);
+    // Atualiza contagem
+    definirTexto('alertaContagem', alertas.length);
     
-    // Atualiza contador
-    const contador = document.getElementById('alertaContagem');
-    if (contador) contador.textContent = alertas.length;
+    // Renderiza alertas
+    const container = document.getElementById('listaAlertasDashboard');
+    if (!container) return;
     
-    // Atualiza lista
-    const lista = document.getElementById('listaAlertasDashboard');
-    if (lista) {
-        if (alertasExibidos.length === 0) {
-            lista.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem; text-align:center; padding:1rem 0;">Nenhum alerta no momento.</p>';
-        } else {
-            lista.innerHTML = alertasExibidos.map(a => `
-                <div class="alerta-item ${a.tipo}">
-                    <div class="titulo">${a.titulo}</div>
-                    <div class="detalhe">${a.detalhe}</div>
-                </div>
-            `).join('');
-        }
+    if (alertas.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem; text-align:center; padding:1rem 0;">Nenhum alerta no momento.</p>';
+        return;
     }
+    
+    container.innerHTML = alertas.slice(0, 5).map(a => `
+        <div class="alerta-item ${a.tipo}">
+            <div class="titulo">${a.titulo}</div>
+            <div class="detalhe">${a.detalhe}</div>
+        </div>
+    `).join('');
 }
 
 // ============================================================
@@ -472,104 +501,118 @@ function atualizarAlertas(veiculos, manutencoes) {
 function atualizarAtividadesRecentes(veiculos, gastos, chamados, checklists, manutencoes) {
     const atividades = [];
     
-    // Combina todas as atividades
-    checklists.forEach(c => atividades.push({
-        data: c.data,
-        veiculo: c.veiculo || '—',
-        tipo: 'Check-list',
-        tipoCor: '#4f46e5',
-        descricao: c.status === 'concluido' ? 'Inspeção concluída' : 'Inspeção pendente',
-        usuario: c.motorista || '—',
-        status: c.status === 'concluido' ? 'OK' : 'Pendente',
-        statusCor: c.status === 'concluido' ? '#22c55e' : '#f59e0b'
-    }));
+    // Adiciona checklists recentes
+    checklists.slice(-5).forEach(c => {
+        atividades.push({
+            data: c.data || c.data_criacao || c.dataCriacao || Date.now(),
+            veiculo: c.veiculo || c.placa || '—',
+            tipo: 'Check-list',
+            descricao: 'Inspeção ' + (c.status || 'realizada'),
+            usuario: c.usuario || c.motorista || 'Sistema',
+            status: (c.status || '').toLowerCase() === 'concluido' ? 'OK' : 'Pendente'
+        });
+    });
     
-    gastos.forEach(g => atividades.push({
-        data: g.data,
-        veiculo: g.veiculo || '—',
-        tipo: 'Gasto',
-        tipoCor: '#06b6d4',
-        descricao: `${g.tipo || 'Outro'} — R$ ${parseFloat(g.valor || 0).toLocaleString('pt-BR')}`,
-        usuario: '—',
-        status: 'Registrado',
-        statusCor: '#22c55e'
-    }));
+    // Adiciona gastos recentes
+    gastos.slice(-5).forEach(g => {
+        atividades.push({
+            data: g.data || g.data_criacao || g.dataCriacao || Date.now(),
+            veiculo: g.veiculo || g.placa || '—',
+            tipo: 'Gasto',
+            descricao: `${g.tipo || 'Despesa'} — R$ ${parseFloat(g.valor || 0).toLocaleString('pt-BR')}`,
+            usuario: g.usuario || 'Sistema',
+            status: 'Registrado'
+        });
+    });
     
-    chamados.forEach(c => atividades.push({
-        data: c.data,
-        veiculo: c.veiculo || '—',
-        tipo: 'Chamado',
-        tipoCor: '#dc2626',
-        descricao: c.titulo || 'Sem título',
-        usuario: '—',
-        status: c.status || 'Aberto',
-        statusCor: c.status === 'resolvido' ? '#22c55e' : '#dc2626'
-    }));
+    // Adiciona chamados recentes
+    chamados.slice(-5).forEach(c => {
+        atividades.push({
+            data: c.data || c.data_criacao || c.dataCriacao || Date.now(),
+            veiculo: c.veiculo || c.placa || '—',
+            tipo: 'Chamado',
+            descricao: c.titulo || c.descricao || 'Ocorrência',
+            usuario: c.usuario || c.requerente || 'Sistema',
+            status: c.status || 'Aberto'
+        });
+    });
     
-    manutencoes.forEach(m => atividades.push({
-        data: m.data,
-        veiculo: m.veiculo || '—',
-        tipo: 'Manutenção',
-        tipoCor: '#f59e0b',
-        descricao: m.descricao || m.tipo || 'Serviço',
-        usuario: '—',
-        status: m.status || 'Aberta',
-        statusCor: m.status === 'concluida' ? '#22c55e' : '#f59e0b'
-    }));
+    // Adiciona manutenções recentes
+    manutencoes.slice(-5).forEach(m => {
+        atividades.push({
+            data: m.data || m.data_criacao || m.dataCriacao || Date.now(),
+            veiculo: m.veiculo || m.placa || '—',
+            tipo: 'Manutenção',
+            descricao: m.tipo || m.descricao || 'Serviço',
+            usuario: m.usuario || m.responsavel || 'Sistema',
+            status: m.status || 'Solicitada'
+        });
+    });
     
     // Ordena por data (mais recentes primeiro)
     atividades.sort((a, b) => new Date(b.data) - new Date(a.data));
     
-    // Pega as 5 mais recentes
-    const recentes = atividades.slice(0, 5);
+    // Pega as 8 mais recentes
+    const recentes = atividades.slice(0, 8);
     
+    // Renderiza tabela
     const tbody = document.getElementById('tabelaAtividadesRecentes');
-    if (tbody) {
-        if (recentes.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhuma atividade registrada.</td></tr>';
-        } else {
-            tbody.innerHTML = recentes.map(a => `
-                <tr>
-                    <td style="color:#64748b; font-size:0.8125rem;">${formatarData(a.data)}</td>
-                    <td style="font-weight:600;">${a.veiculo}</td>
-                    <td><span class="badge" style="background:${hexParaRgba(a.tipoCor, 0.1)};color:${a.tipoCor};">${a.tipo}</span></td>
-                    <td style="color:#64748b;">${a.descricao}</td>
-                    <td style="color:#64748b;">${a.usuario}</td>
-                    <td><span class="badge" style="background:${hexParaRgba(a.statusCor, 0.1)};color:${a.statusCor};">${a.status}</span></td>
-                </tr>
-            `).join('');
-        }
+    if (!tbody) return;
+    
+    if (recentes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhuma atividade registrada.</td></tr>';
+        return;
     }
+    
+    tbody.innerHTML = recentes.map(a => {
+        const data = new Date(a.data);
+        const dataStr = data.toLocaleDateString('pt-BR') + ' · ' + data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        
+        let badgeClass = 'badge-info';
+        if (a.status === 'OK' || a.status === 'Concluído' || a.status === 'Registrado') badgeClass = 'badge-success';
+        else if (a.status === 'Pendente' || a.status === 'Aberto') badgeClass = 'badge-warning';
+        else if (a.status === 'Urgente' || a.status === 'Crítico') badgeClass = 'badge-danger';
+        
+        return `
+            <tr>
+                <td style="white-space:nowrap;">${dataStr}</td>
+                <td><strong>${a.veiculo}</strong></td>
+                <td>${a.tipo}</td>
+                <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${a.descricao}</td>
+                <td>${a.usuario}</td>
+                <td><span class="badge ${badgeClass}">${a.status}</span></td>
+            </tr>
+        `;
+    }).join('');
 }
 
 // ============================================================
 // DADOS DE DEMONSTRAÇÃO (quando não há dados reais)
 // ============================================================
 function carregarDadosDemonstracao() {
-    // Stats
-    definirTexto('stat-total', '24');
-    definirTexto('stat-operacao', '18');
-    definirTexto('stat-manutencao', '4');
-    definirTexto('stat-chamados', '5');
-    definirTexto('stat-gastos', 'R$ 45,3K');
-    definirTexto('stat-km', '128,4K');
-    definirTexto('stat-custo-km', 'Custo/km: R$ 0,35');
-    definirTexto('stat-operacao-percent', '75% da frota');
+    console.log('📊 Carregando dados de demonstração do dashboard...');
+    
+    // Stats de demonstração
+    definirTexto('stat-total', 18);
+    definirTexto('stat-operacao', 14);
+    definirTexto('stat-operacao-percent', '78% da frota');
+    definirTexto('stat-manutencao', 2);
+    definirTexto('stat-chamados', 3);
+    definirTexto('stat-gastos', 'R$ 45.300');
     definirTexto('stat-gastos-tendencia', '▼ 8,2% vs mês anterior');
+    definirTexto('stat-km', '128.400');
+    definirTexto('stat-custo-km', 'Custo/km: R$ 0,35');
     
     // Gráfico Categoria
     if (chartCategoria) {
         chartCategoria.setOption({
             series: [{
                 data: [
-                    { name: 'Caminhão', value: 7, itemStyle: { color: '#4f46e5' } },
-                    { name: 'Caminhão Munck', value: 4, itemStyle: { color: '#06b6d4' } },
+                    { name: 'Caminhão', value: 6, itemStyle: { color: '#4f46e5' } },
+                    { name: 'Van', value: 4, itemStyle: { color: '#06b6d4' } },
                     { name: 'Pá Carregadeira', value: 3, itemStyle: { color: '#f59e0b' } },
-                    { name: 'Carro', value: 3, itemStyle: { color: '#22c55e' } },
-                    { name: 'Guindaste', value: 2, itemStyle: { color: '#dc2626' } },
-                    { name: 'Van', value: 2, itemStyle: { color: '#8b5cf6' } },
-                    { name: 'Betoneira', value: 2, itemStyle: { color: '#ec4899' } },
-                    { name: 'Carreta', value: 1, itemStyle: { color: '#14b8a6' } }
+                    { name: 'Guindaste', value: 2, itemStyle: { color: '#22c55e' } },
+                    { name: 'Carro', value: 3, itemStyle: { color: '#8b5cf6' } }
                 ]
             }]
         });
@@ -580,9 +623,9 @@ function carregarDadosDemonstracao() {
         chartGastos.setOption({
             xAxis: { data: ['Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago'] },
             series: [
-                { data: [22000, 24500, 21800, 26300, 23100, 25400] },
-                { data: [8500, 12200, 9800, 7400, 11500, 13200] },
-                { data: [4200, 3800, 5100, 4600, 6200, 6700] }
+                { data: [28000, 32000, 29500, 31000, 27500, 25000] },
+                { data: [8500, 7200, 9800, 6500, 11200, 12800] },
+                { data: [3200, 4100, 2800, 5200, 3900, 4500] }
             ]
         });
     }
@@ -590,29 +633,32 @@ function carregarDadosDemonstracao() {
     // Gráfico Status
     if (chartStatus) {
         chartStatus.setOption({
-            xAxis: { max: 24 },
+            xAxis: { max: 18 },
             series: [{
                 data: [
                     { value: 2, itemStyle: { color: '#dc2626', borderRadius: [0, 6, 6, 0] } },
-                    { value: 4, itemStyle: { color: '#f59e0b', borderRadius: [0, 6, 6, 0] } },
-                    { value: 18, itemStyle: { color: '#22c55e', borderRadius: [0, 6, 6, 0] } }
+                    { value: 2, itemStyle: { color: '#f59e0b', borderRadius: [0, 6, 6, 0] } },
+                    { value: 14, itemStyle: { color: '#22c55e', borderRadius: [0, 6, 6, 0] } }
                 ]
             }]
         });
     }
     
-    // Checklist
+    // Checklist de demonstração
     const ring = document.getElementById('checklistProgressRing');
     if (ring) {
+        const percent = 67;
+        const circunferencia = 377;
+        const offset = circunferencia - (percent / 100) * circunferencia;
         ring.style.transition = 'stroke-dashoffset 1s ease';
-        ring.style.strokeDashoffset = 377 - (67 / 100) * 377;
+        ring.style.strokeDashoffset = offset;
     }
     definirTexto('checklistPercent', '67%');
     definirTexto('checklistContagem', '12/18');
     
-    const container = document.getElementById('checklistDetalhes');
-    if (container) {
-        container.innerHTML = `
+    const containerCheck = document.getElementById('checklistDetalhes');
+    if (containerCheck) {
+        containerCheck.innerHTML = `
             <div class="mini-stat">
                 <span class="label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;"></span>Concluídos</span>
                 <span class="valor">12</span>
@@ -629,12 +675,10 @@ function carregarDadosDemonstracao() {
     }
     
     // Alertas de demonstração
-    const contador = document.getElementById('alertaContagem');
-    if (contador) contador.textContent = '4';
-    
-    const lista = document.getElementById('listaAlertasDashboard');
-    if (lista) {
-        lista.innerHTML = `
+    definirTexto('alertaContagem', 4);
+    const containerAlertas = document.getElementById('listaAlertasDashboard');
+    if (containerAlertas) {
+        containerAlertas.innerHTML = `
             <div class="alerta-item critico">
                 <div class="titulo">ABC-1234 — Pneus em estado crítico</div>
                 <div class="detalhe">Caminhão · Sul da obra</div>
@@ -654,110 +698,79 @@ function carregarDadosDemonstracao() {
         `;
     }
     
-    // Atividades de demonstração
+    // Atividades recentes de demonstração
     const tbody = document.getElementById('tabelaAtividadesRecentes');
     if (tbody) {
+        const hoje = new Date();
+        const ontem = new Date(hoje);
+        ontem.setDate(ontem.getDate() - 1);
+        
+        const formatar = (d, h, m) => {
+            const data = new Date(d);
+            data.setHours(h, m, 0, 0);
+            return data;
+        };
+        
         tbody.innerHTML = `
             <tr>
-                <td style="color:#64748b; font-size:0.8125rem;">Hoje · 08:42</td>
-                <td style="font-weight:600;">ABC-1234 · Caminhão</td>
-                <td><span class="badge" style="background:rgba(79,70,229,0.1);color:#4f46e5;">Check-list</span></td>
-                <td style="color:#64748b;">Inspeção matutina concluída</td>
-                <td style="color:#64748b;">João Silva</td>
-                <td><span class="badge" style="background:rgba(34,197,94,0.1);color:#22c55e;">OK</span></td>
+                <td style="white-space:nowrap;">Hoje · 08:42</td>
+                <td><strong>ABC-1234 · Caminhão</strong></td>
+                <td>Check-list</td>
+                <td>Inspeção matutina concluída</td>
+                <td>João Silva</td>
+                <td><span class="badge badge-success">OK</span></td>
             </tr>
             <tr>
-                <td style="color:#64748b; font-size:0.8125rem;">Hoje · 08:15</td>
-                <td style="font-weight:600;">DEF-5678 · Pá Carregadeira</td>
-                <td><span class="badge" style="background:rgba(6,182,212,0.1);color:#06b6d4;">Alocação</span></td>
-                <td style="color:#64748b;">Pátio Usina → Obra Principal</td>
-                <td style="color:#64748b;">Carlos Mendes</td>
-                <td><span class="badge" style="background:rgba(34,197,94,0.1);color:#22c55e;">Em andamento</span></td>
+                <td style="white-space:nowrap;">Hoje · 08:15</td>
+                <td><strong>DEF-5678 · Pá Carregadeira</strong></td>
+                <td>Alocação</td>
+                <td>Pátio Usina → Obra Principal</td>
+                <td>Carlos Mendes</td>
+                <td><span class="badge badge-info">Em andamento</span></td>
             </tr>
             <tr>
-                <td style="color:#64748b; font-size:0.8125rem;">Hoje · 07:58</td>
-                <td style="font-weight:600;">GHI-9012 · Guindaste</td>
-                <td><span class="badge" style="background:rgba(245,158,11,0.1);color:#f59e0b;">Manutenção</span></td>
-                <td style="color:#64748b;">Solicitação de revisão preventiva</td>
-                <td style="color:#64748b;">Márcio Lima</td>
-                <td><span class="badge" style="background:rgba(245,158,11,0.1);color:#f59e0b;">Aguardando</span></td>
+                <td style="white-space:nowrap;">Hoje · 07:58</td>
+                <td><strong>GHI-9012 · Guindaste</strong></td>
+                <td>Manutenção</td>
+                <td>Solicitação de revisão preventiva</td>
+                <td>Márcio Lima</td>
+                <td><span class="badge badge-warning">Aguardando</span></td>
             </tr>
             <tr>
-                <td style="color:#64748b; font-size:0.8125rem;">Ontem · 17:30</td>
-                <td style="font-weight:600;">JKL-3456 · Caminhão Munck</td>
-                <td><span class="badge" style="background:rgba(220,38,38,0.1);color:#dc2626;">Chamado</span></td>
-                <td style="color:#64748b;">Falha no sistema hidráulico</td>
-                <td style="color:#64748b;">Roberto Alves</td>
-                <td><span class="badge" style="background:rgba(220,38,38,0.1);color:#dc2626;">Urgente</span></td>
+                <td style="white-space:nowrap;">Ontem · 17:30</td>
+                <td><strong>JKL-3456 · Caminhão Munck</strong></td>
+                <td>Chamado</td>
+                <td>Falha no sistema hidráulico</td>
+                <td>Roberto Alves</td>
+                <td><span class="badge badge-danger">Urgente</span></td>
             </tr>
             <tr>
-                <td style="color:#64748b; font-size:0.8125rem;">Ontem · 15:20</td>
-                <td style="font-weight:600;">MNO-7890 · Van</td>
-                <td><span class="badge" style="background:rgba(34,197,94,0.1);color:#22c55e;">Gasto</span></td>
-                <td style="color:#64748b;">Abastecimento — R$ 680,00</td>
-                <td style="color:#64748b;">Fernanda Costa</td>
-                <td><span class="badge" style="background:rgba(34,197,94,0.1);color:#22c55e;">Registrado</span></td>
+                <td style="white-space:nowrap;">Ontem · 15:20</td>
+                <td><strong>MNO-7890 · Van</strong></td>
+                <td>Gasto</td>
+                <td>Abastecimento — R$ 680,00</td>
+                <td>Fernanda Costa</td>
+                <td><span class="badge badge-success">Registrado</span></td>
             </tr>
         `;
     }
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES
-// ============================================================
-function definirTexto(id, texto) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = texto;
-}
-
-function formatarData(dataStr) {
-    if (!dataStr) return '—';
-    try {
-        const data = new Date(dataStr);
-        const hoje = new Date();
-        const ontem = new Date(hoje);
-        ontem.setDate(ontem.getDate() - 1);
-        
-        if (data.toDateString() === hoje.toDateString()) {
-            return 'Hoje';
-        } else if (data.toDateString() === ontem.toDateString()) {
-            return 'Ontem';
-        } else {
-            return data.toLocaleDateString('pt-BR');
-        }
-    } catch (e) {
-        return dataStr;
-    }
-}
-
-function hexParaRgba(hex, alpha) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-// ============================================================
 // INICIALIZAÇÃO AUTOMÁTICA
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Aguarda um pouco para garantir que o app.js carregou primeiro
+    // Aguarda um pouco para garantir que ECharts e outros scripts carregaram
     setTimeout(function() {
-        // Verifica se estamos na página do dashboard
-        const dashboard = document.getElementById('pag-dashboard');
-        if (dashboard && dashboard.classList.contains('ativa')) {
-            inicializarDashboardAprimorado();
+        if (typeof echarts === 'undefined') {
+            console.warn('⚠️ ECharts não carregado. Verifique se o script está importado no <head>.');
+            return;
         }
-    }, 100);
+        inicializarDashboardAprimorado();
+        console.log('✅ Dashboard aprimorado inicializado com sucesso!');
+    }, 200);
 });
 
-// Também inicializa quando navegar para o dashboard
-const navegarParaOriginal = window.navegarPara;
-if (navegarParaOriginal) {
-    window.navegarPara = function(pagina) {
-        navegarParaOriginal(pagina);
-        if (pagina === 'dashboard') {
-            setTimeout(inicializarDashboardAprimorado, 100);
-        }
-    };
-}
+// Também expõe a função globalmente para ser chamada manualmente se necessário
+window.inicializarDashboardAprimorado = inicializarDashboardAprimorado;
+window.atualizarDashboard = carregarDadosDashboardAprimorado;

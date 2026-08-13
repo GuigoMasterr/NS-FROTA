@@ -5,36 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Frotas | Sistema Veicular v3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-   <style>
-       .dashboard-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-       .dashboard-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
-        .dashboard-card { background: white; border-radius: 0.875rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 1.5rem; transition: all 0.2s; }
-        .dashboard-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .dashboard-card h3 { font-weight: 600; margin: 0 0 0.25rem; font-size: 1rem; color: #1e293b; }
-        .dashboard-card .subtitulo { color: #64748b; font-size: 0.8125rem; margin-bottom: 1rem; }
-        .chart-container { width: 100%; }
-        .mini-stat { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
-        .mini-stat:last-child { border-bottom: none; }
-        .mini-stat .label { color: #64748b; }
-        .mini-stat .valor { font-weight: 600; color: #1e293b; }
-        .alerta-item { padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; border-left: 3px solid; }
-        .alerta-item.critico { background: #fef2f2; border-color: #dc2626; }
-        .alerta-item.atencao { background: #fefce8; border-color: #f59e0b; }
-        .alerta-item.info { background: #eff6ff; border-color: #3b82f6; }
-        .alerta-item .titulo { font-weight: 600; color: #1e293b; }
-        .alerta-item .detalhe { color: #64748b; font-size: 0.75rem; margin-top: 2px; }
-        .checklist-progress { text-align: center; padding: 1rem 0; }
-        .progress-ring-container { position: relative; display: inline-block; }
-        .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
-        .progress-text .numero { font-size: 1.75rem; font-weight: 700; color: #1e293b; }
-        .progress-text .sub { font-size: 0.75rem; color: #64748b; }
-        @media (max-width: 1024px) { .dashboard-grid-2 { grid-template-columns: 1fr; } .dashboard-grid-3 { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 768px) { .dashboard-grid-3 { grid-template-columns: 1fr; } }
-
-       * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
+    <!-- ✅ IMPORTAÇÃO OBRIGATÓRIA DO ECHARTS (para os gráficos) -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    
+    <style>
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; }
         body { background-color: #f8fafc; color: #1e293b; margin: 0; }
         .sidebar { width: 16.5rem; background: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 100; }
         .sidebar-toggle { display: none; position: fixed; top: 1rem; left: 1rem; z-index: 200; background: #4f46e5; color: white; border: none; border-radius: 0.5rem; padding: 0.5rem 0.75rem; cursor: pointer; font-size: 1.25rem; }
@@ -125,7 +101,7 @@
         .btn-fechar { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #94a3b8; }
         .linha-form { margin-bottom: 1rem; }
         .botoes-form { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap; }
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
         .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
         .main-content { flex: 1; overflow-y: auto; background: #f8fafc; min-width: 0; padding: 1.5rem; }
@@ -136,17 +112,55 @@
         .foto-container:hover { border-color: #4f46e5; background: #eef2ff; }
         .foto-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 0.375rem; }
         .section-title { font-size: 0.875rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin: 1.5rem 0 0.75rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; }
-        @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 1024px) { .content-grid { grid-template-columns: 1fr; } .sidebar { width: 15rem; } }
+        
+        /* ============================================================
+           ✅ NOVOS ESTILOS DO DASHBOARD APRIMORADO
+           ============================================================ */
+        .dashboard-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+        .dashboard-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
+        .dashboard-card { background: white; border-radius: 0.875rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 1.5rem; transition: all 0.2s; }
+        .dashboard-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .dashboard-card h3 { font-weight: 600; margin: 0 0 0.25rem; font-size: 1rem; color: #1e293b; }
+        .dashboard-card .subtitulo { color: #64748b; font-size: 0.8125rem; margin-bottom: 1rem; }
+        .chart-container { width: 100%; position: relative; }
+        .mini-stat { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
+        .mini-stat:last-child { border-bottom: none; }
+        .mini-stat .label { color: #64748b; }
+        .mini-stat .valor { font-weight: 600; color: #1e293b; }
+        .alerta-item { padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; border-left: 3px solid; }
+        .alerta-item.critico { background: #fef2f2; border-color: #dc2626; }
+        .alerta-item.atencao { background: #fefce8; border-color: #f59e0b; }
+        .alerta-item.info { background: #eff6ff; border-color: #3b82f6; }
+        .alerta-item .titulo { font-weight: 600; color: #1e293b; }
+        .alerta-item .detalhe { color: #64748b; font-size: 0.75rem; margin-top: 2px; }
+        .checklist-progress { text-align: center; padding: 1rem 0; }
+        .progress-ring-container { position: relative; display: inline-block; }
+        .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+        .progress-text .numero { font-size: 1.75rem; font-weight: 700; color: #1e293b; }
+        .progress-text .sub { font-size: 0.75rem; color: #64748b; }
+        
+        @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1024px) { 
+            .content-grid { grid-template-columns: 1fr; } 
+            .sidebar { width: 15rem; } 
+            .dashboard-grid-2 { grid-template-columns: 1fr; }
+            .dashboard-grid-3 { grid-template-columns: 1fr 1fr; }
+        }
         @media (max-width: 768px) {
             .sidebar-toggle { display: block; }
             .sidebar { position: fixed; height: 100vh; left: 0; top: 0; transform: translateX(-100%); }
             .sidebar.aberto { transform: translateX(0); }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .admin-only, .supervisor-only { display: none !important; }
             .main-content { padding-top: 4rem !important; }
+            .dashboard-grid-3 { grid-template-columns: 1fr; }
         }
-        @media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } .modal-corpo { max-width: 100%; } .botoes-form { flex-direction: column; } .botoes-form .btn { width: 100%; } }
+        @media (max-width: 480px) { 
+            .stats-grid { grid-template-columns: 1fr; } 
+            .modal-corpo { max-width: 100%; } 
+            .botoes-form { flex-direction: column; } 
+            .botoes-form .btn { width: 100%; } 
+        }
     </style>
 </head>
 <body>
@@ -205,144 +219,148 @@
         </aside>
 
         <main class="main-content">
-           <!-- DASHBOARD APRIMORADO -->
-<div id="pag-dashboard" class="pagina ativa">
-    <div class="page-header">
-        <div>
-            <h2 style="font-size:1.75rem; font-weight:700; margin:0;">Bem-vindo de volta!</h2>
-            <p style="color:#64748b; margin:0.25rem 0 0;">Resumo da sua frota hoje</p>
-        </div>
-        <div style="display:flex; gap:0.5rem; align-items:center;">
-            <span class="badge badge-info" id="dataAtualDashboard"></span>
-        </div>
-    </div>
-    
-    <div id="areaAlertas"></div>
-    
-    <!-- Cards de Estatísticas (mantém os originais + 2 novos) -->
-    <div class="stats-grid" style="grid-template-columns: repeat(6, 1fr);">
-        <div class="stat-card" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);">
-            <div style="color:#4f46e5; font-weight:600; font-size:0.875rem;">Total de Veículos</div>
-            <div id="stat-total" style="font-size:2.5rem; font-weight:700; color:#4338ca; margin:0.5rem 0;">0</div>
-            <div style="color:#6366f1; font-size:0.8125rem;">cadastrados</div>
-        </div>
-        <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
-            <div style="color:#166534; font-weight:600; font-size:0.875rem;">Em Operação</div>
-            <div id="stat-operacao" style="font-size:2.5rem; font-weight:700; color:#15803d; margin:0.5rem 0;">0</div>
-            <div id="stat-operacao-percent" style="color:#22c55e; font-size:0.8125rem;">0% da frota</div>
-        </div>
-        <div class="stat-card" style="background:linear-gradient(135deg,#fefce8,#fef3c7);">
-            <div style="color:#92400e; font-weight:600; font-size:0.875rem;">Em Manutenção</div>
-            <div id="stat-manutencao" style="font-size:2.5rem; font-weight:700; color:#b45309; margin:0.5rem 0;">0</div>
-            <div style="color:#f59e0b; font-size:0.8125rem;">precisam de atenção</div>
-        </div>
-        <div class="stat-card" style="background:linear-gradient(135deg,#fef2f2,#fee2e2);">
-            <div style="color:#991b1b; font-weight:600; font-size:0.875rem;">Chamados Abertos</div>
-            <div id="stat-chamados" style="font-size:2.5rem; font-weight:700; color:#b91c1c; margin:0.5rem 0;">0</div>
-            <div style="color:#ef4444; font-size:0.8125rem;">pendentes</div>
-        </div>
-        <div class="stat-card" style="background:linear-gradient(135deg,#ecfeff,#cffafe);">
-            <div style="color:#155e75; font-weight:600; font-size:0.875rem;">Gastos do Mês</div>
-            <div id="stat-gastos" style="font-size:2.5rem; font-weight:700; color:#0e7490; margin:0.5rem 0;">R$ 0</div>
-            <div id="stat-gastos-tendencia" style="color:#06b6d4; font-size:0.8125rem;">—</div>
-        </div>
-        <div class="stat-card" style="background:linear-gradient(135deg,#faf5ff,#f3e8ff);">
-            <div style="color:#6b21a8; font-weight:600; font-size:0.875rem;">KM Rodados</div>
-            <div id="stat-km" style="font-size:2.5rem; font-weight:700; color:#7e22ce; margin:0.5rem 0;">0</div>
-            <div id="stat-custo-km" style="color:#a855f7; font-size:0.8125rem;">Custo/km: R$ 0,00</div>
-        </div>
-    </div>
-
-    <!-- Linha 1: Gráficos principais -->
-    <div class="dashboard-grid-2">
-        <!-- Distribuição por Categoria -->
-        <div class="dashboard-card">
-            <h3>Distribuição por Categoria</h3>
-            <p class="subtitulo">Composição atual da frota</p>
-            <div id="chartCategoria" class="chart-container" style="height:300px;"></div>
-        </div>
-        
-        <!-- Evolução de Gastos -->
-        <div class="dashboard-card">
-            <h3>Evolução de Gastos</h3>
-            <p class="subtitulo">Últimos 6 meses — Combustível · Manutenção · Outros</p>
-            <div id="chartGastos" class="chart-container" style="height:300px;"></div>
-        </div>
-    </div>
-
-    <!-- Linha 2: Status + Checklist + Alertas -->
-    <div class="dashboard-grid-3">
-        <!-- Status da Frota -->
-        <div class="dashboard-card">
-            <h3>Status da Frota</h3>
-            <p class="subtitulo">Disponibilidade operacional</p>
-            <div id="chartStatus" class="chart-container" style="height:260px;"></div>
-        </div>
-        
-        <!-- Check-list de Hoje -->
-        <div class="dashboard-card">
-            <h3>Check-list — Hoje</h3>
-            <p class="subtitulo">Inspeções diárias de veículos</p>
-            <div class="checklist-progress">
-                <div class="progress-ring-container">
-                    <svg width="140" height="140" viewBox="0 0 140 140">
-                        <circle cx="70" cy="70" r="60" fill="none" stroke="#e2e8f0" stroke-width="12"/>
-                        <circle id="checklistProgressRing" cx="70" cy="70" r="60" fill="none" stroke="#4f46e5" stroke-width="12" stroke-linecap="round" stroke-dasharray="377" stroke-dashoffset="377" transform="rotate(-90 70 70)"/>
-                    </svg>
-                    <div class="progress-text">
-                        <div class="numero" id="checklistPercent">0%</div>
-                        <div class="sub" id="checklistContagem">0/0</div>
+            
+            <!-- ============================================================
+                 ✅ DASHBOARD APRIMORADO COMPLETO
+                 ============================================================ -->
+            <div id="pag-dashboard" class="pagina ativa">
+                <div class="page-header">
+                    <div>
+                        <h2 style="font-size:1.75rem; font-weight:700; margin:0;">Bem-vindo de volta! 👋</h2>
+                        <p style="color:#64748b; margin:0.25rem 0 0;">Resumo da sua frota hoje</p>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <span class="badge badge-info" id="dataAtualDashboard"></span>
+                    </div>
+                </div>
+                
+                <div id="areaAlertas"></div>
+                
+                <!-- Cards de Estatísticas (6 cards) -->
+                <div class="stats-grid">
+                    <div class="stat-card" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);">
+                        <div style="color:#4f46e5; font-weight:600; font-size:0.875rem;">🚛 Total de Veículos</div>
+                        <div id="stat-total" style="font-size:2.5rem; font-weight:700; color:#4338ca; margin:0.5rem 0;">0</div>
+                        <div style="color:#6366f1; font-size:0.8125rem;">cadastrados</div>
+                    </div>
+                    <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
+                        <div style="color:#166534; font-weight:600; font-size:0.875rem;">✅ Em Operação</div>
+                        <div id="stat-operacao" style="font-size:2.5rem; font-weight:700; color:#15803d; margin:0.5rem 0;">0</div>
+                        <div id="stat-operacao-percent" style="color:#22c55e; font-size:0.8125rem;">0% da frota</div>
+                    </div>
+                    <div class="stat-card" style="background:linear-gradient(135deg,#fefce8,#fef3c7);">
+                        <div style="color:#92400e; font-weight:600; font-size:0.875rem;">🔧 Em Manutenção</div>
+                        <div id="stat-manutencao" style="font-size:2.5rem; font-weight:700; color:#b45309; margin:0.5rem 0;">0</div>
+                        <div style="color:#f59e0b; font-size:0.8125rem;">precisam de atenção</div>
+                    </div>
+                    <div class="stat-card" style="background:linear-gradient(135deg,#fef2f2,#fee2e2);">
+                        <div style="color:#991b1b; font-weight:600; font-size:0.875rem;">🔔 Chamados Abertos</div>
+                        <div id="stat-chamados" style="font-size:2.5rem; font-weight:700; color:#b91c1c; margin:0.5rem 0;">0</div>
+                        <div style="color:#ef4444; font-size:0.8125rem;">pendentes</div>
+                    </div>
+                    <div class="stat-card" style="background:linear-gradient(135deg,#ecfeff,#cffafe);">
+                        <div style="color:#155e75; font-weight:600; font-size:0.875rem;">💰 Gastos do Mês</div>
+                        <div id="stat-gastos" style="font-size:2.5rem; font-weight:700; color:#0e7490; margin:0.5rem 0;">R$ 0</div>
+                        <div id="stat-gastos-tendencia" style="color:#06b6d4; font-size:0.8125rem;">—</div>
+                    </div>
+                    <div class="stat-card" style="background:linear-gradient(135deg,#faf5ff,#f3e8ff);">
+                        <div style="color:#6b21a8; font-weight:600; font-size:0.875rem;">📊 KM Rodados</div>
+                        <div id="stat-km" style="font-size:2.5rem; font-weight:700; color:#7e22ce; margin:0.5rem 0;">0</div>
+                        <div id="stat-custo-km" style="color:#a855f7; font-size:0.8125rem;">Custo/km: R$ 0,00</div>
+                    </div>
+                </div>
+                
+                <!-- Linha 1: Gráficos principais (2 colunas) -->
+                <div class="dashboard-grid-2">
+                    <!-- Distribuição por Categoria -->
+                    <div class="dashboard-card">
+                        <h3>Distribuição por Categoria</h3>
+                        <p class="subtitulo">Composição atual da frota</p>
+                        <div id="chartCategoria" class="chart-container" style="height:300px;"></div>
+                    </div>
+                    
+                    <!-- Evolução de Gastos -->
+                    <div class="dashboard-card">
+                        <h3>Evolução de Gastos</h3>
+                        <p class="subtitulo">Últimos 6 meses — Combustível · Manutenção · Outros</p>
+                        <div id="chartGastos" class="chart-container" style="height:300px;"></div>
+                    </div>
+                </div>
+                
+                <!-- Linha 2: Status + Checklist + Alertas (3 colunas) -->
+                <div class="dashboard-grid-3">
+                    <!-- Status da Frota -->
+                    <div class="dashboard-card">
+                        <h3>Status da Frota</h3>
+                        <p class="subtitulo">Disponibilidade operacional</p>
+                        <div id="chartStatus" class="chart-container" style="height:260px;"></div>
+                    </div>
+                    
+                    <!-- Check-list de Hoje -->
+                    <div class="dashboard-card">
+                        <h3>Check-list — Hoje</h3>
+                        <p class="subtitulo">Inspeções diárias de veículos</p>
+                        <div class="checklist-progress">
+                            <div class="progress-ring-container">
+                                <svg width="140" height="140" viewBox="0 0 140 140">
+                                    <circle cx="70" cy="70" r="60" fill="none" stroke="#e2e8f0" stroke-width="12"/>
+                                    <circle id="checklistProgressRing" cx="70" cy="70" r="60" fill="none" stroke="#4f46e5" stroke-width="12" stroke-linecap="round" stroke-dasharray="377" stroke-dashoffset="377" transform="rotate(-90 70 70)"/>
+                                </svg>
+                                <div class="progress-text">
+                                    <div class="numero" id="checklistPercent">0%</div>
+                                    <div class="sub" id="checklistContagem">0/0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="checklistDetalhes"></div>
+                    </div>
+                    
+                    <!-- Alertas de Gestão -->
+                    <div class="dashboard-card">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+                            <div>
+                                <h3>Alertas de Gestão</h3>
+                                <p class="subtitulo" style="margin-bottom:0;">Itens que precisam de atenção</p>
+                            </div>
+                            <span class="badge badge-danger" id="alertaContagem">0</span>
+                        </div>
+                        <div id="listaAlertasDashboard">
+                            <p style="color:#94a3b8; font-size:0.875rem; text-align:center; padding:1rem 0;">Nenhum alerta no momento.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Linha 3: Atividades Recentes -->
+                <div class="dashboard-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                        <div>
+                            <h3 style="margin-bottom:0;">📝 Atividades Recentes</h3>
+                            <p class="subtitulo" style="margin-bottom:0;">Últimas movimentações da frota</p>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Veículo</th>
+                                    <th>Tipo</th>
+                                    <th>Descrição</th>
+                                    <th>Usuário</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAtividadesRecentes">
+                                <tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhuma atividade registrada.</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-            <div id="checklistDetalhes"></div>
-        </div>
-        
-        <!-- Alertas de Gestão -->
-        <div class="dashboard-card">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
-                <div>
-                    <h3>Alertas de Gestão</h3>
-                    <p class="subtitulo" style="margin-bottom:0;">Itens que precisam de atenção</p>
-                </div>
-                <span class="badge badge-danger" id="alertaContagem">0</span>
-            </div>
-            <div id="listaAlertasDashboard">
-                <p style="color:#94a3b8; font-size:0.875rem; text-align:center; padding:1rem 0;">Nenhum alerta no momento.</p>
-            </div>
-        </div>
-    </div>
+            <!-- ============================================================
+                 FIM DO DASHBOARD APRIMORADO
+                 ============================================================ -->
 
-    <!-- Linha 3: Atividades Recentes -->
-    <div class="dashboard-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-            <div>
-                <h3 style="margin-bottom:0;">Atividades Recentes</h3>
-                <p class="subtitulo" style="margin-bottom:0;">Últimas movimentações da frota</p>
-            </div>
-        </div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Data/Hora</th>
-                        <th>Veículo</th>
-                        <th>Tipo</th>
-                        <th>Descrição</th>
-                        <th>Usuário</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="tabelaAtividadesRecentes">
-                    <tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhuma atividade registrada.</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-
-            <!-- === TODAS AS DEMAIS PÁGINAS (mantidas originais) === -->
             <!-- VEÍCULOS -->
             <div id="pag-veiculos" class="pagina">
                 <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">🚛 Cadastro de Veículos</h2><p style="color:#64748b; margin:0.25rem 0 0;">Gerencie toda a frota</p></div><button class="btn btn-primary admin-only" onclick="abrirModalVeiculo()">➕ Novo Veículo</button></div>
@@ -418,8 +436,8 @@
 
     <div id="modais"></div>
 
+    <!-- SCRIPTS BÁSICOS -->
     <script>
-        // ========== SIDEBAR ==========
         function toggleSidebar() {
             const s = document.getElementById('sidebar');
             const o = document.querySelector('.sidebar-overlay');
@@ -430,78 +448,37 @@
             const l = e.target.closest('.sidebar-link');
             if (l && window.innerWidth <= 768) toggleSidebar();
         });
-
-        // ========== ATUALIZAÇÃO DO DASHBOARD ==========
-        function atualizarDashboard() {
-            const veiculos = window.listaVeiculos || [];
-            const chamados = window.listaChamados || [];
-            const manutencoes = window.listaManutencao || [];
-
-            // Contadores
-            const total = veiculos.length;
-            const emOperacao = veiculos.filter(v => v.status === 'disponivel' || v.status === 'alocado').length;
-            const emManutencao = veiculos.filter(v => v.status === 'manutencao').length;
-            const chamadosAbertos = chamados.filter(c => c.status === 'aberto' || c.status === 'andamento').length;
-
-            // Atualiza os números na tela
-            document.getElementById('stat-total').textContent = total;
-            document.getElementById('stat-operacao').textContent = emOperacao;
-            document.getElementById('stat-manutencao').textContent = emManutencao;
-            document.getElementById('stat-chamados').textContent = chamadosAbertos;
-
-            // Veículos Recentes (últimos 5)
-            const listaVeicEl = document.getElementById('lista-veiculos-recentes');
-            if (veiculos.length === 0) {
-                listaVeicEl.innerHTML = '<span style="color:#94a3b8;">Nenhum veículo cadastrado.</span>';
-            } else {
-                const recentes = veiculos.slice(-5).reverse();
-                listaVeicEl.innerHTML = recentes.map(v =>
-                    `<div style="padding:0.5rem 0; border-bottom:1px solid #f1f5f9; font-size:0.875rem;">
-                        <strong>${v.placa || '---'}</strong> — ${v.modelo || 'Sem modelo'} 
-                        <span class="badge ${v.status === 'manutencao' ? 'badge-warning' : 'badge-success'}" style="margin-left:0.5rem;">${v.status || 'indisponível'}</span>
-                    </div>`
-                ).join('');
-            }
-
-            // Últimos Chamados (últimos 5)
-            const listaChamEl = document.getElementById('lista-chamados-recentes');
-            if (chamados.length === 0) {
-                listaChamEl.innerHTML = '<span style="color:#94a3b8;">Nenhum chamado registrado.</span>';
-            } else {
-                const recentes = chamados.slice(-5).reverse();
-                listaChamEl.innerHTML = recentes.map(c =>
-                    `<div style="padding:0.5rem 0; border-bottom:1px solid #f1f5f9; font-size:0.875rem;">
-                        <strong>${c.data || '---'}</strong> — ${c.titulo || 'Sem título'} 
-                        <span class="badge ${c.status === 'aberto' ? 'badge-danger' : c.status === 'andamento' ? 'badge-warning' : 'badge-success'}" style="margin-left:0.5rem;">${c.status || 'aberto'}</span>
-                    </div>`
-                ).join('');
-            }
+        
+        // Função navegarPara básica (se não existir no app.js)
+        if (typeof window.navegarPara === 'undefined') {
+            window.navegarPara = function(pagina) {
+                // Esconde todas as páginas
+                document.querySelectorAll('.pagina').forEach(p => p.classList.remove('ativa'));
+                // Mostra a página selecionada
+                const pag = document.getElementById('pag-' + pagina);
+                if (pag) pag.classList.add('ativa');
+                // Atualiza links do sidebar
+                document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('ativo'));
+                const link = document.querySelector('[data-pagina="' + pagina + '"]');
+                if (link) link.classList.add('ativo');
+                
+                // ✅ Atualiza dashboard ao entrar nele
+                if (pagina === 'dashboard' && typeof window.atualizarDashboard !== 'undefined') {
+                    setTimeout(window.atualizarDashboard, 150);
+                }
+                
+                // Fecha sidebar no mobile
+                if (window.innerWidth <= 768) toggleSidebar();
+            };
         }
-
-        // ========== INICIALIZAÇÃO ==========
-        // Atualiza dashboard quando a página carrega e quando muda para aba dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                atualizarDashboard();
-                // Expõe função para ser chamada pelo app.js após salvar dados
-                window.atualizarDashboard = atualizarDashboard;
-            }, 400);
-        });
-
-        // Intercepta navegação para atualizar dashboard ao entrar na aba
-        const navegarOriginal = window.navegarPara;
-        window.navegarPara = function(pagina) {
-            if (navegarOriginal) navegarOriginal(pagina);
-            if (pagina === 'dashboard') {
-                setTimeout(atualizarDashboard, 100);
-            }
-        };
     </script>
 
-    <!-- MANTÉM TODAS AS FUNCIONALIDADES ORIGINAIS -->
+    <!-- ✅ SCRIPTS DO SISTEMA (mantém suas funcionalidades originais) -->
     <script src="js/app.js"></script>
     <script src="js/melhorias-veiculos.js"></script>
     <script src="js/melhorias-checklist-v2.js"></script>
+    
+    <!-- ✅ DASHBOARD APRIMORADO (carrega por último para garantir dependências) -->
     <script src="js/melhorias-dashboard.js"></script>
 </body>
 </html>
