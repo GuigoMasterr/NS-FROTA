@@ -3,6 +3,7 @@
 // ==================================================
 
 // ✅ Abre modal de cadastro/edição de usuário
+const BD = window.BD;
 function abrirModalUsuario(usuario = null) {
   const ehEdicao = !!usuario;
   const modal = document.createElement('div');

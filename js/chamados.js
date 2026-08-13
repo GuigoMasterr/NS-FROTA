@@ -3,6 +3,7 @@
 // ==================================================
 
 // ✅ Abre janela de cadastro ou edição
+const BD = window.BD;
 function abrirModalChamado(chamado = null) {
   const ehEdicao = !!chamado;
   const veiculos = BD.veiculos || [];

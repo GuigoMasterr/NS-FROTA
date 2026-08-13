@@ -3,6 +3,7 @@
 // ==================================================
 
 // ✅ Abre janela de cadastro ou edição
+const BD = window.BD;
 function abrirModalGasto(gasto = null) {
   const ehEdicao = !!gasto;
   const veiculos = BD.veiculos || [];

@@ -3,6 +3,7 @@
 // ==================================================
 
 // ✅ Abre janela de cadastro ou edição
+const BD = window.BD;
 function abrirModalManutencao(tipo, manutencao = null) {
   const ehEdicao = !!manutencao;
   const tipoManutencao = tipo || manutencao?.tipo || 'preventiva';

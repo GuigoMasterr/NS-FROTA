@@ -3,6 +3,7 @@
 // ==================================================
 
 // Itens padrão do check-list
+const BD = window.BD;
 const ITENS_CHECKLIST = [
   { id: 'pneus', label: '🚛 Pneus e Calibragem' },
   { id: 'freios', label: '🛑 Freios' },

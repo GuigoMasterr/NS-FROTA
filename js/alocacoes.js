@@ -3,6 +3,7 @@
 // ==================================================
 
 // ✅ Abre modal de nova alocação
+const BD = window.BD;
 function abrirModalAlocacao(alocacao = null) {
   const ehEdicao = !!alocacao;
   const veiculos = BD.veiculos || [];

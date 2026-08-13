@@ -14,6 +14,7 @@ let graficoGastosCategoria = null;
 // ============================================================
 // INICIALIZAÇÃO
 // ============================================================
+const BD = window.BD;
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 [DASHBOARD] Inicializando...');
   // Aguarda o BD ser carregado pelo auth.js
