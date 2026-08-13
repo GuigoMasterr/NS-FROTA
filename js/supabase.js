@@ -137,5 +137,5 @@ const supabaseInstancia = new SupabaseWrapper();
 window.supabase = supabaseInstancia;
 
 // Exporta como módulo (para arquivos que usam import)
-export const supabase = supabaseInstancia;
-export default supabaseInstancia;
+// export const supabase = supabaseInstancia;  // Removido para compatibilidade
+// export default supabaseInstancia;  // Removido para compatibilidade

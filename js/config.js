@@ -2,7 +2,7 @@
 // ARQUIVO DE CONFIGURAÇÃO DO SISTEMA
 // ==========================================
 
-export const CONFIG = {
+const CONFIG = {
     // Status de Veículos
     STATUS_VEICULOS: {
         ATIVO: 'Em Operação',
@@ -78,4 +78,4 @@ window.TIPO_MANUTENCAO = CONFIG.TIPO_MANUTENCAO;
 window.STATUS_MANUTENCAO = CONFIG.STATUS_MANUTENCAO;
 window.TIPO_GASTOS = CONFIG.TIPO_GASTOS;
 
-export default CONFIG;
+// export default CONFIG;  // Removido: causa erro de sintaxe em script normal

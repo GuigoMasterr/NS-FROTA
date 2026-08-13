@@ -1,5 +1,5 @@
 // js/validacoes.js
-export const Validacoes = {
+const Validacoes = {
   placaValida(placa) {
     if (!placa) return false;
     const l = placa.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -30,4 +30,4 @@ export const Validacoes = {
   }
 };
 window.Validacoes = Validacoes;
-export default Validacoes;
+// export default Validacoes;  // Removido para compatibilidade

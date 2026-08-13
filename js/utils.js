@@ -1,5 +1,5 @@
 // js/utils.js
-export const Utils = {
+const Utils = {
   formatarMoeda(valor) {
     const n = Number(valor);
     if (isNaN(n) || n < 0) return "R$ 0,00";
@@ -24,4 +24,4 @@ export const Utils = {
   padronizarPlaca(p) { return !p ? "" : p.toString().toUpperCase().replace(/[^A-Z0-9]/g, ""); }
 };
 window.Utils = Utils;
-export default Utils;
+// export default Utils;  // Removido para compatibilidade
