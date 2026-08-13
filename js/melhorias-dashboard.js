@@ -5,9 +5,12 @@
 
 // Variáveis globais dos gráficos
 let chartCategoria, chartGastos, chartStatus;
+let dashboardDebug = true; // Ativa logs no console para debug
 
 // Inicializa o dashboard aprimorado
 function inicializarDashboardAprimorado() {
+    if (dashboardDebug) console.log('🚀 [DASHBOARD] Inicializando...');
+    
     // Atualiza data atual
     atualizarDataDashboard();
     
@@ -16,7 +19,7 @@ function inicializarDashboardAprimorado() {
     inicializarChartGastos();
     inicializarChartStatus();
     
-    // Carrega dados reais
+    // Carrega dados reais (NÃO usa mais dados de demonstração por padrão)
     carregarDadosDashboardAprimorado();
     
     // Redimensiona gráficos ao mudar tamanho da janela
@@ -25,6 +28,8 @@ function inicializarDashboardAprimorado() {
         if (chartGastos) chartGastos.resize();
         if (chartStatus) chartStatus.resize();
     });
+    
+    if (dashboardDebug) console.log('✅ [DASHBOARD] Inicialização concluída!');
 }
 
 // Atualiza a data no cabeçalho
@@ -206,52 +211,197 @@ function inicializarChartStatus() {
 // CARREGAR DADOS REAIS DO SISTEMA
 // ============================================================
 function carregarDadosDashboardAprimorado() {
-    // Tenta buscar dados do sistema existente (localStorage ou variáveis globais)
-    const veiculos = buscarDados('veiculos') || [];
-    const gastos = buscarDados('gastos') || [];
-    const chamados = buscarDados('chamados') || [];
-    const checklists = buscarDados('checklists') || [];
-    const manutencoes = buscarDados('manutencoes') || [];
+    if (dashboardDebug) console.log('📊 [DASHBOARD] Carregando dados reais do sistema...');
     
-    // Se não houver dados reais, usa dados de demonstração
-    const temDadosReais = veiculos.length > 0;
+    // Tenta buscar dados do sistema existente
+    const veiculos = buscarDados('veiculos') || buscarDados('veiculo') || [];
+    const gastos = buscarDados('gastos') || buscarDados('gasto') || buscarDados('despesas') || [];
+    const chamados = buscarDados('chamados') || buscarDados('chamado') || [];
+    const checklists = buscarDados('checklists') || buscarDados('checklist') || buscarDados('inspecoes') || [];
+    const manutencoes = buscarDados('manutencoes') || buscarDados('manutencao') || buscarDados('servicos') || [];
     
-    if (temDadosReais) {
-        atualizarStatsComDadosReais(veiculos, gastos, chamados);
-        atualizarGraficosComDadosReais(veiculos, gastos);
-        atualizarChecklist(checklists);
-        atualizarAlertas(veiculos, manutencoes);
-        atualizarAtividadesRecentes(veiculos, gastos, chamados, checklists, manutencoes);
-    } else {
-        // Dados de demonstração
-        carregarDadosDemonstracao();
+    if (dashboardDebug) {
+        console.log('📋 [DASHBOARD] Resumo dos dados encontrados:');
+        console.log(`   🚛 Veículos: ${veiculos.length}`);
+        console.log(`   💰 Gastos: ${gastos.length}`);
+        console.log(`   🔔 Chamados: ${chamados.length}`);
+        console.log(`   ✅ Check-lists: ${checklists.length}`);
+        console.log(`   🔧 Manutenções: ${manutencoes.length}`);
+    }
+    
+    // SEMPRE usa dados reais - NÃO cai mais em dados de demonstração
+    if (veiculos.length === 0 && gastos.length === 0 && chamados.length === 0) {
+        if (dashboardDebug) {
+            console.warn('⚠️ [DASHBOARD] Nenhum dado real encontrado!');
+            console.log('💡 [DASHBOARD] Dicas para fazer os dados aparecerem:');
+            console.log('   1. Verifique se seus dados estão salvos no localStorage');
+            console.log('   2. Ou se existem variáveis globais como: window.listaVeiculos, window.dadosVeiculos, etc.');
+            console.log('   3. Abra o Console (F12) e digite: window para ver todas as variáveis disponíveis');
+        }
+        // Mostra mensagem no dashboard
+        mostrarMensagemSemDados();
+        return;
+    }
+    
+    // Atualiza tudo com dados reais
+    atualizarStatsComDadosReais(veiculos, gastos, chamados);
+    atualizarGraficosComDadosReais(veiculos, gastos);
+    atualizarChecklist(checklists);
+    atualizarAlertas(veiculos, manutencoes);
+    atualizarAtividadesRecentes(veiculos, gastos, chamados, checklists, manutencoes);
+    
+    if (dashboardDebug) console.log('🎉 [DASHBOARD] Dados reais carregados e exibidos com sucesso!');
+}
+
+// Mostra mensagem amigável quando não há dados reais
+function mostrarMensagemSemDados() {
+    // Zera os stats
+    definirTexto('stat-total', '0');
+    definirTexto('stat-operacao', '0');
+    definirTexto('stat-operacao-percent', '0% da frota');
+    definirTexto('stat-manutencao', '0');
+    definirTexto('stat-chamados', '0');
+    definirTexto('stat-gastos', 'R$ 0');
+    definirTexto('stat-gastos-tendencia', '—');
+    definirTexto('stat-km', '0');
+    definirTexto('stat-custo-km', 'Custo/km: R$ 0,00');
+    
+    // Atualiza gráficos vazios
+    if (chartCategoria) {
+        chartCategoria.setOption({ series: [{ data: [{ name: 'Sem dados', value: 1, itemStyle: { color: '#cbd5e1' } }] }] });
+    }
+    if (chartGastos) {
+        chartGastos.setOption({
+            xAxis: { data: ['Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago'] },
+            series: [
+                { data: [0, 0, 0, 0, 0, 0] },
+                { data: [0, 0, 0, 0, 0, 0] },
+                { data: [0, 0, 0, 0, 0, 0] }
+            ]
+        });
+    }
+    if (chartStatus) {
+        chartStatus.setOption({
+            xAxis: { max: 1 },
+            series: [{
+                data: [
+                    { value: 0, itemStyle: { color: '#dc2626', borderRadius: [0, 6, 6, 0] } },
+                    { value: 0, itemStyle: { color: '#f59e0b', borderRadius: [0, 6, 6, 0] } },
+                    { value: 0, itemStyle: { color: '#22c55e', borderRadius: [0, 6, 6, 0] } }
+                ]
+            }]
+        });
+    }
+    
+    // Checklist
+    const ring = document.getElementById('checklistProgressRing');
+    if (ring) ring.style.strokeDashoffset = 377;
+    definirTexto('checklistPercent', '0%');
+    definirTexto('checklistContagem', '0/0');
+    
+    const containerCheck = document.getElementById('checklistDetalhes');
+    if (containerCheck) {
+        containerCheck.innerHTML = `
+            <div class="mini-stat"><span class="label">Concluídos</span><span class="valor">0</span></div>
+            <div class="mini-stat"><span class="label">Pendentes</span><span class="valor">0</span></div>
+            <div class="mini-stat"><span class="label">Com pendências</span><span class="valor">0</span></div>
+        `;
+    }
+    
+    // Alertas
+    definirTexto('alertaContagem', '0');
+    const containerAlertas = document.getElementById('listaAlertasDashboard');
+    if (containerAlertas) {
+        containerAlertas.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem; text-align:center; padding:1rem 0;">Nenhum alerta no momento.</p>';
+    }
+    
+    // Atividades
+    const tbody = document.getElementById('tabelaAtividadesRecentes');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhuma atividade registrada. Cadastre veículos, gastos ou faça check-lists para ver os dados aqui.</td></tr>';
     }
 }
 
 // Função auxiliar para buscar dados (compatível com localStorage e variáveis globais)
 function buscarDados(tabela) {
     try {
-        // Tenta localStorage primeiro
-        const dados = localStorage.getItem('frota_' + tabela);
-        if (dados) return JSON.parse(dados);
+        if (dashboardDebug) console.log(`🔍 [DASHBOARD] Buscando dados de: ${tabela}`);
         
-        // Tenta variáveis globais do app.js (várias convenções de nome)
-        const nomesVariaveis = [
-            'lista' + tabela.charAt(0).toUpperCase() + tabela.slice(1),
-            'dados' + tabela.charAt(0).toUpperCase() + tabela.slice(1),
+        // ==========================================
+        // TENTATIVA 1: localStorage (várias chaves)
+        // ==========================================
+        const chavesLocalStorage = [
+            'frota_' + tabela,
             tabela,
-            tabela + 'Lista'
+            'dados_' + tabela,
+            'lista_' + tabela,
+            'sistema_' + tabela,
+            'gestao_' + tabela
+        ];
+        
+        for (const chave of chavesLocalStorage) {
+            const dados = localStorage.getItem(chave);
+            if (dados) {
+                try {
+                    const parsed = JSON.parse(dados);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        if (dashboardDebug) console.log(`✅ [DASHBOARD] Encontrados ${parsed.length} registros de ${tabela} no localStorage (chave: ${chave})`);
+                        return parsed;
+                    }
+                } catch (e) {
+                    if (dashboardDebug) console.warn(`⚠️ [DASHBOARD] Erro ao parsear chave ${chave}:`, e);
+                }
+            }
+        }
+        
+        // ==========================================
+        // TENTATIVA 2: Variáveis globais (vários nomes)
+        // ==========================================
+        const tabelaCapitalizada = tabela.charAt(0).toUpperCase() + tabela.slice(1);
+        const nomesVariaveis = [
+            'lista' + tabelaCapitalizada,
+            'dados' + tabelaCapitalizada,
+            tabela,
+            tabela + 'Lista',
+            tabela + 'Dados',
+            'todos' + tabelaCapitalizada,
+            'tabela' + tabelaCapitalizada,
+            // Singular
+            tabela.slice(0, -1),
+            'lista' + tabelaCapitalizada.slice(0, -1),
+            'dados' + tabelaCapitalizada.slice(0, -1)
         ];
         
         for (const nome of nomesVariaveis) {
-            if (window[nome] && Array.isArray(window[nome])) {
+            if (window[nome] && Array.isArray(window[nome]) && window[nome].length > 0) {
+                if (dashboardDebug) console.log(`✅ [DASHBOARD] Encontrados ${window[nome].length} registros de ${tabela} na variável global: window.${nome}`);
                 return window[nome];
             }
         }
         
+        // ==========================================
+        // TENTATIVA 3: Objeto global de dados
+        // ==========================================
+        const objetosGlobais = ['dados', 'sistema', 'app', 'frota', 'banco', 'store'];
+        for (const obj of objetosGlobais) {
+            if (window[obj]) {
+                if (window[obj][tabela] && Array.isArray(window[obj][tabela]) && window[obj][tabela].length > 0) {
+                    if (dashboardDebug) console.log(`✅ [DASHBOARD] Encontrados ${window[obj][tabela].length} registros em window.${obj}.${tabela}`);
+                    return window[obj][tabela];
+                }
+                const singular = tabela.slice(0, -1);
+                if (window[obj][singular] && Array.isArray(window[obj][singular]) && window[obj][singular].length > 0) {
+                    if (dashboardDebug) console.log(`✅ [DASHBOARD] Encontrados ${window[obj][singular].length} registros em window.${obj}.${singular}`);
+                    return window[obj][singular];
+                }
+            }
+        }
+        
+        if (dashboardDebug) console.log(`ℹ️ [DASHBOARD] Nenhum dado de ${tabela} encontrado ainda.`);
         return [];
+        
     } catch (e) {
-        console.warn('Erro ao buscar dados de', tabela, ':', e);
+        console.error(`❌ [DASHBOARD] Erro ao buscar dados de ${tabela}:`, e);
         return [];
     }
 }
@@ -587,174 +737,83 @@ function atualizarAtividadesRecentes(veiculos, gastos, chamados, checklists, man
 }
 
 // ============================================================
-// DADOS DE DEMONSTRAÇÃO (quando não há dados reais)
+// 🔧 FERRAMENTAS DE DEBUG E CONTROLE MANUAL
 // ============================================================
-function carregarDadosDemonstracao() {
-    console.log('📊 Carregando dados de demonstração do dashboard...');
+
+// Atualiza o dashboard manualmente (pode ser chamada no Console do navegador)
+window.atualizarDashboard = function() {
+    console.log('🔄 [DASHBOARD] Atualização manual solicitada...');
+    carregarDadosDashboardAprimorado();
+    return 'Dashboard atualizado!';
+};
+
+// Mostra no console todos os dados disponíveis no sistema
+window.dashboardDebugDados = function() {
+    console.group('🔍 [DASHBOARD] Diagnóstico Completo de Dados');
     
-    // Stats de demonstração
-    definirTexto('stat-total', 18);
-    definirTexto('stat-operacao', 14);
-    definirTexto('stat-operacao-percent', '78% da frota');
-    definirTexto('stat-manutencao', 2);
-    definirTexto('stat-chamados', 3);
-    definirTexto('stat-gastos', 'R$ 45.300');
-    definirTexto('stat-gastos-tendencia', '▼ 8,2% vs mês anterior');
-    definirTexto('stat-km', '128.400');
-    definirTexto('stat-custo-km', 'Custo/km: R$ 0,35');
-    
-    // Gráfico Categoria
-    if (chartCategoria) {
-        chartCategoria.setOption({
-            series: [{
-                data: [
-                    { name: 'Caminhão', value: 6, itemStyle: { color: '#4f46e5' } },
-                    { name: 'Van', value: 4, itemStyle: { color: '#06b6d4' } },
-                    { name: 'Pá Carregadeira', value: 3, itemStyle: { color: '#f59e0b' } },
-                    { name: 'Guindaste', value: 2, itemStyle: { color: '#22c55e' } },
-                    { name: 'Carro', value: 3, itemStyle: { color: '#8b5cf6' } }
-                ]
-            }]
-        });
+    console.log('\n📦 localStorage:');
+    for (let i = 0; i < localStorage.length; i++) {
+        const chave = localStorage.key(i);
+        try {
+            const valor = JSON.parse(localStorage.getItem(chave));
+            if (Array.isArray(valor)) {
+                console.log(`   ${chave}: ${valor.length} itens (array)`);
+            } else {
+                console.log(`   ${chave}: ${typeof valor}`);
+            }
+        } catch {
+            console.log(`   ${chave}: (não é JSON)`);
+        }
     }
     
-    // Gráfico Gastos
-    if (chartGastos) {
-        chartGastos.setOption({
-            xAxis: { data: ['Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago'] },
-            series: [
-                { data: [28000, 32000, 29500, 31000, 27500, 25000] },
-                { data: [8500, 7200, 9800, 6500, 11200, 12800] },
-                { data: [3200, 4100, 2800, 5200, 3900, 4500] }
-            ]
-        });
+    console.log('\n🌐 Variáveis globais relacionadas:');
+    const palavrasChave = ['veic', 'gast', 'cham', 'check', 'manut', 'aloca', 'local', 'usuar', 'dado', 'lista', 'sistema', 'frota', 'app'];
+    const encontradas = [];
+    for (const chave in window) {
+        if (palavrasChave.some(p => chave.toLowerCase().includes(p))) {
+            try {
+                const valor = window[chave];
+                if (Array.isArray(valor)) {
+                    encontradas.push(`   window.${chave}: ${valor.length} itens (array)`);
+                }
+            } catch {}
+        }
+    }
+    if (encontradas.length > 0) {
+        encontradas.forEach(e => console.log(e));
+    } else {
+        console.log('   Nenhuma variável global de dados encontrada.');
     }
     
-    // Gráfico Status
-    if (chartStatus) {
-        chartStatus.setOption({
-            xAxis: { max: 18 },
-            series: [{
-                data: [
-                    { value: 2, itemStyle: { color: '#dc2626', borderRadius: [0, 6, 6, 0] } },
-                    { value: 2, itemStyle: { color: '#f59e0b', borderRadius: [0, 6, 6, 0] } },
-                    { value: 14, itemStyle: { color: '#22c55e', borderRadius: [0, 6, 6, 0] } }
-                ]
-            }]
-        });
-    }
+    console.groupEnd();
+    return 'Diagnóstico concluído. Veja o console acima.';
+};
+
+// Injeta dados manualmente (útil para teste)
+window.dashboardInjetarDados = function(dados) {
+    if (dados.veiculos) localStorage.setItem('frota_veiculos', JSON.stringify(dados.veiculos));
+    if (dados.gastos) localStorage.setItem('frota_gastos', JSON.stringify(dados.gastos));
+    if (dados.chamados) localStorage.setItem('frota_chamados', JSON.stringify(dados.chamados));
+    if (dados.checklists) localStorage.setItem('frota_checklists', JSON.stringify(dados.checklists));
+    if (dados.manutencoes) localStorage.setItem('frota_manutencoes', JSON.stringify(dados.manutencoes));
     
-    // Checklist de demonstração
-    const ring = document.getElementById('checklistProgressRing');
-    if (ring) {
-        const percent = 67;
-        const circunferencia = 377;
-        const offset = circunferencia - (percent / 100) * circunferencia;
-        ring.style.transition = 'stroke-dashoffset 1s ease';
-        ring.style.strokeDashoffset = offset;
-    }
-    definirTexto('checklistPercent', '67%');
-    definirTexto('checklistContagem', '12/18');
+    console.log('✅ [DASHBOARD] Dados injetados no localStorage!');
+    carregarDadosDashboardAprimorado();
+    return 'Dados injetados e dashboard atualizado!';
+};
+
+// Limpa todos os dados de teste do dashboard
+window.dashboardLimparDados = function() {
+    localStorage.removeItem('frota_veiculos');
+    localStorage.removeItem('frota_gastos');
+    localStorage.removeItem('frota_chamados');
+    localStorage.removeItem('frota_checklists');
+    localStorage.removeItem('frota_manutencoes');
     
-    const containerCheck = document.getElementById('checklistDetalhes');
-    if (containerCheck) {
-        containerCheck.innerHTML = `
-            <div class="mini-stat">
-                <span class="label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;"></span>Concluídos</span>
-                <span class="valor">12</span>
-            </div>
-            <div class="mini-stat">
-                <span class="label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:6px;"></span>Pendentes</span>
-                <span class="valor">6</span>
-            </div>
-            <div class="mini-stat">
-                <span class="label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc2626;margin-right:6px;"></span>Com pendências</span>
-                <span class="valor">1</span>
-            </div>
-        `;
-    }
-    
-    // Alertas de demonstração
-    definirTexto('alertaContagem', 4);
-    const containerAlertas = document.getElementById('listaAlertasDashboard');
-    if (containerAlertas) {
-        containerAlertas.innerHTML = `
-            <div class="alerta-item critico">
-                <div class="titulo">ABC-1234 — Pneus em estado crítico</div>
-                <div class="detalhe">Caminhão · Sul da obra</div>
-            </div>
-            <div class="alerta-item atencao">
-                <div class="titulo">DEF-5678 — Troca de óleo próxima</div>
-                <div class="detalhe">Pá Carregadeira · Restam 180 km</div>
-            </div>
-            <div class="alerta-item atencao">
-                <div class="titulo">GHI-9012 — Licenciamento vencendo</div>
-                <div class="detalhe">Guindaste · Vence em 15 dias</div>
-            </div>
-            <div class="alerta-item info">
-                <div class="titulo">Check-list pendente — 3 veículos</div>
-                <div class="detalhe">Inspeção matutina não realizada</div>
-            </div>
-        `;
-    }
-    
-    // Atividades recentes de demonstração
-    const tbody = document.getElementById('tabelaAtividadesRecentes');
-    if (tbody) {
-        const hoje = new Date();
-        const ontem = new Date(hoje);
-        ontem.setDate(ontem.getDate() - 1);
-        
-        const formatar = (d, h, m) => {
-            const data = new Date(d);
-            data.setHours(h, m, 0, 0);
-            return data;
-        };
-        
-        tbody.innerHTML = `
-            <tr>
-                <td style="white-space:nowrap;">Hoje · 08:42</td>
-                <td><strong>ABC-1234 · Caminhão</strong></td>
-                <td>Check-list</td>
-                <td>Inspeção matutina concluída</td>
-                <td>João Silva</td>
-                <td><span class="badge badge-success">OK</span></td>
-            </tr>
-            <tr>
-                <td style="white-space:nowrap;">Hoje · 08:15</td>
-                <td><strong>DEF-5678 · Pá Carregadeira</strong></td>
-                <td>Alocação</td>
-                <td>Pátio Usina → Obra Principal</td>
-                <td>Carlos Mendes</td>
-                <td><span class="badge badge-info">Em andamento</span></td>
-            </tr>
-            <tr>
-                <td style="white-space:nowrap;">Hoje · 07:58</td>
-                <td><strong>GHI-9012 · Guindaste</strong></td>
-                <td>Manutenção</td>
-                <td>Solicitação de revisão preventiva</td>
-                <td>Márcio Lima</td>
-                <td><span class="badge badge-warning">Aguardando</span></td>
-            </tr>
-            <tr>
-                <td style="white-space:nowrap;">Ontem · 17:30</td>
-                <td><strong>JKL-3456 · Caminhão Munck</strong></td>
-                <td>Chamado</td>
-                <td>Falha no sistema hidráulico</td>
-                <td>Roberto Alves</td>
-                <td><span class="badge badge-danger">Urgente</span></td>
-            </tr>
-            <tr>
-                <td style="white-space:nowrap;">Ontem · 15:20</td>
-                <td><strong>MNO-7890 · Van</strong></td>
-                <td>Gasto</td>
-                <td>Abastecimento — R$ 680,00</td>
-                <td>Fernanda Costa</td>
-                <td><span class="badge badge-success">Registrado</span></td>
-            </tr>
-        `;
-    }
-}
+    console.log('🗑️ [DASHBOARD] Dados do localStorage limpos!');
+    carregarDadosDashboardAprimorado();
+    return 'Dados limpos!';
+};
 
 // ============================================================
 // INICIALIZAÇÃO AUTOMÁTICA
@@ -763,14 +822,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Aguarda um pouco para garantir que ECharts e outros scripts carregaram
     setTimeout(function() {
         if (typeof echarts === 'undefined') {
-            console.warn('⚠️ ECharts não carregado. Verifique se o script está importado no <head>.');
+            console.error('❌ [DASHBOARD] ECharts não carregado! Verifique se o script está importado no <head>:');
+            console.error('   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>');
             return;
         }
         inicializarDashboardAprimorado();
-        console.log('✅ Dashboard aprimorado inicializado com sucesso!');
-    }, 200);
+        console.log('✅ [DASHBOARD] Sistema pronto!');
+        console.log('💡 [DASHBOARD] Comandos úteis no Console:');
+        console.log('   window.atualizarDashboard() - Atualiza os dados');
+        console.log('   window.dashboardDebugDados() - Mostra diagnóstico completo');
+        console.log('   window.dashboardInjetarDados({...}) - Injeta dados de teste');
+        console.log('   window.dashboardLimparDados() - Limpa dados do localStorage');
+    }, 300);
 });
 
 // Também expõe a função globalmente para ser chamada manualmente se necessário
 window.inicializarDashboardAprimorado = inicializarDashboardAprimorado;
-window.atualizarDashboard = carregarDadosDashboardAprimorado;
