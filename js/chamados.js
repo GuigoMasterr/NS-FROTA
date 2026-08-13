@@ -1,195 +1,208 @@
-// ===== CHAMADOS ✅ CORRIGIDO =====
-
-let chamadoEmEdicao = null;
-
-// ✅ Garante função auxiliar existência
-function veiculosDoUsuario() {
-  return BD.veiculos || [];
-}
+// ==================================================
+// 🚨 CHAMADOS E OCORRÊNCIAS
+// ==================================================
 
 // ✅ Abre janela de cadastro ou edição
 function abrirModalChamado(chamado = null) {
-  chamadoEmEdicao = chamado;
   const ehEdicao = !!chamado;
+  const veiculos = BD.veiculos || [];
+  
+  const opcoesVeiculos = veiculos.map(v => 
+    `<option value="${v.id}" ${String(chamado?.veiculoId) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo}</option>`
+  ).join('');
+  
   const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+  modal.className = 'modal-overlay aberto';
+  modal.onclick = (e) => { if (e.target === modal) fecharModal(); };
+  
   modal.innerHTML = `
-    <div class="bg-white rounded-xl w-full max-w-md p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">📢 ${ehEdicao ? '✏️ Editar' : '➕ Registrar'} Chamado</h3>
-        <button type="button" onclick="fecharModal()"><i class="fa-solid fa-times text-slate-400"></i></button>
+    <div class="modal-container" style="max-width: 550px;">
+      <div class="modal-cabecalho">
+        <h3 class="modal-titulo">📢 ${ehEdicao ? '✏️ Editar' : '➕ Registrar'} Chamado</h3>
+        <button type="button" class="modal-fechar" onclick="fecharModal()">&times;</button>
       </div>
-      <form id="formChamado" class="space-y-3">
-        <div>
-          <label class="block text-sm font-medium mb-1">Veículo *</label>
-          <select id="chVeiculo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="">Selecione o veículo</option>
-            ${veiculosDoUsuario().map(v => `<option value="${v.id}" ${String(chamado?.veiculoId) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Tipo de Ocorrência *</label>
-          <select id="chTipo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="Problema Mecânico" ${chamado?.tipo === 'Problema Mecânico' ? 'selected' : ''}>🔧 Problema Mecânico</option>
-            <option value="Sinistro" ${chamado?.tipo === 'Sinistro' ? 'selected' : ''}>💥 Sinistro / Acidente</option>
-            <option value="Outro" ${chamado?.tipo === 'Outro' ? 'selected' : ''}>📋 Outro</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Obra / Local *</label>
-          <input type="text" id="chObra" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${chamado?.obra || ''}">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Quilometragem *</label>
-          <input type="number" id="chKm" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${chamado?.km || ''}">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Descrição *</label>
-          <textarea id="chDescricao" class="w-full px-3 py-2 border border-slate-200 rounded-lg" rows="3" required>${chamado?.descricao || ''}</textarea>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Status</label>
-          <select id="chStatus" class="w-full px-3 py-2 border border-slate-200 rounded-lg">
-            <option value="Aberto" ${chamado?.status === 'Aberto' ? 'selected' : ''}>🔴 Aberto</option>
-            <option value="Em Andamento" ${chamado?.status === 'Em Andamento' ? 'selected' : ''}>🟡 Em Andamento</option>
-            <option value="Resolvido" ${chamado?.status === 'Resolvido' ? 'selected' : ''}>🟢 Resolvido</option>
-          </select>
-        </div>
-        <button type="submit" class="w-full bg-red-600 text-white py-2 rounded-lg mt-2">${ehEdicao ? '💾 Salvar' : '➕ Registrar'}</button>
-      </form>
+      <div class="modal-corpo">
+        <form id="formChamado">
+          <div class="form-grid">
+            <div class="form-grupo">
+              <label>Veículo <span class="obrigatorio">*</span></label>
+              <select id="chVeiculo" required>
+                <option value="">Selecione o veículo</option>
+                ${opcoesVeiculos}
+              </select>
+            </div>
+            <div class="form-grupo">
+              <label>Tipo de Ocorrência <span class="obrigatorio">*</span></label>
+              <select id="chTipo" required>
+                <option value="Problema Mecânico" ${chamado?.tipo === 'Problema Mecânico' ? 'selected' : ''}>🔧 Problema Mecânico</option>
+                <option value="Sinistro" ${chamado?.tipo === 'Sinistro' ? 'selected' : ''}>💥 Sinistro / Acidente</option>
+                <option value="Elétrico" ${chamado?.tipo === 'Elétrico' ? 'selected' : ''}>⚡ Problema Elétrico</option>
+                <option value="Outro" ${chamado?.tipo === 'Outro' ? 'selected' : ''}>📋 Outro</option>
+              </select>
+            </div>
+            <div class="form-grupo">
+              <label>Obra / Local <span class="obrigatorio">*</span></label>
+              <input type="text" id="chObra" required value="${chamado?.obra || ''}" placeholder="Nome da obra ou local">
+            </div>
+            <div class="form-grupo">
+              <label>Quilometragem <span class="obrigatorio">*</span></label>
+              <input type="number" id="chKm" required value="${chamado?.km || ''}" min="0">
+            </div>
+            <div class="form-grupo" style="grid-column: 1 / -1;">
+              <label>Descrição <span class="obrigatorio">*</span></label>
+              <textarea id="chDescricao" rows="3" required placeholder="Descreva detalhadamente o que ocorreu...">${chamado?.descricao || ''}</textarea>
+            </div>
+            <div class="form-grupo">
+              <label>Status</label>
+              <select id="chStatus">
+                <option value="Aberto" ${chamado?.status === 'Aberto' ? 'selected' : ''}>🔴 Aberto</option>
+                <option value="Em Andamento" ${chamado?.status === 'Em Andamento' ? 'selected' : ''}>🟡 Em Andamento</option>
+                <option value="Resolvido" ${chamado?.status === 'Resolvido' ? 'selected' : ''}>🟢 Resolvido</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-rodape">
+        <button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>
+        <button type="button" class="btn btn-perigo" id="btnSalvarChamado">${ehEdicao ? '💾 Salvar' : '➕ Registrar'}</button>
+      </div>
     </div>
   `;
+  
   document.getElementById('modais').appendChild(modal);
-
-  // ✅ MANIPULAÇÃO DO FORMULÁRIO
-  document.getElementById('formChamado').addEventListener('submit', e => {
-    e.preventDefault();
-    const veicId = document.getElementById('chVeiculo').value; // ✅ Mantém como string, converte só quando necessário
-    const kmValor = parseFloat(document.getElementById('chKm').value);
-
-    // ✅ Validações com verificação segura
-    if (!(typeof Validacoes !== 'undefined' && Validacoes.camposPreenchidos([veicId, kmValor]))) {
+  
+  document.getElementById('btnSalvarChamado').addEventListener('click', async () => {
+    const veicId = parseInt(document.getElementById('chVeiculo').value);
+    const tipo = document.getElementById('chTipo').value;
+    const obra = document.getElementById('chObra').value.trim();
+    const km = parseFloat(document.getElementById('chKm').value);
+    const descricao = document.getElementById('chDescricao').value.trim();
+    const status = document.getElementById('chStatus').value;
+    
+    if (!veicId || !tipo || !obra || !descricao) {
       alert('❌ Preencha todos os campos obrigatórios!');
       return;
     }
-    if (!(typeof Validacoes !== 'undefined' && Validacoes.kmValido(kmValor))) {
+    
+    if (isNaN(km) || km < 0) {
       alert('❌ Quilometragem inválida!');
       return;
     }
-
+    
     const dados = {
-      veiculoId: veicId, // ✅ Mantém tipo original para consistência entre módulos
-      tipo: document.getElementById('chTipo').value,
-      obra: document.getElementById('chObra').value,
-      km: kmValor,
-      descricao: document.getElementById('chDescricao').value.trim(),
-      status: document.getElementById('chStatus').value,
-      responsavel: chamado?.responsavel || ((typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || 'Administrador'),
+      veiculoId: veicId,
+      tipo,
+      obra,
+      km,
+      descricao,
+      status,
+      responsavel: chamado?.responsavel || window.usuarioAtual?.nome || 'Administrador',
       data: chamado?.data || new Date().toISOString()
     };
-
+    
     if (ehEdicao) {
-      // ✅ Fallback seguro com funções do banco
-      if (typeof atualizarRegistro === 'function') {
-        atualizarRegistro('chamados', chamado.id, dados);
-      } else {
-        if (!BD.chamados) BD.chamados = [];
-        const idx = BD.chamados.findIndex(c => String(c.id) === String(chamado.id));
-        if (idx !== -1) {
-          BD.chamados[idx] = { ...BD.chamados[idx], ...dados };
-          if (typeof salvarDados === 'function') salvarDados();
-        }
-      }
-    } else {
-      // ✅ Novo registro com fallback seguro
-      if (typeof adicionarRegistro === 'function') {
-        adicionarRegistro('chamados', dados);
-      } else {
-        if (!BD.chamados) BD.chamados = [];
-        dados.id = (typeof Utils?.gerarId === 'function') ? Utils.gerarId() : Date.now();
-        BD.chamados.push(dados);
-        if (typeof salvarDados === 'function') salvarDados();
-      }
-
-      if (typeof Sincronizacao !== 'undefined' && Sincronizacao?.sincronizarRegistro) {
-        Sincronizacao.sincronizarRegistro('chamados', dados).catch(() => {});
-      }
+      dados.id = chamado.id;
     }
-
-    fecharModal();
-    if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-    if (typeof carregarMeusRegistros === 'function') carregarMeusRegistros();
-    alert('✅ Chamado salvo com sucesso!');
+    
+    const resultado = await salvarChamado(dados);
+    if (resultado) {
+      alert('✅ Chamado salvo com sucesso!');
+      fecharModal();
+      carregarTabelaChamados();
+      if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+      else if (typeof atualizarDashboard === 'function') atualizarDashboard();
+    } else {
+      alert('❌ Erro ao salvar chamado!');
+    }
   });
 }
 
 // ✅ Excluir chamado
-function excluirChamado(id) {
-  if (confirm('⚠️ Tem certeza que deseja excluir este chamado permanentemente?')) {
-    if (typeof excluirRegistro === 'function') {
-      excluirRegistro('chamados', id);
-    } else {
-      BD.chamados = (BD.chamados || []).filter(c => String(c.id) !== String(id));
-      if (typeof salvarDados === 'function') salvarDados();
-    }
-    if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-  }
+async function excluirChamado(id) {
+  if (!confirm('⚠️ Tem certeza que deseja excluir este chamado permanentemente?')) return;
+  
+  await excluirChamadoBD(id);
+  
+  alert('✅ Chamado excluído!');
+  carregarTabelaChamados();
+  if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+  else if (typeof atualizarDashboard === 'function') atualizarDashboard();
 }
 
-// ✅ Alterar status do chamado
-function alterarStatusChamado(id, status) {
+// ✅ Alterar status rapidamente
+async function alterarStatusChamado(id, novoStatus) {
   const chamado = (BD.chamados || []).find(c => String(c.id) === String(id));
   if (chamado) {
-    chamado.status = status;
-    if (typeof salvarDados === 'function') salvarDados();
-    if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
+    chamado.status = novoStatus;
+    await salvarChamado(chamado);
+    carregarTabelaChamados();
     if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
     else if (typeof atualizarDashboard === 'function') atualizarDashboard();
   }
 }
 
 // ✅ Carregar tabela de chamados
-function carregarTabelaChamados() {
+async function carregarTabelaChamados() {
   const corpo = document.getElementById('tabelaChamados');
   if (!corpo) return;
-  const ehAdmin = (typeof usuarioAtual !== 'undefined' && usuarioAtual?.perfil) === 'admin';
-  const listaBruta = BD.chamados || [];
-  const lista = typeof filtrarPorVeiculosPermitidos === 'function'
-    ? filtrarPorVeiculosPermitidos(listaBruta)
-    : listaBruta;
-
-  corpo.innerHTML = lista.length ? lista.map(c => {
+  
+  const lista = BD.chamados || [];
+  
+  // Ordena por data (mais recente primeiro)
+  const ordenados = [...lista].sort((a, b) => new Date(b.data) - new Date(a.data));
+  
+  if (!ordenados.length) {
+    corpo.innerHTML = `<tr><td colspan="8" class="estado-vazio">
+      <div class="estado-vazio-icone">📢</div>
+      <div class="estado-vazio-texto">Nenhum chamado registrado</div>
+    </td></tr>`;
+    return;
+  }
+  
+  corpo.innerHTML = ordenados.map(c => {
     const v = (BD.veiculos || []).find(x => String(x.id) === String(c.veiculoId));
-    // ✅ Formatação segura com fallback
-    const dt = (typeof Utils?.formatarData === 'function')
-      ? Utils.formatarData(c.data)
-      : new Date(c.data).toLocaleDateString('pt-BR');
+    const dt = c.data ? new Date(c.data).toLocaleDateString('pt-BR') : '—';
+    
     const statusLabel = {
-      'Aberto': '<span class="text-red-600">🔴 Aberto</span>',
-      'Em Andamento': '<span class="text-amber-600">🟡 Em Andamento</span>',
-      'Resolvido': '<span class="text-green-600">🟢 Resolvido</span>'
-    }[c.status] || c.status;
-    // ✅ JSON seguro para edição
+      'Aberto': '<span class="badge badge-danger">🔴 Aberto</span>',
+      'Em Andamento': '<span class="badge badge-warning">🟡 Em Andamento</span>',
+      'Resolvido': '<span class="badge badge-success">🟢 Resolvido</span>'
+    }[c.status] || `<span class="badge badge-secondary">${c.status}</span>`;
+    
     const seguro = JSON.stringify(c).replace(/"/g, '&quot;');
-
-    return `<tr class="border-b hover:bg-slate-50">
-      <td class="px-4 py-3">${dt}</td>
-      <td class="px-4 py-3 font-mono">${v?.placa || '—'}</td>
-      <td class="px-4 py-3">${c.tipo}</td>
-      <td class="px-4 py-3">${c.obra}</td>
-      <td class="px-4 py-3">${statusLabel}</td>
-      <td class="px-4 py-3 admin-only whitespace-nowrap">
-        ${ehAdmin ? `
-          <button class="text-blue-600 text-sm mr-2" onclick='abrirModalChamado(${seguro})'><i class="fa-solid fa-pen-to-square"></i> Editar</button>
-          <button class="text-red-600 text-sm" onclick="excluirChamado('${String(c.id)}')"><i class="fa-solid fa-trash"></i> Excluir</button>
-        ` : ''}
+    
+    return `<tr class="hover:bg-slate-50">
+      <td>${dt}</td>
+      <td class="font-mono font-semibold">${v?.placa || '—'}</td>
+      <td>${c.tipo || '—'}</td>
+      <td>${c.obra || '—'}</td>
+      <td>${c.km ? Number(c.km).toLocaleString('pt-BR') : '—'} km</td>
+      <td>${statusLabel}</td>
+      <td>${c.responsavel || '—'}</td>
+      <td>
+        <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+          ${c.status !== 'Resolvido' ? `
+            <button class="btn btn-sm" style="background:#d1fae5; color:#065f46;" onclick="alterarStatusChamado('${c.id}', 'Resolvido')" title="Marcar como resolvido">
+              <i class="fa-solid fa-check"></i>
+            </button>
+          ` : ''}
+          <button class="btn btn-sm" style="background:#fef3c7; color:#92400e;" onclick='abrirModalChamado(${seguro})'>
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="excluirChamado('${c.id}')">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
       </td>
     </tr>`;
-  }).join('') : '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Nenhum registro disponível</td></tr>';
+  }).join('');
 }
 
-// ❌ Removida função salvarChamado() duplicada/incorreta — conflitava com o envio do formulário
+// ==================================================
+// ✅ DISPONIBILIZA GLOBALMENTE
+// ==================================================
+window.abrirModalChamado = abrirModalChamado;
+window.excluirChamado = excluirChamado;
+window.alterarStatusChamado = alterarStatusChamado;
+window.carregarTabelaChamados = carregarTabelaChamados;

@@ -1,96 +1,104 @@
 // ==================================================
-// CONTROLE DE GASTOS E DESPESAS ✅ CORRIGIDO
+// 💰 CONTROLE DE GASTOS E DESPESAS
 // ==================================================
-
-let gastoEmEdicao = null;
-
-// ✅ Garante função auxiliar existência
-function veiculosDoUsuario() {
-  return BD.veiculos || [];
-}
 
 // ✅ Abre janela de cadastro ou edição
 function abrirModalGasto(gasto = null) {
-  gastoEmEdicao = gasto;
   const ehEdicao = !!gasto;
-
+  const veiculos = BD.veiculos || [];
+  const obras = BD.obras || BD.locais?.map(l => l.nome) || [];
+  
+  const opcoesVeiculos = veiculos.map(v => 
+    `<option value="${v.id}" ${String(gasto?.veiculoId) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo}</option>`
+  ).join('');
+  
+  const opcoesObras = obras.map(o => 
+    `<option value="${o}" ${gasto?.obra === o ? 'selected' : ''}>${o}</option>`
+  ).join('');
+  
   const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+  modal.className = 'modal-overlay aberto';
+  modal.onclick = (e) => { if (e.target === modal) fecharModal(); };
+  
   modal.innerHTML = `
-    <div class="bg-white rounded-xl w-full max-w-md p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">💰 ${ehEdicao ? '✏️ Editar' : '➕ Lançar'} Gasto</h3>
-        <button type="button" onclick="fecharModal()"><i class="fa-solid fa-times text-slate-400"></i></button>
+    <div class="modal-container" style="max-width: 550px;">
+      <div class="modal-cabecalho">
+        <h3 class="modal-titulo">💰 ${ehEdicao ? '✏️ Editar' : '➕ Lançar'} Gasto</h3>
+        <button type="button" class="modal-fechar" onclick="fecharModal()">&times;</button>
       </div>
-      <form id="formGasto" class="space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium mb-1">Data *</label>
-            <input type="date" id="gData" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${gasto?.data || ''}">
+      <div class="modal-corpo">
+        <form id="formGasto">
+          <div class="form-grid">
+            <div class="form-grupo">
+              <label>Data <span class="obrigatorio">*</span></label>
+              <input type="date" id="gData" required value="${gasto?.data || new Date().toISOString().split('T')[0]}">
+            </div>
+            <div class="form-grupo">
+              <label>Valor (R$) <span class="obrigatorio">*</span></label>
+              <input type="number" step="0.01" id="gValor" required value="${gasto?.valor || ''}" min="0.01" placeholder="0,00">
+            </div>
+            <div class="form-grupo">
+              <label>Veículo <span class="obrigatorio">*</span></label>
+              <select id="gVeiculo" required>
+                <option value="">Selecione o veículo</option>
+                ${opcoesVeiculos}
+              </select>
+            </div>
+            <div class="form-grupo">
+              <label>Obra / Local <span class="obrigatorio">*</span></label>
+              <select id="gObra" required>
+                <option value="">Selecione</option>
+                ${opcoesObras}
+              </select>
+            </div>
+            <div class="form-grupo" style="grid-column: 1 / -1;">
+              <label>Tipo de Gasto <span class="obrigatorio">*</span></label>
+              <select id="gTipo" required>
+                <option value="Combustível" ${gasto?.tipo === 'Combustível' ? 'selected' : ''}>⛽ Combustível</option>
+                <option value="Manutenção" ${gasto?.tipo === 'Manutenção' ? 'selected' : ''}>🔧 Manutenção</option>
+                <option value="Pneus" ${gasto?.tipo === 'Pneus' ? 'selected' : ''}>🚛 Pneus</option>
+                <option value="Pedágio" ${gasto?.tipo === 'Pedágio' ? 'selected' : ''}>🛣️ Pedágio</option>
+                <option value="Seguro" ${gasto?.tipo === 'Seguro' ? 'selected' : ''}>🛡️ Seguro</option>
+                <option value="IPVA" ${gasto?.tipo === 'IPVA' ? 'selected' : ''}>📄 IPVA</option>
+                <option value="Licenciamento" ${gasto?.tipo === 'Licenciamento' ? 'selected' : ''}>📋 Licenciamento</option>
+                <option value="Multa" ${gasto?.tipo === 'Multa' ? 'selected' : ''}>⚠️ Multa</option>
+                <option value="Outro" ${gasto?.tipo === 'Outro' ? 'selected' : ''}>📋 Outro</option>
+              </select>
+            </div>
+            <div class="form-grupo" style="grid-column: 1 / -1;">
+              <label>Observação</label>
+              <input type="text" id="gObs" placeholder="Detalhes adicionais..." value="${gasto?.observacao || ''}">
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Valor (R$) *</label>
-            <input type="number" step="0.01" id="gValor" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required value="${gasto?.valor || ''}">
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Veículo *</label>
-          <select id="gVeiculo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="">Selecione o veículo</option>
-            ${veiculosDoUsuario().map(v => `<option value="${v.id}" ${String(gasto?.veiculoId) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Obra / Local *</label>
-          <select id="gObra" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="">Selecione</option>
-            ${(BD.obras || []).map(o => `<option value="${o}" ${gasto?.obra === o ? 'selected' : ''}>${o}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Tipo de Gasto *</label>
-          <select id="gTipo" class="w-full px-3 py-2 border border-slate-200 rounded-lg" required>
-            <option value="Combustível" ${gasto?.tipo === 'Combustível' ? 'selected' : ''}>⛽ Combustível</option>
-            <option value="Manutenção" ${gasto?.tipo === 'Manutenção' ? 'selected' : ''}>🔧 Manutenção</option>
-            <option value="Pneus" ${gasto?.tipo === 'Pneus' ? 'selected' : ''}>🚛 Pneus</option>
-            <option value="Pedágio" ${gasto?.tipo === 'Pedágio' ? 'selected' : ''}>🛣️ Pedágio</option>
-            <option value="Seguro" ${gasto?.tipo === 'Seguro' ? 'selected' : ''}>🛡️ Seguro</option>
-            <option value="Outro" ${gasto?.tipo === 'Outro' ? 'selected' : ''}>📋 Outro</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Observação</label>
-          <input type="text" id="gObs" class="w-full px-3 py-2 border border-slate-200 rounded-lg" placeholder="Detalhes..." value="${gasto?.observacao || ''}">
-        </div>
-        <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-lg mt-2">
-          ${ehEdicao ? '💾 Salvar' : '➕ Salvar Gasto'}
-        </button>
-      </form>
+        </form>
+      </div>
+      <div class="modal-rodape">
+        <button type="button" class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>
+        <button type="button" class="btn btn-sucesso" id="btnSalvarGasto">💾 Salvar Gasto</button>
+      </div>
     </div>
   `;
+  
   document.getElementById('modais').appendChild(modal);
-
-  // ✅ MANIPULAÇÃO DO FORMULÁRIO
-  document.getElementById('formGasto').addEventListener('submit', e => {
-    e.preventDefault();
-
+  
+  document.getElementById('btnSalvarGasto').addEventListener('click', async () => {
     const data = document.getElementById('gData').value;
-    const veiculoId = document.getElementById('gVeiculo').value;
+    const veiculoId = parseInt(document.getElementById('gVeiculo').value);
     const obra = document.getElementById('gObra').value;
     const tipo = document.getElementById('gTipo').value;
     const valor = parseFloat(document.getElementById('gValor').value);
     const observacao = document.getElementById('gObs').value.trim();
-
-    // ✅ VALIDAÇÕES com verificação segura
-    if (!(typeof Validacoes !== 'undefined' && Validacoes.camposPreenchidos([data, veiculoId, obra, tipo]))) {
+    
+    if (!data || !veiculoId || !obra || !tipo) {
       alert('❌ Preencha todos os campos obrigatórios!');
       return;
     }
+    
     if (!valor || valor <= 0) {
       alert('❌ O valor deve ser maior que zero!');
       return;
     }
-
+    
     const dados = {
       data,
       veiculoId,
@@ -98,93 +106,95 @@ function abrirModalGasto(gasto = null) {
       tipo,
       valor,
       observacao,
-      lancadoPor: (typeof usuarioAtual !== 'undefined' && usuarioAtual?.nome) || 'Sistema'
+      lancadoPor: window.usuarioAtual?.nome || 'Sistema'
     };
-
+    
     if (ehEdicao) {
-      // ✅ Usando função genérica do banco com fallback
-      if (typeof atualizarRegistro === 'function') {
-        atualizarRegistro('gastos', gasto.id, dados);
-      } else {
-        const idx = (BD.gastos || []).findIndex(g => String(g.id) === String(gasto.id));
-        if (idx !== -1) {
-          BD.gastos[idx] = { ...BD.gastos[idx], ...dados };
-          if (typeof salvarDados === 'function') salvarDados();
-        }
-      }
-    } else {
-      // ✅ Usando função genérica do banco com fallback
-      if (typeof adicionarRegistro === 'function') {
-        adicionarRegistro('gastos', dados);
-      } else {
-        if (!BD.gastos) BD.gastos = [];
-        dados.id = (typeof Utils?.gerarId === 'function') ? Utils.gerarId() : Date.now();
-        BD.gastos.push(dados);
-        if (typeof salvarDados === 'function') salvarDados();
-      }
+      dados.id = gasto.id;
     }
-
-    fecharModal();
-    if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-    alert('✅ Gasto salvo com sucesso!');
+    
+    const resultado = await salvarGasto(dados);
+    if (resultado) {
+      alert('✅ Gasto salvo com sucesso!');
+      fecharModal();
+      carregarTabelaGastos();
+      if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+      else if (typeof atualizarDashboard === 'function') atualizarDashboard();
+    } else {
+      alert('❌ Erro ao salvar gasto!');
+    }
   });
 }
 
 // ✅ Exclui gasto
-function excluirGasto(id) {
-  if (confirm('⚠️ Tem certeza que deseja excluir este lançamento?')) {
-    if (typeof excluirRegistro === 'function') {
-      excluirRegistro('gastos', id);
-    } else {
-      BD.gastos = (BD.gastos || []).filter(g => String(g.id) !== String(id));
-      if (typeof salvarDados === 'function') salvarDados();
-    }
-    if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos();
-    if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-    else if (typeof atualizarDashboard === 'function') atualizarDashboard();
-  }
+async function excluirGasto(id) {
+  if (!confirm('⚠️ Tem certeza que deseja excluir este lançamento?')) return;
+  
+  await excluirGastoBD(id);
+  
+  alert('✅ Gasto excluído!');
+  carregarTabelaGastos();
+  if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+  else if (typeof atualizarDashboard === 'function') atualizarDashboard();
 }
 
 // ✅ Carrega e exibe tabela com filtro por veículo
-function carregarTabelaGastos(filtroPlaca = 'todos') {
+async function carregarTabelaGastos(filtroPlaca = 'todos') {
   const corpo = document.getElementById('tabelaGastos');
   if (!corpo) return;
-
-  // ✅ Garante existência da lista
+  
   let dados = BD.gastos || [];
-
-  // ✅ Filtro corrigido: busca veículo com comparação normalizada
+  
+  // Filtro por veículo
   if (filtroPlaca !== 'todos') {
     dados = dados.filter(g => {
       const veiculo = (BD.veiculos || []).find(v => String(v.id) === String(g.veiculoId));
       return veiculo?.placa === filtroPlaca;
     });
   }
-
-  corpo.innerHTML = dados.length ? dados.map(g => {
+  
+  // Ordena por data (mais recente primeiro)
+  dados = [...dados].sort((a, b) => new Date(b.data) - new Date(a.data));
+  
+  if (!dados.length) {
+    corpo.innerHTML = `<tr><td colspan="7" class="estado-vazio">
+      <div class="estado-vazio-icone">💰</div>
+      <div class="estado-vazio-texto">${filtroPlaca === 'todos' ? 'Nenhum registro de gasto' : 'Nenhum registro para este veículo'}</div>
+    </td></tr>`;
+    return;
+  }
+  
+  const tipoIcone = {
+    'Combustível': '⛽', 'Manutenção': '🔧', 'Pneus': '🚛', 'Pedágio': '🛣️',
+    'Seguro': '🛡️', 'IPVA': '📄', 'Licenciamento': '📋', 'Multa': '⚠️', 'Outro': '📋'
+  };
+  
+  corpo.innerHTML = dados.slice(0, 100).map(g => {
     const veic = (BD.veiculos || []).find(v => String(v.id) === String(g.veiculoId));
-    // ✅ Formatação segura com fallback
-    const dataFormatada = (typeof Utils?.formatarData === 'function')
-      ? Utils.formatarData(g.data)
-      : new Date(g.data).toLocaleDateString('pt-BR');
-    const valorFormatado = (typeof Utils?.formatarMoeda === 'function')
-      ? Utils.formatarMoeda(g.valor)
-      : `R$ ${Number(g.valor).toFixed(2).replace('.', ',')}`;
-    // ✅ JSON SEGURO para edição
     const seguro = JSON.stringify(g).replace(/"/g, '&quot;');
-
+    
     return `<tr>
-      <td>${dataFormatada}</td>
+      <td>${g.data ? new Date(g.data).toLocaleDateString('pt-BR') : '—'}</td>
       <td class="font-mono font-semibold">${veic?.placa || '—'}</td>
-      <td>${g.tipo}</td>
-      <td>${valorFormatado}</td>
-      <td>${g.observacao || '—'}</td>
-      <td class="admin-only">
-        <button class="text-blue-600 text-sm mr-1" onclick='abrirModalGasto(${seguro})'>✏️</button>
-        <button class="text-red-600 text-sm" onclick="excluirGasto('${g.id}')">🗑️</button>
+      <td>${tipoIcone[g.tipo] || '📋'} ${g.tipo || '—'}</td>
+      <td>${g.obra || '—'}</td>
+      <td><strong>${Utils.formatarMoeda(g.valor)}</strong></td>
+      <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${g.observacao || '—'}</td>
+      <td>
+        <button class="btn btn-sm" style="background:#fef3c7; color:#92400e; margin-right:0.25rem;" onclick='abrirModalGasto(${seguro})'>
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="excluirGasto('${g.id}')">
+          <i class="fa-solid fa-trash"></i>
+        </button>
       </td>
     </tr>`;
-  }).join('') : `<tr><td colspan="6" class="text-center text-slate-400 py-4">${filtroPlaca === 'todos' ? 'Nenhum registro de gasto' : 'Nenhum registro para este veículo'}</td></tr>`;
+  }).join('');
 }
+
+// ==================================================
+// ✅ DISPONIBILIZA GLOBALMENTE
+// ==================================================
+window.abrirModalGasto = abrirModalGasto;
+window.excluirGasto = excluirGasto;
+window.carregarTabelaGastos = carregarTabelaGastos;

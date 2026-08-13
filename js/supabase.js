@@ -1,16 +1,137 @@
 // js/supabase.js
-class SupabaseMock {
-  constructor() { this._tabela = ''; this._filtros = []; }
-  from(t) { this._tabela = t; this._filtros = []; return this; }
-  select() { return this._resposta(); }
-  eq(c, v) { this._filtros.push({c, v}); return this; }
-  order() { return this; }
-  single() { return this._resposta(true); }
-  upsert() { return this._resposta(); }
-  delete() { return this._resposta(); }
-  _resposta(unico = false) {
-    return Promise.resolve({ data: unico ? null : [], error: { message: 'Modo local' } });
+// Integração real com Supabase + fallback para modo local
+
+class SupabaseWrapper {
+  constructor() {
+    this._tabela = '';
+    this._filtros = [];
+    this._ordem = null;
+    this._limite = null;
+    this._unico = false;
+    this._clienteReal = window.supabaseReal || null;
+  }
+
+  // Verifica se tem conexão real
+  get temConexaoReal() {
+    return this._clienteReal !== null;
+  }
+
+  from(tabela) {
+    this._tabela = tabela;
+    this._filtros = [];
+    this._ordem = null;
+    this._unico = false;
+    return this;
+  }
+
+  select(colunas = '*') {
+    if (this.temConexaoReal) {
+      try {
+        let query = this._clienteReal.from(this._tabela).select(colunas);
+        this._filtros.forEach(f => {
+          query = query.eq(f.c, f.v);
+        });
+        if (this._ordem) {
+          query = query.order(this._ordem);
+        }
+        if (this._unico) {
+          return query.single();
+        }
+        return query;
+      } catch (e) {
+        console.warn('Erro na query Supabase, usando fallback:', e);
+        return this._respostaFallback();
+      }
+    }
+    return this._respostaFallback();
+  }
+
+  eq(coluna, valor) {
+    this._filtros.push({ c: coluna, v: valor });
+    return this;
+  }
+
+  order(coluna) {
+    this._ordem = coluna;
+    return this;
+  }
+
+  limit(n) {
+    this._limite = n;
+    return this;
+  }
+
+  single() {
+    this._unico = true;
+    return this;
+  }
+
+  async upsert(dados, opcoes = {}) {
+    if (this.temConexaoReal) {
+      try {
+        return await this._clienteReal.from(this._tabela).upsert(dados, opcoes).select();
+      } catch (e) {
+        console.warn('Erro no upsert Supabase:', e);
+      }
+    }
+    return this._respostaFallback();
+  }
+
+  async insert(dados) {
+    if (this.temConexaoReal) {
+      try {
+        return await this._clienteReal.from(this._tabela).insert(dados).select();
+      } catch (e) {
+        console.warn('Erro no insert Supabase:', e);
+      }
+    }
+    return this._respostaFallback();
+  }
+
+  async update(dados) {
+    if (this.temConexaoReal) {
+      try {
+        let query = this._clienteReal.from(this._tabela).update(dados);
+        this._filtros.forEach(f => {
+          query = query.eq(f.c, f.v);
+        });
+        return await query.select();
+      } catch (e) {
+        console.warn('Erro no update Supabase:', e);
+      }
+    }
+    return this._respostaFallback();
+  }
+
+  async delete() {
+    if (this.temConexaoReal) {
+      try {
+        let query = this._clienteReal.from(this._tabela).delete();
+        this._filtros.forEach(f => {
+          query = query.eq(f.c, f.v);
+        });
+        return await query;
+      } catch (e) {
+        console.warn('Erro no delete Supabase:', e);
+      }
+    }
+    return this._respostaFallback();
+  }
+
+  _respostaFallback() {
+    return Promise.resolve({ 
+      data: this._unico ? null : [], 
+      error: { message: 'Modo local - Supabase não conectado' } 
+    });
   }
 }
-export const supabase = new SupabaseMock();
-export default supabase;
+
+// Cria instância
+const supabaseInstancia = new SupabaseWrapper();
+
+// Disponibiliza globalmente (para scripts carregados normalmente)
+window.supabase = supabaseInstancia;
+
+// Exporta como módulo (para arquivos que usam import)
+export const supabase = supabaseInstancia;
+export default supabaseInstancia;
