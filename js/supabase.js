@@ -32,7 +32,10 @@ class SupabaseWrapper {
           query = query.eq(f.c, f.v);
         });
         if (this._ordem) {
-          query = query.order(this._ordem);
+          query = query.order(this._ordem.coluna, this._ordem.opcoes || {});
+        }
+        if (this._limite) {
+          query = query.limit(this._limite);
         }
         if (this._unico) {
           return query.single();
@@ -51,8 +54,8 @@ class SupabaseWrapper {
     return this;
   }
 
-  order(coluna) {
-    this._ordem = coluna;
+  order(coluna, opcoes = {}) {
+    this._ordem = { coluna, opcoes };
     return this;
   }
 

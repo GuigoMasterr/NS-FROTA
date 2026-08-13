@@ -61,7 +61,7 @@ function salvarDespesas() {
 window.carregarListaDespesas = function() {
   carregarDespesas();
   renderizarLista();
-  atualizarResumoDespesas();
+  renderizarResumos();
 };
 
 // ============================================================
