@@ -742,6 +742,90 @@
         .saldo-positivo { background: #d1fae5 !important; color: #065f46; }
         .saldo-negativo { background: #fee2e2 !important; color: #991b1b; }
         .saldo-zerado { background: #f8fafc !important; }
+        
+        /* Abas */
+        .aba-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #64748b;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .aba-btn:hover { color: #2563eb; }
+        .aba-btn.ativo {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        
+        /* Cartão de Adiantamento */
+        .cartao-adiantamento {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #2563eb;
+            transition: box-shadow 0.2s;
+        }
+        .cartao-adiantamento:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .cartao-adiantamento.parcial { border-left-color: #f59e0b; }
+        .cartao-adiantamento.fechado { border-left-color: #10b981; opacity: 0.85; }
+        
+        .adiantamento-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
+        }
+        .adiantamento-motorista { font-weight: 700; font-size: 1.1rem; color: #0f172a; }
+        .adiantamento-info { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+        .adiantamento-valor { font-size: 1.5rem; font-weight: 800; color: #2563eb; }
+        
+        .adiantamento-progresso {
+            margin: 1rem 0;
+        }
+        .progresso-barra {
+            height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;
+        }
+        .progresso-preenchido {
+            height: 100%; background: linear-gradient(90deg, #10b981, #2563eb);
+            transition: width 0.5s ease;
+        }
+        .progresso-texto {
+            display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;
+        }
+        
+        .adiantamento-saldos {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+            padding: 0.75rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem;
+        }
+        .saldo-item { text-align: center; }
+        .saldo-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
+        .saldo-valor { font-weight: 700; font-size: 1rem; color: #0f172a; margin-top: 0.25rem; }
+        .saldo-valor.positivo { color: #10b981; }
+        .saldo-valor.negativo { color: #dc2626; }
+        
+        /* Cartão de Gasto */
+        .cartao-gasto {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.75rem 1rem; background: #f8fafc; border-radius: 8px;
+            margin-bottom: 0.5rem; border-left: 3px solid #8b5cf6;
+        }
+        .gasto-info { flex: 1; }
+        .gasto-tipo { font-weight: 600; color: #0f172a; }
+        .gasto-detalhes { font-size: 0.8rem; color: #64748b; margin-top: 0.15rem; }
+        .gasto-valor { font-weight: 700; color: #dc2626; margin-right: 1rem; }
+        
+        .status-adiantamento {
+            display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px;
+            font-size: 0.75rem; font-weight: 600;
+        }
+        .status-liberado { background: #dbeafe; color: #1e40af; }
+        .status-parcial { background: #fef3c7; color: #92400e; }
+        .status-fechado { background: #d1fae5; color: #065f46; }
     </style>
 </head>
 <body>
@@ -750,92 +834,6 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- Container para Modais -->
-
-        <!-- Modal de Despesa de Viagem -->
-        <div id="modalDespesa" class="modal-fundo">
-            <div class="modal-conteudo" style="max-width: 700px;">
-                <div class="modal-cabecalho">
-                    <h3 class="modal-titulo">💰 Nova Despesa de Viagem</h3>
-                    <button type="button" class="modal-fechar" id="modalFechar" onclick="fecharModal && fecharModal()">&times;</button>
-                </div>
-                <form id="formDespesa">
-                    <div class="modal-corpo">
-                        <div class="form-grid">
-                            <div class="form-grupo">
-                                <label>Data <span class="obrigatorio">*</span></label>
-                                <input type="date" id="despesaData" required>
-                            </div>
-                            <div class="form-grupo">
-                                <label>Motorista <span class="obrigatorio">*</span></label>
-                                <input type="text" id="despesaMotorista" required placeholder="Nome do motorista">
-                            </div>
-                            <div class="form-grupo">
-                                <label>Veículo <span class="obrigatorio">*</span></label>
-                                <input type="text" id="despesaVeiculo" required placeholder="Placa ou modelo">
-                            </div>
-                            <div class="form-grupo">
-                                <label>Trajeto</label>
-                                <input type="text" id="despesaTrajeto" placeholder="Origem → Destino">
-                            </div>
-                            <div class="form-grupo" style="grid-column: 1 / -1;">
-                                <label>Valor do Adiantamento (R$)</label>
-                                <input type="number" step="0.01" min="0" id="adiantamentoValor" placeholder="0,00" value="0">
-                            </div>
-                        </div>
-
-                        <div style="margin: 1.5rem 0 0.75rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                                <strong>📋 Itens da Despesa</strong>
-                                <button type="button" class="btn btn-sm" id="btnAdicionarItem" style="background: #dbeafe; color: #1e40af;">
-                                    <i class="fa-solid fa-plus"></i> Adicionar Item
-                                </button>
-                            </div>
-                            <div id="itensContainer"></div>
-                        </div>
-
-                        <div id="resumoAdiantamento" style="display: none; margin: 1rem 0; padding: 1rem; border-radius: 8px; background: #f8fafc;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span><strong>Total Gasto:</strong></span>
-                                <span id="totalDespesas" style="font-size: 1.2rem; font-weight: 700; color: #2563eb;">R$ 0,00</span>
-                            </div>
-                        </div>
-
-                        <div class="form-grupo" style="margin-top: 1rem;">
-                            <label>Observações</label>
-                            <textarea id="despesaObservacoes" rows="2" placeholder="Observações adicionais..."></textarea>
-                        </div>
-
-                        <div style="margin-top: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📎 Comprovantes</label>
-                            <div id="areaUpload" style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.2s;">
-                                <i class="fa-solid fa-cloud-upload-alt" style="font-size: 2rem; color: #94a3b8; margin-bottom: 0.5rem;"></i>
-                                <p style="color: #64748b; margin: 0;">Clique ou arraste arquivos aqui</p>
-                                <p style="color: #94a3b8; font-size: 0.8rem; margin: 0.25rem 0 0;">PNG, JPG, PDF até 5MB</p>
-                            </div>
-                            <input type="file" id="inputComprovantes" multiple accept="image/*,.pdf" style="display: none;">
-                            <div id="comprovantesAnexados" style="margin-top: 0.75rem;"></div>
-                        </div>
-                    </div>
-                    <div class="modal-rodape">
-                        <button type="button" class="btn btn-secundario" id="btnCancelarDespesa" onclick="fecharModal && fecharModal()">Cancelar</button>
-                        <button type="submit" class="btn btn-sucesso">💾 Salvar Despesa</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Modal de Visualização de Comprovantes -->
-        <div id="modalComprovantes" class="modal-fundo">
-            <div class="modal-conteudo" style="max-width: 800px;">
-                <div class="modal-cabecalho">
-                    <h3 class="modal-titulo">📎 Comprovantes Anexados</h3>
-                    <button type="button" class="modal-fechar" id="modalComprovantesFechar">&times;</button>
-                </div>
-                <div class="modal-corpo">
-                    <div id="galeriaComprovantes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;"></div>
-                </div>
-            </div>
-        </div>
 
         <div id="modais"></div>
 
@@ -1230,60 +1228,84 @@
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                 <div>
                     <h1 class="page-title"><i class="fa-solid fa-money-bill-trip"></i> Despesas de Viagem</h1>
-                    <p class="page-subtitle">Gestão de despesas com viagens e adiantamentos</p>
+                    <p class="page-subtitle">Adiantamentos e prestação de contas de viagens</p>
                 </div>
-                <button class="btn btn-primario" id="btnAbrirDespesa">
-                    <i class="fa-solid fa-plus"></i>
-                    Lançar Despesa
+                <button class="btn btn-sucesso" onclick="abrirModalAdiantamento()">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                    Liberar Adiantamento
                 </button>
             </div>
             
             <!-- Cards Resumo -->
             <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
                 <div class="stat-card">
-                    <div class="stat-titulo">Total Geral</div>
-                    <div class="stat-valor" id="resumoTotalDespesas" style="font-size: 1.35rem;">R$ 0,00</div>
+                    <div class="stat-titulo"><i class="fa-solid fa-sack-dollar" style="color: #2563eb;"></i> Total Adiantado</div>
+                    <div class="stat-valor" id="resumoTotalAdiantado" style="font-size: 1.35rem;">R$ 0,00</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-titulo"><i class="fa-solid fa-clock" style="color: #f59e0b;"></i> Pendentes</div>
-                    <div class="stat-valor" id="resumoPendentes" style="font-size: 1.35rem;">0</div>
+                    <div class="stat-titulo"><i class="fa-solid fa-receipt" style="color: #8b5cf6;"></i> Total Gasto</div>
+                    <div class="stat-valor" id="resumoTotalGasto" style="font-size: 1.35rem;">R$ 0,00</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-titulo"><i class="fa-solid fa-check" style="color: #10b981;"></i> Aprovadas</div>
-                    <div class="stat-valor" id="resumoAprovadas" style="font-size: 1.35rem;">0</div>
+                    <div class="stat-titulo"><i class="fa-solid fa-clock" style="color: #f59e0b;"></i> Em Aberto</div>
+                    <div class="stat-valor" id="resumoEmAberto" style="font-size: 1.35rem;">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-titulo"><i class="fa-solid fa-xmark" style="color: #ef4444;"></i> Rejeitadas</div>
-                    <div class="stat-valor" id="resumoRejeitadas" style="font-size: 1.35rem;">0</div>
+                    <div class="stat-titulo"><i class="fa-solid fa-check-circle" style="color: #10b981;"></i> Fechados</div>
+                    <div class="stat-valor" id="resumoFechados" style="font-size: 1.35rem;">0</div>
                 </div>
             </div>
             
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">Lista de Despesas</div>
-                    <div class="filtros-bar" style="margin: 0;">
-                        <button class="btn btn-sucesso" id="btnAbrirDespesa" onclick="abrirModalNovaDespesa && abrirModalNovaDespesa()">
-                            <i class="fa-solid fa-plus"></i> Nova Despesa
-                        </button>
-                        <select id="filtroPeriodoDespesas">
-                            <option value="todos">📅 Todos os períodos</option>
-                            <option value="mes">📅 Este Mês</option>
-                            <option value="anterior">📅 Mês Passado</option>
-                            <option value="ano">📅 Este Ano</option>
-                        </select>
-                        <select id="filtroStatusDespesas">
-                            <option value="todos">Todos os status</option>
-                            <option value="pendente">⏳ Pendentes</option>
-                            <option value="aprovado">✅ Aprovadas</option>
-                            <option value="rejeitado">❌ Rejeitadas</option>
-                        </select>
-                        <input type="text" id="buscaDespesas" placeholder="🔍 Buscar motorista, veículo..." style="flex: 1; min-width: 200px;">
+            <!-- Abas -->
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0;">
+                <button class="aba-btn ativo" data-aba="adiantamentos" onclick="trocarAbaDespesas('adiantamentos')">
+                    <i class="fa-solid fa-sack-dollar"></i> Adiantamentos
+                </button>
+                <button class="aba-btn" data-aba="gastos" onclick="trocarAbaDespesas('gastos')">
+                    <i class="fa-solid fa-receipt"></i> Prestação de Contas
+                </button>
+            </div>
+            
+            <!-- Aba: Adiantamentos -->
+            <div id="aba-adiantamentos">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Adiantamentos Liberados</div>
+                        <div class="filtros-bar" style="margin: 0;">
+                            <select id="filtroStatusAdiantamento" onchange="renderizarListaAdiantamentos()">
+                                <option value="todos">Todos os status</option>
+                                <option value="liberado">💰 Liberado</option>
+                                <option value="parcial">📝 Parcial</option>
+                                <option value="fechado">✅ Fechado</option>
+                            </select>
+                            <input type="text" id="buscaAdiantamento" placeholder="🔍 Buscar motorista, veículo..." style="flex: 1;" oninput="renderizarListaAdiantamentos()">
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding: 1rem;">
+                        <div id="listaAdiantamentos"></div>
                     </div>
                 </div>
-                <div class="card-body" style="padding: 0;">
-                    <div id="listaDespesas" class="estado-vazio">
-                        <div class="estado-vazio-icone">📭</div>
-                        <div class="estado-vazio-texto">Nenhuma despesa lançada ainda.</div>
+            </div>
+            
+            <!-- Aba: Gastos/Prestação de Contas -->
+            <div id="aba-gastos" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Lançar Gastos</div>
+                        <div class="filtros-bar" style="margin: 0;">
+                            <select id="filtroAdiantamentoGasto" onchange="renderizarListaGastos()">
+                                <option value="">Selecione um adiantamento</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding: 1rem;">
+                        <div id="detalhesAdiantamento" style="display: none; margin-bottom: 1rem; padding: 1rem; background: #f8fafc; border-radius: 8px;"></div>
+                        <div style="margin-bottom: 1rem;">
+                            <button class="btn btn-primario" id="btnLancarGasto" style="display: none;" onclick="abrirModalGasto()">
+                                <i class="fa-solid fa-plus"></i> Lançar Gasto
+                            </button>
+                        </div>
+                        <div id="listaGastos"></div>
                     </div>
                 </div>
             </div>
@@ -1502,19 +1524,16 @@
 <script src="js/alocacoes.js"></script>
 <script src="js/usuarios.js"></script>
 
-<!-- 7. Correções e compatibilidade -->
-<script src="js/correcoes.js"></script>
-
-<!-- 8. Dashboard (carrega DEPOIS) -->
+<!-- 7. Dashboard (carrega DEPOIS dos módulos) -->
 <script src="js/melhorias-dashboard.js"></script>
 
-<!-- 9. Despesas de Viagem (carrega ANTES do script de inicialização) -->
+<!-- 8. Sync (ajustado para produção) -->
+<script src="js/sync.js"></script>
+
+<!-- 9. Despesas de Viagem -->
 <script src="js/despesas-viagem.js"></script>
 
-<!-- 10. App Principal -->
-<script src="js/app.js"></script>
-
-<!-- 11. Scripts de inicialização customizados (carrega POR ÚLTIMO) -->
+<!-- 10. Scripts de inicialização customizados (carrega POR ÚLTIMO) -->
 <script>
     // Data de hoje no topbar
     document.getElementById('topbarData').textContent = new Date().toLocaleDateString('pt-BR', { 
@@ -1576,10 +1595,9 @@
         const modalComprovantes = document.getElementById('modalComprovantes');
         if (modalComprovantes) modalComprovantes.classList.remove('aberto');
         
-        // Reseta formulário de despesas se a função existir
-        if (typeof resetarFormulario === 'function') {
-            resetarFormulario();
-        }
+        // Fecha modal específico de comprovantes se existir
+        const modalComprovantes = document.getElementById('modalComprovantes');
+        if (modalComprovantes) modalComprovantes.classList.remove('ativo', 'aberto');
     };
     
     // Função global para toast
