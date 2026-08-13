@@ -1,1 +1,383 @@
-{"code":4404,"error":"fail to get resource"}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Frotas | Painel de Controle</title>
+  
+  <!-- CSS do sistema original (MANTENHA o seu!) -->
+  <link rel="stylesheet" href="estilos.css">
+  
+  <!-- ✅ CSS APRIMORADO (carrega DEPOIS para sobrescrever) -->
+  <link rel="stylesheet" href="css/estilos-aprimorados.css">
+  
+  <!-- ECharts - carrega ANTES dos scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  
+  <style>
+    /* Estilos mínimos para garantir layout caso estilos.css não exista */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-principal, #f8fafc); color: var(--texto-principal, #1e293b); }
+    .app-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    .page-header { margin-bottom: 20px; }
+    .page-title { font-size: 24px; font-weight: 700; color: var(--texto-principal); }
+    .page-subtitle { font-size: 14px; color: var(--texto-secundario); margin-top: 4px; }
+    .page-header-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+    .data-hoje { font-size: 12px; color: var(--texto-secundario); background: var(--cor-primaria-clara); color: var(--cor-primaria-escura); padding: 4px 10px; border-radius: 12px; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ============================================================
+       CABEÇALHO
+       ============================================================ -->
+  <div class="page-header">
+    <div class="page-header-top">
+      <div>
+        <h1 class="page-title">Bem-vindo de volta! 👋</h1>
+        <p class="page-subtitle">Resumo da sua frota hoje</p>
+      </div>
+      <span class="data-hoje" id="dataHoje"></span>
+    </div>
+
+    <!-- ✅ CONTROLES DO DASHBOARD - Layout profissional -->
+    <div class="dashboard-controles">
+      
+      <!-- LINHA PRINCIPAL: Filtros + Ações -->
+      <div class="controles-linha-principal">
+        
+        <!-- GRUPO: FILTROS (esquerda) -->
+        <div class="grupo-filtros">
+          
+          <div class="controle-item">
+            <label>📅 Período</label>
+            <select id="filtroPeriodoDash">
+              <option value="mes">Este Mês</option>
+              <option value="semestre" selected>Últimos 6 Meses</option>
+              <option value="ano">Este Ano</option>
+              <option value="personalizado">Personalizado</option>
+            </select>
+          </div>
+
+          <div class="controle-item datas-personalizadas" id="datasPersonalizadas">
+            <div class="controle-item">
+              <label>De</label>
+              <input type="date" id="dataInicio">
+            </div>
+            <div class="controle-item">
+              <label>Até</label>
+              <input type="date" id="dataFim">
+            </div>
+          </div>
+
+          <div class="controle-item">
+            <label>📊 Gráfico</label>
+            <select id="tipoGraficoDash">
+              <option value="bar">Barras</option>
+              <option value="line">Linha</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- GRUPO: AÇÕES (direita) -->
+        <div class="grupo-acoes">
+          <button class="btn-acao btn-acao-icone" id="btnAtualizarDash" title="Atualizar dados">🔄</button>
+          <button class="btn-acao btn-acao-icone" id="btnTelaCheia" title="Tela cheia">⛶</button>
+          <button class="btn-acao btn-acao-icone" id="btnExportarPDF" title="Exportar em PDF">📄</button>
+          <button class="btn-acao btn-acao-icone" id="btnAlternarTema" title="Alternar tema">🌙</button>
+          <div class="separador-vertical"></div>
+          <button class="btn-acao btn-acao-primario" id="btnAbrirDespesa">
+            💰 Lançar Despesa
+          </button>
+        </div>
+      </div>
+
+      <!-- LINHA SECUNDÁRIA: Opções avançadas -->
+      <div class="controles-linha-secundaria">
+        <label class="opcao-avancada">
+          <input type="checkbox" id="usarComparativo">
+          Comparar com período anterior
+        </label>
+        <label class="opcao-avancada">
+          ⏱️ Auto-refresh:
+          <select id="autoRefreshDash">
+            <option value="0">Desativado</option>
+            <option value="5">A cada 5 min</option>
+            <option value="15">A cada 15 min</option>
+            <option value="30">A cada 30 min</option>
+            <option value="60">A cada 1 hora</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       CARDS DE ESTATÍSTICAS
+       ============================================================ -->
+  <div class="stats-grid">
+    <div class="stat-card" id="cardTotalVeiculos">
+      <div class="stat-titulo">Total de Veículos</div>
+      <div class="stat-valor">0</div>
+      <div class="stat-detalhe">cadastrados</div>
+    </div>
+    <div class="stat-card" id="cardEmOperacao">
+      <div class="stat-titulo">Em Operação</div>
+      <div class="stat-valor">0</div>
+      <div class="stat-detalhe">0% da frota</div>
+    </div>
+    <div class="stat-card" id="cardEmManutencao">
+      <div class="stat-titulo">Em Manutenção</div>
+      <div class="stat-valor">0</div>
+      <div class="stat-detalhe">precisam de atenção</div>
+    </div>
+    <div class="stat-card" id="cardChamados">
+      <div class="stat-titulo">Chamados Abertos</div>
+      <div class="stat-valor">0</div>
+      <div class="stat-detalhe">pendentes</div>
+    </div>
+    <div class="stat-card" id="cardGastosMes">
+      <div class="stat-titulo">Gastos do Mês</div>
+      <div class="stat-valor">R$ 0,00</div>
+      <div class="stat-detalhe">todas as despesas</div>
+    </div>
+    <div class="stat-card" id="cardKmRodados">
+      <div class="stat-titulo">KM Rodados</div>
+      <div class="stat-valor">0</div>
+      <div class="stat-detalhe">total da frota</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       GRÁFICOS - LINHA 1
+       ============================================================ -->
+  <div class="graficos-grid">
+    <div class="grafico-card">
+      <div class="grafico-titulo">Distribuição por Categoria</div>
+      <div class="grafico-subtitulo">Composição atual da frota</div>
+      <div class="grafico-container" id="chartCategoria"></div>
+    </div>
+    <div class="grafico-card">
+      <div class="grafico-titulo">Evolução de Gastos</div>
+      <div class="grafico-subtitulo">Últimos 6 meses — Combustível · Manutenção · Outros</div>
+      <div class="grafico-container" id="chartGastos"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       GRÁFICOS - LINHA 2 (NOVOS!)
+       ============================================================ -->
+  <div class="graficos-grid">
+    <div class="grafico-card">
+      <div class="grafico-titulo">🏆 Top 5 — Veículos com Mais Gastos</div>
+      <div class="grafico-subtitulo">Ranking dos veículos que mais geraram custos</div>
+      <div class="grafico-container" id="chartTopVeiculos"></div>
+    </div>
+    <div class="grafico-card">
+      <div class="grafico-titulo">📊 Gastos por Categoria</div>
+      <div class="grafico-subtitulo">Onde o dinheiro está sendo gasto</div>
+      <div class="grafico-container" id="chartGastosCategoria"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAINEL DE ALERTAS
+       ============================================================ -->
+  <div class="painel-alertas" id="painelAlertas">
+    <div class="grafico-titulo" style="margin-bottom: 12px;">🚨 Alertas do Sistema</div>
+    <div class="alerta-item alerta-info" style="animation: none;">
+      <span class="alerta-icone">⏳</span>
+      <span class="alerta-texto">Verificando alertas...</span>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SEÇÃO: DESPESAS DE VIAGEM
+       ============================================================ -->
+  <section class="secao-despesas" id="secao-despesas">
+    
+    <div class="secao-cabecalho">
+      <h2 class="secao-titulo">💰 Despesas de Viagem</h2>
+      <button class="btn btn-primario" id="btnAbrirDespesa2">➕ Lançar Despesa</button>
+    </div>
+
+    <!-- CARDS RESUMO -->
+    <div class="despesas-resumo">
+      <div class="resumo-item">
+        <div class="resumo-label">Total Geral</div>
+        <div class="resumo-valor" id="resumoTotalDespesas">R$ 0,00</div>
+      </div>
+      <div class="resumo-item">
+        <div class="resumo-label">⏳ Pendentes</div>
+        <div class="resumo-valor" id="resumoPendentes">0</div>
+      </div>
+      <div class="resumo-item">
+        <div class="resumo-label">✅ Aprovadas</div>
+        <div class="resumo-valor" id="resumoAprovadas">0</div>
+      </div>
+      <div class="resumo-item">
+        <div class="resumo-label">❌ Rejeitadas</div>
+        <div class="resumo-valor" id="resumoRejeitadas">0</div>
+      </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="despesas-filtros">
+      <select id="filtroPeriodoDespesas">
+        <option value="todos">📅 Todos os períodos</option>
+        <option value="mes">📅 Este Mês</option>
+        <option value="anterior">📅 Mês Passado</option>
+        <option value="ano">📅 Este Ano</option>
+      </select>
+      <select id="filtroStatusDespesas">
+        <option value="todos">📋 Todos os status</option>
+        <option value="pendente">⏳ Pendentes</option>
+        <option value="aprovado">✅ Aprovadas</option>
+        <option value="rejeitado">❌ Rejeitadas</option>
+      </select>
+      <input type="text" id="buscaDespesas" placeholder="🔍 Buscar motorista, veículo ou trajeto..." style="flex: 1; min-width: 220px;">
+    </div>
+
+    <!-- LISTA -->
+    <div class="lista-despesas" id="listaDespesas">
+      <div class="estado-vazio">
+        <div class="estado-vazio-icone">📭</div>
+        <div class="estado-vazio-texto">Nenhuma despesa lançada ainda. Clique em "Lançar Despesa" para começar.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============================================================
+     MODAL: FORMULÁRIO DE DESPESA DE VIAGEM
+     ============================================================ -->
+<div class="modal-overlay" id="modalDespesa">
+  <div class="modal-container">
+    
+    <div class="modal-cabecalho">
+      <h3 class="modal-titulo" id="modalTitulo">💰 Lançar Despesa de Viagem</h3>
+      <button class="modal-fechar" id="modalFechar" type="button">&times;</button>
+    </div>
+
+    <form class="modal-corpo" id="formDespesa" novalidate>
+      
+      <!-- DADOS BÁSICOS -->
+      <div class="form-secao-titulo">📝 Dados da Viagem</div>
+      <div class="form-grid">
+        <div class="form-grupo">
+          <label>Motorista <span class="obrigatorio">*</span></label>
+          <input type="text" id="despesaMotorista" required placeholder="Nome completo do motorista">
+        </div>
+        <div class="form-grupo">
+          <label>Veículo / Placa <span class="obrigatorio">*</span></label>
+          <input type="text" id="despesaVeiculo" required placeholder="Ex: ABC-1234">
+        </div>
+        <div class="form-grupo">
+          <label>Data <span class="obrigatorio">*</span></label>
+          <input type="date" id="despesaData" required>
+        </div>
+        <div class="form-grupo">
+          <label>Trajeto</label>
+          <input type="text" id="despesaTrajeto" placeholder="Origem → Destino">
+        </div>
+      </div>
+
+      <!-- ADIANTAMENTO (NOVO!) -->
+      <div class="form-secao-titulo">💸 Adiantamento para o Motorista</div>
+      <div class="form-grid">
+        <div class="form-grupo">
+          <label>Valor adiantado pela empresa</label>
+          <input type="number" id="adiantamentoValor" step="0.01" min="0" placeholder="R$ 0,00 (deixe 0 se não houve adiantamento)">
+        </div>
+      </div>
+
+      <!-- RESUMO DO SALDO (aparece automaticamente) -->
+      <div class="adiantamento-resumo saldo-zerado" id="resumoAdiantamento" style="display: none;"></div>
+
+      <!-- ITENS DA DESPESA -->
+      <div class="form-secao-titulo">🧾 Itens da Despesa</div>
+      <div id="itensContainer"></div>
+      <button type="button" class="btn-adicionar" id="btnAdicionarItem">➕ Adicionar Item</button>
+      
+      <div style="text-align: right; padding: 10px; background: var(--bg-principal); border-radius: 8px; margin: 10px 0;">
+        <strong>📝 Total Gasto: </strong>
+        <span style="font-size: 18px; color: var(--cor-primaria);" id="totalDespesas">R$ 0,00</span>
+      </div>
+
+      <!-- COMPROVANTES -->
+      <div class="form-secao-titulo">📎 Comprovantes Fiscais</div>
+      <div class="upload-area" id="areaUpload">
+        <input type="file" id="inputComprovantes" accept="image/*,.pdf" multiple hidden>
+        <div class="upload-icone">📎</div>
+        <div class="upload-texto">Clique ou arraste os comprovantes aqui</div>
+        <div class="upload-dica">PNG, JPG ou PDF • Máximo 5MB por arquivo</div>
+      </div>
+      <div class="comprovantes-grid" id="comprovantesAnexados"></div>
+
+      <!-- OBSERVAÇÕES -->
+      <div class="form-secao-titulo">💬 Observações</div>
+      <div class="form-grupo">
+        <textarea id="despesaObservacoes" rows="3" placeholder="Informações adicionais, justificativas, etc."></textarea>
+      </div>
+
+    </form>
+
+    <div class="modal-rodape">
+      <button type="button" class="btn btn-secundario" id="btnCancelarDespesa">Cancelar</button>
+      <button type="submit" form="formDespesa" class="btn btn-primario">💾 Salvar Lançamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: VISUALIZAR COMPROVANTES
+     ============================================================ -->
+<div class="modal-overlay" id="modalComprovantes">
+  <div class="modal-container" style="max-width: 900px;">
+    <div class="modal-cabecalho">
+      <h3 class="modal-titulo">📎 Comprovantes da Despesa</h3>
+      <button class="modal-fechar" id="modalComprovantesFechar" type="button">&times;</button>
+    </div>
+    <div class="modal-corpo">
+      <div class="comprovantes-galeria" id="galeriaComprovantes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCRIPTS - ORDEM CORRETA!
+     ============================================================ -->
+
+<!-- 1. Scripts do sistema original (MANTENHA os seus!) -->
+<script src="js/app.js"></script>
+<script src="js/melhorias-veiculos.js"></script>
+<script src="js/melhorias-checklist-v2.js"></script>
+
+<!-- 2. Dashboard (carrega DEPOIS do app.js) -->
+<script src="js/melhorias-dashboard.js"></script>
+
+<!-- 3. Despesas de Viagem (carrega POR ÚLTIMO) -->
+<script src="js/despesas-viagem.js"></script>
+
+<!-- Data de hoje no cabeçalho -->
+<script>
+  const elHoje = document.getElementById('dataHoje');
+  if (elHoje) {
+    elHoje.textContent = new Date().toLocaleDateString('pt-BR', { 
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' 
+    });
+  }
+  // Botão duplicado "Lançar Despesa" na seção também funciona
+  const btn2 = document.getElementById('btnAbrirDespesa2');
+  const btn1 = document.getElementById('btnAbrirDespesa');
+  if (btn2 && btn1) {
+    btn2.addEventListener('click', () => btn1.click());
+  }
+</script>
+
+</body>
+</html>
