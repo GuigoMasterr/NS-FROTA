@@ -41,6 +41,8 @@ if (!window.__navegacaoInicializada) {
     if (typeof carregarTabelaAlocacoes === 'function') carregarTabelaAlocacoes();
   }
   if (pagina === 'dashboard' && typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+  if (pagina === 'usuarios' && typeof carregarTabelaUsuarios === 'function') carregarTabelaUsuarios();
+  if (pagina === 'despesas-viagem' && typeof carregarListaDespesas === 'function') carregarListaDespesas();
   }
 
   window.mostrarPagina = mostrarPagina;

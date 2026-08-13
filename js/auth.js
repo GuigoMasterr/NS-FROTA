@@ -160,9 +160,6 @@ function sincronizarUsuarioNaTela() {
   if (elAvatar && window.usuarioAtual) {
     elAvatar.textContent = window.usuarioAtual.nome.charAt(0).toUpperCase();
   }
-  
-  const elInfo = document.getElementById('nomeUsuario');
-  if (elInfo && window.usuarioAtual) elInfo.textContent = window.usuarioAtual.nome;
 }
 
 // Conecta o formulário de login

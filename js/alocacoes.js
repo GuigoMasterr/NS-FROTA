@@ -133,7 +133,7 @@ async function carregarTabelaAlocacoes() {
   const alocacoes = BD.alocacoes || [];
   
   if (!alocacoes.length) {
-    corpo.innerHTML = `<tr><td colspan="9" class="estado-vazio">
+    corpo.innerHTML = `<tr><td colspan="10" class="estado-vazio">
       <div class="estado-vazio-icone">🚛</div>
       <div class="estado-vazio-texto">Nenhuma alocação registrada</div>
     </td></tr>`;
@@ -155,12 +155,34 @@ async function carregarTabelaAlocacoes() {
       <td>${a.dataRetorno ? new Date(a.dataRetorno).toLocaleDateString('pt-BR') : '—'}</td>
       <td>${a.kmRetorno ? Number(a.kmRetorno).toLocaleString('pt-BR') : '—'} km</td>
       <td><span class="badge ${statusClasse}">${a.status || 'Pendente'}</span></td>
+      <td>
+        <button class="btn btn-sm" style="background:#fef3c7; color:#92400e; margin-right:0.25rem;" onclick='abrirModalAlocacao(${JSON.stringify(a).replace(/"/g, '&quot;')})'>
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="excluirAlocacao('${a.id}')">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </td>
     </tr>`;
   }).join('');
 }
 
+// ✅ Excluir alocação
+async function excluirAlocacao(id) {
+  if (!confirm('⚠️ Tem certeza que deseja excluir esta alocação?')) return;
+  
+  BD.alocacoes = (BD.alocacoes || []).filter(a => String(a.id) !== String(id));
+  
+  if (typeof salvarDados === 'function') salvarDados();
+  else localStorage.setItem('bd_frotas', JSON.stringify(BD));
+  
+  alert('✅ Alocação excluída!');
+  carregarTabelaAlocacoes();
+  if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+}
 // ==================================================
 // ✅ DISPONIBILIZA GLOBALMENTE
 // ==================================================
 window.abrirModalAlocacao = abrirModalAlocacao;
 window.carregarTabelaAlocacoes = carregarTabelaAlocacoes;
+window.excluirAlocacao = excluirAlocacao;

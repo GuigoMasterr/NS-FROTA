@@ -20,6 +20,7 @@ class SupabaseWrapper {
     this._tabela = tabela;
     this._filtros = [];
     this._ordem = null;
+    this._limite = null;
     this._unico = false;
     return this;
   }

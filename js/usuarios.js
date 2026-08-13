@@ -159,7 +159,13 @@ function carregarTabelaUsuarios() {
 async function excluirUsuario(id) {
   if (!confirm('⚠️ Tem certeza que deseja excluir este usuário?')) return;
   
-  await window.excluirUsuario(id);
+  // Remove diretamente do BD (evita conflito de nome com a função do banco-dados)
+  BD.usuarios = (BD.usuarios || []).filter(u => String(u.id) !== String(id));
+  
+  // Salva no armazenamento
+  if (typeof salvarDados === 'function') salvarDados();
+  else localStorage.setItem('bd_frotas', JSON.stringify(BD));
+  
   alert('✅ Usuário excluído!');
   carregarTabelaUsuarios();
 }
