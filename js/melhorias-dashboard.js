@@ -72,19 +72,17 @@ function carregarDadosDoBD() {
   const chamados = BD.chamados || [];
   const manutencoes = BD.manutencoes || [];
   const alocacoes = BD.alocacoes || [];
-  const despesasViagem = BD.despesasViagem || [];
+  const gastosViagem = BD.gastosViagem || [];
   
-  // Inclui despesas de viagem APROVADAS nos gastos totais
-  const despesasAprovadas = despesasViagem.filter(dv => dv.status === 'aprovado');
-  const todosGastos = [...gastos, ...despesasAprovadas.map(dv => ({
-    data: dv.data,
-    valor: dv.total || dv.valorTotal || 0,
-    tipo: 'Despesa Viagem',
-    veiculoId: dv.veiculoId,
-    veiculo: dv.veiculo
+  // Inclui gastos de viagem nos gastos totais
+  const todosGastos = [...gastos, ...gastosViagem.map(gv => ({
+    data: gv.data,
+    valor: gv.valor || 0,
+    tipo: gv.tipo || 'Despesa Viagem',
+    veiculoId: gv.veiculoId
   }))];
   
-  return { veiculos, gastos: todosGastos, chamados, manutencoes, alocacoes, despesasViagem };
+  return { veiculos, gastos: todosGastos, chamados, manutencoes, alocacoes, gastosViagem };
 }
 
 // ============================================================

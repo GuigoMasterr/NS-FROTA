@@ -231,7 +231,7 @@ function abrirModalAdiantamento(adiantamento = null) {
 // ============================================================
 // MODAL: LANÇAR GASTO (Motorista)
 // ============================================================
-function abrirModalGasto(gasto = null) {
+function abrirModalGastoViagem(gasto = null) {
   if (!adiantamentoSelecionado) {
     alert('⚠️ Selecione um adiantamento primeiro!');
     return;
@@ -640,10 +640,10 @@ function renderizarListaGastos() {
         <button class="btn btn-sm btn-secundario" onclick='verComprovantes(${JSON.stringify(g.comprovantes).replace(/"/g, '&quot;')})' title="Ver comprovantes">
           📎
         </button>` : ''}
-        <button class="btn btn-sm" style="background:#fef3c7; color:#92400e;" onclick='abrirModalGasto(${JSON.stringify(g).replace(/"/g, '&quot;')})'>
+        <button class="btn btn-sm" style="background:#fef3c7; color:#92400e;" onclick='abrirModalGastoViagem(${JSON.stringify(g).replace(/"/g, '&quot;')})'>
           <i class="fa-solid fa-pen"></i>
         </button>
-        <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="excluirGasto(${g.id})">
+        <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="excluirGastoViagem(${g.id})">
           <i class="fa-solid fa-trash"></i>
         </button>
       </div>
@@ -705,7 +705,7 @@ function excluirAdiantamento(id) {
   renderizarTudo();
 }
 
-function excluirGasto(id) {
+function excluirGastoViagem(id) {
   if (!confirm('⚠️ Tem certeza que deseja excluir este gasto?')) return;
   
   BD.gastosViagem = (BD.gastosViagem || []).filter(g => String(g.id) !== String(id));
@@ -792,10 +792,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // Expor funções globalmente
 window.trocarAbaDespesas = trocarAbaDespesas;
 window.abrirModalAdiantamento = abrirModalAdiantamento;
-window.abrirModalGasto = abrirModalGasto;
+window.abrirModalGastoViagem = abrirModalGastoViagem;
 window.selecionarAdiantamento = selecionarAdiantamento;
 window.excluirAdiantamento = excluirAdiantamento;
-window.excluirGasto = excluirGasto;
+window.excluirGastoViagem = excluirGastoViagem;
 window.fecharAdiantamento = fecharAdiantamento;
 window.verComprovantes = verComprovantes;
 window.removerComprovanteTemp = removerComprovanteTemp;

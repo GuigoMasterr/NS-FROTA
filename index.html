@@ -936,6 +936,10 @@
                 <i class="fa-solid fa-users"></i>
                 <span>Usuários</span>
             </div>
+            <div class="sidebar-link" onclick="abrirModalConfiguracoes()" style="cursor: pointer;">
+                <i class="fa-solid fa-gear"></i>
+                <span>Configurações</span>
+            </div>
             <div class="sidebar-link" id="btnSairSidebar" style="color: #f87171;">
                 <i class="fa-solid fa-right-from-bracket"></i>
                 <span>Sair</span>
@@ -1301,7 +1305,7 @@
                     <div class="card-body" style="padding: 1rem;">
                         <div id="detalhesAdiantamento" style="display: none; margin-bottom: 1rem; padding: 1rem; background: #f8fafc; border-radius: 8px;"></div>
                         <div style="margin-bottom: 1rem;">
-                            <button class="btn btn-primario" id="btnLancarGasto" style="display: none;" onclick="abrirModalGasto()">
+                            <button class="btn btn-primario" id="btnLancarGasto" style="display: none;" onclick="abrirModalGastoViagem()">
                                 <i class="fa-solid fa-plus"></i> Lançar Gasto
                             </button>
                         </div>
@@ -1584,21 +1588,159 @@
         sairDoSistema();
     });
     
+    // ============================================================
+    // MODAL DE CONFIGURAÇÕES
+    // ============================================================
+    window.abrirModalConfiguracoes = function() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay aberto';
+        modal.onclick = (e) => { if (e.target === modal) fecharModal(); };
+        
+        const modoSupabase = window.supabase?.temConexaoReal ? '✅ Conectado' : '⚠️ Apenas Local';
+        const totalVeiculos = BD.veiculos?.length || 0;
+        const totalGastos = BD.gastos?.length || 0;
+        const totalUsuarios = BD.usuarios?.length || 0;
+        
+        modal.innerHTML = `
+            <div class="modal-container" style="max-width: 550px;">
+                <div class="modal-cabecalho">
+                    <h3 class="modal-titulo">⚙️ Configurações do Sistema</h3>
+                    <button type="button" class="modal-fechar" onclick="fecharModal()">&times;</button>
+                </div>
+                <div class="modal-corpo">
+                    <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem;">
+                        <div style="font-weight: 600; margin-bottom: 0.5rem;">📊 Status do Sistema</div>
+                        <div style="font-size: 0.875rem; color: #64748b; display: grid; gap: 0.25rem;">
+                            <div>Conexão Supabase: <strong>${modoSupabase}</strong></div>
+                            <div>Veículos cadastrados: <strong>${totalVeiculos}</strong></div>
+                            <div>Gastos registrados: <strong>${totalGastos}</strong></div>
+                            <div>Usuários: <strong>${totalUsuarios}</strong></div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; gap: 0.5rem;">
+                        <button class="btn btn-primario" onclick="sincronizarManualmente()" style="width: 100%;">
+                            <i class="fa-solid fa-sync"></i> 🔄 Sincronizar com Supabase
+                        </button>
+                        <button class="btn btn-secundario" onclick="exportarDadosJSON()" style="width: 100%;">
+                            <i class="fa-solid fa-download"></i> 📤 Exportar Dados (JSON)
+                        </button>
+                        <button class="btn btn-secundario" onclick="document.getElementById('importarArquivo').click()" style="width: 100%;">
+                            <i class="fa-solid fa-upload"></i> 📥 Importar Dados
+                        </button>
+                        <input type="file" id="importarArquivo" accept=".json" style="display: none;" onchange="importarDadosJSON(event)">
+                        <button class="btn" style="width: 100%; background: #fef3c7; color: #92400e;" onclick="recarregarDadosDemo()">
+                            <i class="fa-solid fa-database"></i> 📦 Recarregar Dados de Demonstração
+                        </button>
+                        <button class="btn" style="width: 100%; background: #fee2e2; color: #991b1b;" onclick="limparTodosDados()">
+                            <i class="fa-solid fa-trash"></i> 🗑️ Limpar Todos os Dados Locais
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-rodape">
+                    <button type="button" class="btn btn-secundario" onclick="fecharModal()">Fechar</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('modais').appendChild(modal);
+    };
+    
+    // Funções de configuração
+    window.sincronizarManualmente = async function() {
+        if (typeof sincronizarBD === 'function') {
+            await sincronizarBD();
+            alert('✅ Sincronização concluída!');
+            if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+        } else {
+            alert('⚠️ Função de sincronização não disponível');
+        }
+    };
+    
+    window.exportarDadosJSON = function() {
+        const dados = {
+            veiculos: BD.veiculos || [],
+            gastos: BD.gastos || [],
+            manutencoes: BD.manutencoes || [],
+            chamados: BD.chamados || [],
+            checklists: BD.checklists || [],
+            alocacoes: BD.alocacoes || [],
+            usuarios: BD.usuarios || [],
+            locais: BD.locais || [],
+            adiantamentos: BD.adiantamentos || [],
+            gastosViagem: BD.gastosViagem || [],
+            exportadoEm: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ns-frota-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('✅ Dados exportados com sucesso!');
+    };
+    
+    window.importarDadosJSON = function(event) {
+        const arquivo = event.target.files[0];
+        if (!arquivo) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const dados = JSON.parse(e.target.result);
+                if (dados.veiculos) BD.veiculos = dados.veiculos;
+                if (dados.gastos) BD.gastos = dados.gastos;
+                if (dados.manutencoes) BD.manutencoes = dados.manutencoes;
+                if (dados.chamados) BD.chamados = dados.chamados;
+                if (dados.checklists) BD.checklists = dados.checklists;
+                if (dados.alocacoes) BD.alocacoes = dados.alocacoes;
+                if (dados.usuarios) BD.usuarios = dados.usuarios;
+                if (dados.locais) BD.locais = dados.locais;
+                if (dados.adiantamentos) BD.adiantamentos = dados.adiantamentos;
+                if (dados.gastosViagem) BD.gastosViagem = dados.gastosViagem;
+                
+                if (typeof salvarDados === 'function') salvarDados();
+                alert('✅ Dados importados com sucesso! Recarregue a página.');
+                fecharModal();
+            } catch (erro) {
+                alert('❌ Erro ao importar: arquivo inválido');
+            }
+        };
+        reader.readAsText(arquivo);
+    };
+    
+    window.recarregarDadosDemo = function() {
+        if (!confirm('⚠️ Isso substituirá seus dados atuais pelos dados de demonstração. Continuar?')) return;
+        if (typeof carregarDadosDemonstracao === 'function') {
+            carregarDadosDemonstracao();
+            alert('✅ Dados de demonstração carregados!');
+            fecharModal();
+            location.reload();
+        } else {
+            alert('⚠️ Função não disponível');
+        }
+    };
+    
+    window.limparTodosDados = function() {
+        if (!confirm('⚠️ TEM CERTEZA? Isso apagará TODOS os dados locais e não pode ser desfeito!')) return;
+        if (!confirm('⚠️ Confirma novamente? Todos os veículos, gastos, manutenções serão apagados!')) return;
+        
+        localStorage.removeItem('bd_frotas');
+        localStorage.removeItem('sessaoUsuario');
+        alert('✅ Dados limpos! A página será recarregada.');
+        location.reload();
+    };
+    
     // Função global para fechar modal (funciona com TODOS os tipos)
     window.fecharModal = function() {
         // Fecha modais no container geral
         const container = document.getElementById('modais');
         if (container) container.innerHTML = '';
         
-        // Fecha modal específico de despesas de viagem
+        // Fecha modais específicos se existirem
         const modalDespesa = document.getElementById('modalDespesa');
-        if (modalDespesa) modalDespesa.classList.remove('ativo');
+        if (modalDespesa) modalDespesa.classList.remove('ativo', 'aberto');
         
-        // Fecha modal de comprovantes
-        const modalComprovantes = document.getElementById('modalComprovantes');
-        if (modalComprovantes) modalComprovantes.classList.remove('aberto');
-        
-        // Fecha modal específico de comprovantes se existir
         const modalComprovantes = document.getElementById('modalComprovantes');
         if (modalComprovantes) modalComprovantes.classList.remove('ativo', 'aberto');
     };
