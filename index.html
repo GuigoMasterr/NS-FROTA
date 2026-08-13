@@ -181,11 +181,11 @@
                     </div>
                 </div>
                 
-                <!-- CONTROLES DO DASHBOARD -->
+                <!-- CONTROLES DO DASHBOARD - DESIGN MODERNO -->
                 <div class="dashboard-controles">
-                    <div class="controles-linha">
-                        <div class="filtro-grupo">
-                            <label>Período:</label>
+                    <div class="controles-principais">
+                        <div class="grupo-controle">
+                            <label>📅 Período</label>
                             <select id="filtroPeriodoDashboard">
                                 <option value="mes">Este Mês</option>
                                 <option value="semestre" selected>Últimos 6 Meses</option>
@@ -193,27 +193,42 @@
                                 <option value="personalizado">Personalizado</option>
                             </select>
                         </div>
-                        <div class="filtro-grupo" id="datasPersonalizadas" style="display:none; gap:6px;">
-                            <label>De:</label>
-                            <input type="date" id="dataInicio" style="min-width:140px;">
-                            <label>Até:</label>
-                            <input type="date" id="dataFim" style="min-width:140px;">
+                        
+                        <div class="grupo-controle" id="datasPersonalizadas" style="display:none;">
+                            <label>De</label>
+                            <input type="date" id="dataInicio">
                         </div>
-                        <div class="filtro-grupo">
-                            <label>Tipo Gráfico:</label>
+                        
+                        <div class="grupo-controle" id="datasPersonalizadasFim" style="display:none;">
+                            <label>Até</label>
+                            <input type="date" id="dataFim">
+                        </div>
+                        
+                        <div class="grupo-controle">
+                            <label>📈 Gráfico</label>
                             <select id="tipoGrafico">
                                 <option value="bar">Barras</option>
                                 <option value="line">Linha</option>
                             </select>
                         </div>
-                        <button id="btnAtualizarDashboard" class="btn-icone" title="Atualizar">🔄</button>
-                        <button id="btnTelaCheia" class="btn-icone" title="Tela Cheia">⛶</button>
-                        <button id="btnExportarPDF" class="btn-icone" title="Exportar PDF">📄</button>
-                        <button id="btnAlternarTema" class="btn-icone" title="Tema">🌙</button>
+                        
+                        <div class="separador-controles"></div>
+                        
+                        <div class="botoes-controle">
+                            <button id="btnAtualizarDashboard" class="btn-icone" title="Atualizar dados">🔄</button>
+                            <button id="btnTelaCheia" class="btn-icone" title="Tela Cheia">⛶</button>
+                            <button id="btnExportarPDF" class="btn-icone" title="Exportar PDF">📄</button>
+                            <button id="btnAlternarTema" class="btn-icone" title="Alternar Tema">🌙</button>
+                        </div>
                     </div>
-                    <div class="opcoes-linha">
-                        <label class="opcao-check"><input type="checkbox" id="usarComparativo"> Comparar com período anterior</label>
-                        <label class="opcao-auto-refresh">Auto-refresh: 
+                    
+                    <div class="controles-secundarios">
+                        <label class="opcao-check">
+                            <input type="checkbox" id="usarComparativo">
+                            Comparar com período anterior
+                        </label>
+                        <label class="opcao-auto-refresh">
+                            ⏱️ Auto-refresh:
                             <select id="autoRefreshMinutos">
                                 <option value="0">Desativado</option>
                                 <option value="5">5 min</option>
@@ -525,6 +540,23 @@
                     <div class="form-group">
                         <label>Origem → Destino</label>
                         <input type="text" id="dv-trajeto" placeholder="Cidade A → Cidade B">
+                    </div>
+                </div>
+                
+                <!-- SEÇÃO DE ADIANTAMENTO -->
+                <div class="secao-adiantamento">
+                    <div class="secao-titulo">💸 Adiantamento e Prestação de Contas</div>
+                    <div class="adiantamento-grid">
+                        <div class="form-group" style="min-width:100%; margin:0;">
+                            <label>Valor Adiantado pela Empresa</label>
+                            <input type="number" id="dv-adiantamento" step="0.01" min="0" placeholder="R$ 0,00" oninput="atualizarResumoAdiantamento()">
+                            <small style="color:#64748b; font-size:11px;">Deixe em branco ou 0 se não houve adiantamento</small>
+                        </div>
+                        <div class="adiantamento-resumo">
+                            <div class="rotulo" id="dv-saldo-tipo">Saldo</div>
+                            <div class="valor" id="dv-saldo-valor">R$ 0,00</div>
+                            <span class="saldo-badge" id="dv-saldo-badge" style="display:none;"></span>
+                        </div>
                     </div>
                 </div>
                 

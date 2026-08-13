@@ -1,6 +1,9 @@
 /* ============================================================
    MÓDULO: DESPESAS DE VIAGEM v3.1
-   Gestão de Frotas - Sistema Veicular
+   Com sistema completo de ADIANTAMENTO:
+   - Empresa adianta valor para o motorista
+   - Motorista presta contas com comprovantes
+   - Cálculo automático: saldo a estornar ou valor complementar
    ============================================================ */
 
 const STORAGE_DESPESAS = 'frota_despesas_viagem';
@@ -35,10 +38,12 @@ function abrirModalDespesaViagem() {
     document.getElementById('formDespesaViagem').reset();
     document.getElementById('dv-id').value = '';
     document.getElementById('dv-data').valueAsDate = new Date();
+    document.getElementById('dv-adiantamento').value = '';
     comprovantesAnexados = [];
     document.getElementById('dv-comprovantes-preview').innerHTML = '';
     resetarItensLinha();
     atualizarTotalDespesas();
+    atualizarResumoAdiantamento();
     document.getElementById('modalDespesaViagem').classList.add('ativo');
 }
 
@@ -46,7 +51,6 @@ function fecharModalDespesaViagem() {
     document.getElementById('modalDespesaViagem').classList.remove('ativo');
 }
 
-// Fechar modal ao clicar fora
 document.addEventListener('click', (e) => {
     const modal = document.getElementById('modalDespesaViagem');
     if (modal && e.target === modal) fecharModalDespesaViagem();
@@ -78,17 +82,24 @@ function vincularEventosFormulario() {
         inputArquivos.addEventListener('change', (e) => processarArquivosComprovantes(e.target.files));
     }
     
-    // Cálculo automático
+    // Atualizar total e saldo ao digitar valores
     document.addEventListener('input', (e) => {
-        if (e.target.classList.contains('item-valor')) atualizarTotalDespesas();
+        if (e.target.classList.contains('item-valor')) {
+            atualizarTotalDespesas();
+            atualizarResumoAdiantamento();
+        }
+        if (e.target.id === 'dv-adiantamento') {
+            atualizarResumoAdiantamento();
+        }
     });
     
-    // Remover linha
+    // Remover linha de item
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-remover-linha')) {
             const linhas = document.querySelectorAll('.item-despesa-linha');
             if (linhas.length > 1) e.target.closest('.item-despesa-linha').remove();
             atualizarTotalDespesas();
+            atualizarResumoAdiantamento();
         }
     });
 }
@@ -124,14 +135,71 @@ function resetarItensLinha() {
     adicionarLinhaItemDV();
 }
 
-function atualizarTotalDespesas() {
+function calcularTotalDespesas() {
     let total = 0;
     document.querySelectorAll('.item-despesa-linha').forEach(linha => {
         const valor = parseFloat(linha.querySelector('.item-valor')?.value) || 0;
         total += valor;
     });
+    return total;
+}
+
+function atualizarTotalDespesas() {
+    const total = calcularTotalDespesas();
     const el = document.getElementById('dv-total-valor');
     if (el) el.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+}
+
+// ========== CÁLCULO DE ADIANTAMENTO E SALDO ==========
+function atualizarResumoAdiantamento() {
+    const adiantamento = parseFloat(document.getElementById('dv-adiantamento')?.value) || 0;
+    const totalDespesas = calcularTotalDespesas();
+    const saldo = adiantamento - totalDespesas;
+    
+    const elSaldo = document.getElementById('dv-saldo-valor');
+    const elTipo = document.getElementById('dv-saldo-tipo');
+    const elBadge = document.getElementById('dv-saldo-badge');
+    
+    if (!elSaldo) return;
+    
+    if (adiantamento === 0 && totalDespesas === 0) {
+        elSaldo.textContent = 'R$ 0,00';
+        elSaldo.className = 'valor';
+        if (elTipo) elTipo.textContent = 'Saldo';
+        if (elBadge) elBadge.style.display = 'none';
+        return;
+    }
+    
+    if (elBadge) elBadge.style.display = 'inline-flex';
+    
+    if (saldo > 0) {
+        // Motorista recebeu mais do que gastou → deve estornar para empresa
+        elSaldo.textContent = 'R$ ' + saldo.toFixed(2).replace('.', ',');
+        elSaldo.className = 'valor positivo';
+        if (elTipo) elTipo.textContent = '💰 A Estornar';
+        if (elBadge) {
+            elBadge.className = 'saldo-badge saldo-estorno';
+            elBadge.innerHTML = '↩️ Motorista devolve para empresa';
+        }
+    } else if (saldo < 0) {
+        // Motorista gastou mais do que recebeu → empresa complementa
+        elSaldo.textContent = 'R$ ' + Math.abs(saldo).toFixed(2).replace('.', ',');
+        elSaldo.className = 'valor negativo';
+        if (elTipo) elTipo.textContent = '📌 Complementar';
+        if (elBadge) {
+            elBadge.className = 'saldo-badge saldo-complementar';
+            elBadge.innerHTML = '➡️ Empresa paga diferença';
+        }
+    } else {
+        // Valores exatos → conta fechada
+        elSaldo.textContent = 'R$ 0,00';
+        elSaldo.className = 'valor';
+        if (elTipo) elTipo.textContent = '✅ Conta Fechada';
+        if (elBadge) {
+            elBadge.className = 'saldo-badge saldo-fechado';
+            elBadge.innerHTML = '✓ Valores exatos';
+        }
+    }
 }
 
 // ========== UPLOAD DE COMPROVANTES ==========
@@ -216,8 +284,18 @@ function salvarDespesaViagem(e) {
     }
     
     if (comprovantesAnexados.length === 0) {
-        alert('⚠️ Anexe pelo menos um comprovante.');
+        alert('⚠️ Anexe pelo menos um comprovante (cupom fiscal, nota, etc.).');
         return;
+    }
+    
+    const adiantamento = parseFloat(document.getElementById('dv-adiantamento')?.value) || 0;
+    const saldo = adiantamento - valorTotal;
+    
+    let statusConta = 'fechado';
+    if (adiantamento > 0) {
+        if (saldo > 0.01) statusConta = 'estorno_pendente';
+        else if (saldo < -0.01) statusConta = 'complementar_pendente';
+        else statusConta = 'fechado';
     }
     
     const despesa = {
@@ -226,8 +304,11 @@ function salvarDespesaViagem(e) {
         veiculo: document.getElementById('dv-veiculo').value.trim().toUpperCase(),
         data: document.getElementById('dv-data').value,
         trajeto: document.getElementById('dv-trajeto').value.trim(),
+        adiantamento,
         itens,
         valorTotal,
+        saldo,
+        statusConta,
         comprovantes: [...comprovantesAnexados],
         observacoes: document.getElementById('dv-observacoes').value.trim(),
         status: 'pendente',
@@ -245,7 +326,13 @@ function salvarDespesaViagem(e) {
     renderizarListaDespesasViagem();
     fecharModalDespesaViagem();
     
-    alert('✅ Despesa lançada com sucesso! Aguardando aprovação.');
+    let msg = '✅ Despesa lançada com sucesso!';
+    if (adiantamento > 0) {
+        if (saldo > 0.01) msg += `\n\n💰 Saldo a ESTORNAR pelo motorista: R$ ${saldo.toFixed(2).replace('.', ',')}`;
+        else if (saldo < -0.01) msg += `\n\n📌 Valor COMPLEMENTAR a pagar pela empresa: R$ ${Math.abs(saldo).toFixed(2).replace('.', ',')}`;
+        else msg += '\n\n✅ Conta fechada! Valores exatos.';
+    }
+    alert(msg);
 }
 
 // ========== RENDERIZAR LISTA ==========
@@ -263,7 +350,7 @@ function renderizarListaDespesasViagem() {
     // Filtro período
     if (filtroPeriodo === 'semana') {
         const semana = new Date(Date.now() - 7 * 86400000);
-        filtradas = filtradas.filter(d => new Date(d.data) >= semana);
+        filtradas = filtradas.filter(d => new Date(d.data + 'T00:00:00') >= semana);
     } else if (filtroPeriodo === 'mes') {
         filtradas = filtradas.filter(d => {
             const dt = new Date(d.data + 'T00:00:00');
@@ -294,7 +381,7 @@ function renderizarListaDespesasViagem() {
     atualizarCardsResumo(filtradas);
     
     if (filtradas.length === 0) {
-        container.innerHTML = '<p class="sem-dados">📭 Nenhuma despesa encontrada para os filtros selecionados.</p>';
+        container.innerHTML = '<p class="sem-dados">Nenhuma despesa encontrada.</p>';
         return;
     }
     
@@ -312,24 +399,54 @@ function renderizarListaDespesasViagem() {
         const dt = new Date(d.data + 'T00:00:00');
         const dtFmt = `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
         
-        const statusClasse = d.status === 'aprovado' ? 'status-aprovado' : d.status === 'rejeitado' ? 'status-rejeitado' : 'status-pendente';
-        const statusTexto = d.status === 'aprovado' ? '✅ Aprovado' : d.status === 'rejeitado' ? '❌ Rejeitado' : '⏳ Pendente';
+        const statusClasse = d.status === 'aprovado' ? 'status-aprovado' : 
+                           d.status === 'rejeitado' ? 'status-rejeitado' : 'status-pendente';
+        const statusTexto = d.status === 'aprovado' ? '✅ Aprovado' : 
+                          d.status === 'rejeitado' ? '❌ Rejeitado' : '⏳ Pendente';
         
-        const itensResumo = d.itens.map(i => `${iconesTipo[i.tipo] || '•'} ${nomesTipo[i.tipo] || i.tipo} — R$ ${i.valor.toFixed(2).replace('.',',')}`).join(' · ');
+        const itensResumo = d.itens.map(i => 
+            `${iconesTipo[i.tipo] || '•'} ${nomesTipo[i.tipo] || i.tipo} — R$ ${i.valor.toFixed(2).replace('.',',')}`
+        ).join(' · ');
+        
+        // Informações de adiantamento e saldo
+        let infoAdiantamento = '';
+        if (d.adiantamento > 0) {
+            const saldo = d.saldo || 0;
+            if (saldo > 0.01) {
+                infoAdiantamento = `<div class="despesa-saldo" style="background:#ecfdf5; color:#059669;">
+                    💰 Adiantado: R$ ${d.adiantamento.toFixed(2).replace('.',',')} · 
+                    ↩️ <strong>A estornar: R$ ${saldo.toFixed(2).replace('.',',')}</strong>
+                </div>`;
+            } else if (saldo < -0.01) {
+                infoAdiantamento = `<div class="despesa-saldo" style="background:#fef2f2; color:#b91c1c;">
+                    💰 Adiantado: R$ ${d.adiantamento.toFixed(2).replace('.',',')} · 
+                    ➡️ <strong>Complementar: R$ ${Math.abs(saldo).toFixed(2).replace('.',',')}</strong>
+                </div>`;
+            } else {
+                infoAdiantamento = `<div class="despesa-saldo" style="background:#eff6ff; color:#1e40af;">
+                    💰 Adiantado: R$ ${d.adiantamento.toFixed(2).replace('.',',')} · 
+                    ✅ <strong>Conta fechada</strong>
+                </div>`;
+            }
+        }
         
         return `
             <div class="cartao-despesa ${statusClasse}">
                 <div class="despesa-cabecalho">
                     <div>
                         <div class="despesa-motorista">${d.motorista} <span style="font-weight:400; color:#64748b;">— ${d.veiculo}</span></div>
-                        <div class="despesa-info">📅 ${dtFmt}${d.trajeto ? ' | 🛣️ ' + d.trajeto : ''}</div>
+                        <div class="despesa-info">
+                            <span>📅 ${dtFmt}</span>
+                            ${d.trajeto ? `<span>🛣️ ${d.trajeto}</span>` : ''}
+                        </div>
                     </div>
                     <div>
                         <div class="despesa-valor">R$ ${d.valorTotal.toFixed(2).replace('.',',')}</div>
-                        <div style="text-align:right;"><span class="despesa-status">${statusTexto}</span></div>
+                        <div style="text-align:right; margin-top:4px;"><span class="despesa-status">${statusTexto}</span></div>
                     </div>
                 </div>
                 <div class="despesa-itens">${itensResumo}</div>
+                ${infoAdiantamento}
                 ${d.observacoes ? `<div style="font-size:13px; color:#64748b; margin-top:8px;">📝 ${d.observacoes}</div>` : ''}
                 <div class="despesa-rodape">
                     <span>📎 ${d.comprovantes.length} comprovante(s)</span>
@@ -359,6 +476,11 @@ function atualizarCardsResumo(filtradas) {
     definirTexto('dv-rejeitadas', rejeitadas);
 }
 
+function definirTexto(id, texto) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = texto;
+}
+
 // ========== AÇÕES ==========
 function aprovarDespesa(id) {
     if (!confirm('✅ Confirmar aprovação desta despesa?')) return;
@@ -384,27 +506,53 @@ function verComprovantes(id) {
     const d = despesasViagem.find(x => x.id === id);
     if (!d || !d.comprovantes.length) return;
     
-    let html = `<div style="max-width:600px; max-height:80vh; overflow-y:auto; padding:20px;">
-        <h3 style="margin-bottom:16px;">📎 Comprovantes — ${d.motorista} (${d.veiculo})</h3>
-        <div style="display:flex; flex-wrap:wrap; gap:12px;">`;
+    let html = `<!DOCTYPE html><html><head><title>Comprovantes - ${d.motorista}</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: #f8fafc; }
+        h2 { color: #0f172a; margin-bottom: 8px; }
+        .info { color: #64748b; margin-bottom: 24px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+        .item { background: white; border-radius: 10px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .item img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; cursor: pointer; }
+        .pdf-link { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 160px; background: #fee2e2; border-radius: 6px; color: #991b1b; text-decoration: none; font-weight: 600; }
+        .pdf-link span { font-size: 40px; margin-bottom: 8px; }
+        .nome { font-size: 12px; color: #64748b; margin-top: 8px; text-align: center; word-break: break-all; }
+        .resumo { background: white; padding: 16px; border-radius: 10px; margin-bottom: 20px; }
+        .resumo-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
+        .resumo-item:last-child { border-bottom: none; }
+    </style></head><body>
+    <h2>📎 Comprovantes de Viagem</h2>
+    <div class="info"><strong>${d.motorista}</strong> — ${d.veiculo} — ${d.data}</div>`;
+    
+    if (d.adiantamento > 0) {
+        const saldo = d.saldo || 0;
+        let textoSaldo = '';
+        if (saldo > 0.01) textoSaldo = `<span style="color:#059669;">↩️ A estornar: R$ ${saldo.toFixed(2).replace('.',',')}</span>`;
+        else if (saldo < -0.01) textoSaldo = `<span style="color:#b91c1c;">➡️ Complementar: R$ ${Math.abs(saldo).toFixed(2).replace('.',',')}</span>`;
+        else textoSaldo = `<span style="color:#1e40af;">✅ Conta fechada</span>`;
+        
+        html += `<div class="resumo">
+            <div class="resumo-item"><span>💰 Adiantamento</span><strong>R$ ${d.adiantamento.toFixed(2).replace('.',',')}</strong></div>
+            <div class="resumo-item"><span>📊 Total gasto</span><strong>R$ ${d.valorTotal.toFixed(2).replace('.',',')}</strong></div>
+            <div class="resumo-item"><span>Saldo</span><strong>${textoSaldo}</strong></div>
+        </div>`;
+    }
+    
+    html += '<div class="grid">';
     
     d.comprovantes.forEach(c => {
         if (c.tipo.startsWith('image/')) {
-            html += `<div style="width:140px; height:140px; border-radius:8px; overflow:hidden; border:2px solid #e2e8f0;">
-                <img src="${c.base64}" style="width:100%; height:100%; object-fit:cover;" onclick="window.open('${c.base64}')" title="Clique para ampliar">
-            </div>`;
+            html += `<div class="item"><img src="${c.base64}" onclick="window.open('${c.base64}')" title="Clique para ampliar"><div class="nome">${c.nome}</div></div>`;
         } else {
-            html += `<a href="${c.base64}" download="${c.nome}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:140px; height:140px; background:#fee2e2; border-radius:8px; text-decoration:none; color:#991b1b; font-weight:600;">
-                <span style="font-size:40px;">📄</span>
-                <span style="font-size:11px; margin-top:6px; text-align:center; word-break:break-all; padding:0 8px;">${c.nome}</span>
-            </a>`;
+            html += `<div class="item"><a href="${c.base64}" download="${c.nome}" class="pdf-link"><span>📄</span>${c.nome.split('.').pop().toUpperCase()}</a><div class="nome">${c.nome}</div></div>`;
         }
     });
     
-    html += '</div></div>';
+    html += '</div></body></html>';
     
-    const modal = window.open('', '_blank', 'width=650,height=700');
-    modal.document.write(`<html><head><title>Comprovantes</title></head><body style="font-family:Arial,sans-serif;">${html}</body></html>`);
+    const modal = window.open('', '_blank', 'width=850,height=700');
+    modal.document.write(html);
+    modal.document.close();
 }
 
 // ========== FUNÇÕES GLOBAIS ==========

@@ -470,7 +470,10 @@ function vincularControlesDashboard() {
     
     document.getElementById('filtroPeriodoDashboard')?.addEventListener('change', e => {
         const dp = document.getElementById('datasPersonalizadas');
-        if (dp) dp.style.display = e.target.value === 'personalizado' ? 'flex' : 'none';
+        const dpf = document.getElementById('datasPersonalizadasFim');
+        const mostrar = e.target.value === 'personalizado';
+        if (dp) dp.style.display = mostrar ? 'flex' : 'none';
+        if (dpf) dpf.style.display = mostrar ? 'flex' : 'none';
         carregarDadosDashboardAprimorado();
     });
     
