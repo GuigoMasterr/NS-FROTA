@@ -1505,17 +1505,19 @@
 <script src="js/utils.js"></script>
 <script src="js/validacoes.js"></script>
 
-<!-- 3. Banco de Dados (local + Supabase) -->
-<script src="js/banco-dados.js"></script>
-<script src="js/sync.js"></script>
+<!-- 3. Supabase Wrapper -->
+<script src="js/supabase.js"></script>
 
-<!-- 4. Autenticação -->
+<!-- 4. Banco de Dados (local + Supabase) -->
+<script src="js/banco-dados.js"></script>
+
+<!-- 5. Autenticação -->
 <script src="js/auth.js"></script>
 
-<!-- 5. Navegação -->
+<!-- 6. Navegação -->
 <script src="js/navegacao.js"></script>
 
-<!-- 6. Módulos do Sistema -->
+<!-- 7. Módulos do Sistema -->
 <script src="js/veiculos.js"></script>
 <script src="js/manutencao.js"></script>
 <script src="js/gastos.js"></script>
@@ -1524,16 +1526,16 @@
 <script src="js/alocacoes.js"></script>
 <script src="js/usuarios.js"></script>
 
-<!-- 7. Dashboard (carrega DEPOIS dos módulos) -->
+<!-- 8. Dashboard (carrega DEPOIS dos módulos) -->
 <script src="js/melhorias-dashboard.js"></script>
 
-<!-- 8. Sync (ajustado para produção) -->
+<!-- 9. Sync (ajustado para produção) -->
 <script src="js/sync.js"></script>
 
-<!-- 9. Despesas de Viagem -->
+<!-- 10. Despesas de Viagem -->
 <script src="js/despesas-viagem.js"></script>
 
-<!-- 10. Scripts de inicialização customizados (carrega POR ÚLTIMO) -->
+<!-- 11. Scripts de inicialização customizados (carrega POR ÚLTIMO) -->
 <script>
     // Data de hoje no topbar
     document.getElementById('topbarData').textContent = new Date().toLocaleDateString('pt-BR', { 

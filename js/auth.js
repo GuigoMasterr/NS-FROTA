@@ -161,7 +161,7 @@ function sincronizarUsuarioNaTela() {
     elAvatar.textContent = window.usuarioAtual.nome.charAt(0).toUpperCase();
   }
   
-  const elInfo = document.getElementById('infoUsuario');
+  const elInfo = document.getElementById('nomeUsuario');
   if (elInfo && window.usuarioAtual) elInfo.textContent = window.usuarioAtual.nome;
 }
 
