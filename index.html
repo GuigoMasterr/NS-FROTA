@@ -49,12 +49,52 @@
         body.usuario-motorista .admin-only, body.usuario-motorista .supervisor-only { display: none !important; }
         body.usuario-visitante .admin-only, body.usuario-visitante .supervisor-only { display: none !important; }
         body.usuario-supervisor .admin-only { display: none !important; }
-        .filtro-area { display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1.25rem; padding: 1.25rem; background: #ffffff; border-radius: 0.875rem; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; border-left: 4px solid #4f46e5; }
-        .filtro-area .filtro-titulo { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #334155; font-size: 0.9rem; margin-right: 0.5rem; }
-        .filtro-area .filtro-grupo { display: flex; flex-direction: column; gap: 0.35rem; min-width: 180px; }
-        .filtro-area .filtro-grupo label { font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 0; text-transform: uppercase; letter-spacing: 0.03em; }
-        .filtro-area .filtro-grupo select, .filtro-area .filtro-grupo input { min-width: 180px; margin: 0; }
-        .filtro-area .filtro-separador { color: #94a3b8; font-size: 0.875rem; padding-bottom: 0.5rem; }
+        .filtro-area { 
+            display: flex; 
+            gap: 1rem; 
+            align-items: flex-end; 
+            margin-bottom: 1.25rem; 
+            padding: 1.25rem; 
+            background: #ffffff; 
+            border-radius: 0.875rem; 
+            flex-wrap: wrap; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #4f46e5;
+        }
+        .filtro-area .filtro-titulo { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+            font-weight: 600; 
+            color: #334155; 
+            font-size: 0.9rem; 
+            margin-right: 0.5rem;
+        }
+        .filtro-area .filtro-grupo { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 0.35rem; 
+            min-width: 180px;
+        }
+        .filtro-area .filtro-grupo label { 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            color: #64748b; 
+            margin-bottom: 0; 
+            text-transform: uppercase; 
+            letter-spacing: 0.03em;
+        }
+        .filtro-area .filtro-grupo select,
+        .filtro-area .filtro-grupo input { 
+            min-width: 180px; 
+            margin: 0;
+        }
+        .filtro-area .filtro-separador { 
+            color: #94a3b8; 
+            font-size: 0.875rem; 
+            padding-bottom: 0.5rem;
+        }
         .btn-fechar { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #94a3b8; }
         .linha-form { margin-bottom: 1rem; }
         .botoes-form { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap; }
@@ -79,8 +119,6 @@
         .alerta-item.critico { background: #fef2f2; border-color: #dc2626; }
         .alerta-item.atencao { background: #fefce8; border-color: #f59e0b; }
         .alerta-item.info { background: #eff6ff; border-color: #3b82f6; }
-        .alerta-item .titulo { font-weight: 600; color: #1e293b; }
-        .alerta-item .detalhe { color: #64748b; font-size: 0.75rem; margin-top: 2px; }
         .progress-ring-container { position: relative; display: inline-block; }
         .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
         .progress-text .numero { font-size: 1.75rem; font-weight: 700; color: #1e293b; }
@@ -103,7 +141,7 @@
     <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-    <!-- TELA DE LOGIN -->
+    <!-- LOGIN -->
     <div id="telaLogin" style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, #1e1b4b, #4338ca);">
         <div class="card" style="width:100%; max-width:420px; padding:2.5rem; text-align:center; margin:1rem;">
             <div style="width:64px; height:64px; background:linear-gradient(135deg, #4f46e5, #6366f1); border-radius:1rem; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 1.5rem;">🚛</div>
@@ -123,7 +161,7 @@
         </div>
     </div>
 
-    <!-- SISTEMA PRINCIPAL -->
+    <!-- SISTEMA -->
     <div id="sistemaPrincipal" class="hidden main-wrapper">
         <aside class="sidebar" id="sidebar">
             <div style="padding:1.5rem 1.25rem; border-bottom:1px solid #e2e8f0;">
@@ -155,7 +193,7 @@
         </aside>
 
         <main class="main-content">
-            <!-- DASHBOARD -->
+            <!-- DASHBOARD NOVO -->
             <div id="pag-dashboard" class="pagina ativa">
                 <div class="page-header">
                     <div>
@@ -268,42 +306,159 @@
                 </div>
             </div>
 
-            <!-- OUTRAS PÁGINAS (estrutura básica) -->
+            <!-- === TODAS AS OUTRAS PÁGINAS ORIGINAIS === -->
+            <!-- VEÍCULOS -->
             <div id="pag-veiculos" class="pagina">
-                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">🚛 Cadastro de Veículos</h2><p style="color:#64748b; margin:0.25rem 0 0;">Gerencie toda a frota</p></div></div>
-                <div class="card" style="padding:1.25rem; margin-top:1rem;">
-                    <p style="text-align:center; color:#94a3b8; padding:2rem;">Nenhum veículo cadastrado.</p>
-                </div>
+                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">🚛 Cadastro de Veículos</h2><p style="color:#64748b; margin:0.25rem 0 0;">Gerencie toda a frota</p></div><button class="btn btn-primary admin-only" onclick="abrirModalVeiculo()">➕ Novo Veículo</button></div>
+                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Categoria</label><select id="filtroVeiculoCategoria" onchange="carregarTabelaVeiculos()"><option value="todas">Todas Categorias</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroVeiculoStatus" onchange="carregarTabelaVeiculos()"><option value="todos">Todos Status</option><option value="disponivel">Disponível</option><option value="alocado">Alocado</option><option value="manutencao">Manutenção</option><option value="inativo">Inativo</option></select></div></div>
+                <div class="card table-container"><table><thead><tr><th>Placa</th><th>Categoria</th><th>Modelo</th><th>Km Atual</th><th>Obra</th><th>Status</th><th class="admin-only">Ações</th></tr></thead><tbody id="tabelaVeiculos"></tbody></table></div>
             </div>
 
-            <div id="pag-checklist" class="pagina"><h2>Check-list</h2></div>
-            <div id="pag-manutencao" class="pagina"><h2>Manutenção</h2></div>
-            <div id="pag-gastos" class="pagina"><h2>Gastos</h2></div>
-            <div id="pag-chamados" class="pagina"><h2>Chamados</h2></div>
-            <div id="pag-alocacoes" class="pagina"><h2>Alocações</h2></div>
-            <div id="pag-locais" class="pagina"><h2>Locais / Obras</h2></div>
-            <div id="pag-usuarios" class="pagina"><h2>Usuários</h2></div>
-            <div id="pag-configuracoes" class="pagina"><h2>Configurações</h2></div>
-            <div id="pag-log" class="pagina"><h2>Log de Registros</h2></div>
+            <!-- CHECK-LIST -->
+            <div id="pag-checklist" class="pagina">
+                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">✅ Check-list de Inspeção</h2><p style="color:#64748b; margin:0.25rem 0 0;">Inspeções diárias</p></div><button class="btn btn-primary" onclick="abrirModalChecklist()">➕ Novo Check-list</button></div>
+                <div id="alertasCintas"></div>
+                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroChecklistVeiculo" onchange="carregarTabelaChecklist()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Data Início</label><input type="date" id="filtroChecklistDataIni" onchange="carregarTabelaChecklist()"></div><div class="filtro-separador">até</div><div class="filtro-grupo"><label>Data Fim</label><input type="date" id="filtroChecklistDataFim" onchange="carregarTabelaChecklist()"></div></div>
+                <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Motorista</th><th>Status</th><th>Localização</th><th>Ações</th></tr></thead><tbody id="tabelaChecklist"></tbody></table></div>
+            </div>
+
+            <!-- MANUTENÇÃO -->
+            <div id="pag-manutencao" class="pagina">
+                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">🔧 Manutenção</h2><p style="color:#64748b; margin:0.25rem 0 0;">Solicitações e serviços</p></div><button class="btn btn-primary" onclick="abrirModalManutencao()">➕ Nova Solicitação</button></div>
+                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroManutencaoVeiculo" onchange="carregarTabelaManutencao()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroManutencaoStatus" onchange="carregarTabelaManutencao()"><option value="todos">Todos Status</option><option value="aberta">Aberta</option><option value="andamento">Em Andamento</option><option value="concluida">Concluída</option></select></div></div>
+                <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th><th>Status</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaManutencao"></tbody></table></div>
+            </div>
+
+            <!-- GASTOS -->
+            <div id="pag-gastos" class="pagina">
+                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">💰 Gastos</h2><p style="color:#64748b; margin:0.25rem 0 0;">Registro de despesas</p></div><button class="btn btn-primary" onclick="abrirModalGasto()">➕ Novo Gasto</button></div>
+                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroGastosVeiculo" onchange="carregarTabelaGastos()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Tipo</label><select id="filtroGastosTipo" onchange="carregarTabelaGastos()"><option value="todos">Todos Tipos</option><option value="combustivel">Combustível</option><option value="manutencao">Manutenção</option><option value="pneus">Pneus</option><option value="pedagio">Pedágio</option><option value="seguro">Seguro</option><option value="outro">Outro</option></select></div></div>
+                <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaGastos"></tbody></table></div>
+            </div>
+
+            <!-- CHAMADOS -->
+            <div id="pag-chamados" class="pagina">
+                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">🔔 Chamados</h2><p style="color:#64748b; margin:0.25rem 0 0;">Ocorrências registradas</p></div><button class="btn btn-primary" onclick="abrirModalChamado()">➕ Abrir Chamado</button></div>
+                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroChamadosVeiculo" onchange="carregarTabelaChamados()"><option value="todos">Todos Veículos</option></select></div><div class="filtro-grupo"><label>Status</label><select id="filtroChamadosStatus" onchange="carregarTabelaChamados()"><option value="todos">Todos Status</option><option value="aberto">Aberto</option><option value="andamento">Em Andamento</option><option value="resolvido">Resolvido</option></select></div></div>
+                <div class="card table-container"><table><thead><tr><th>Data</th><th>Veículo</th><th>Título</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaChamados"></tbody></table></div>
+            </div>
+
+            <!-- ALOCAÇÕES -->
+            <div id="pag-alocacoes" class="pagina">
+                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">📍 Alocações</h2><p style="color:#64748b; margin:0.25rem 0 0;">Alocação de veículos</p></div><button class="btn btn-primary" onclick="abrirModalAlocacao()">➕ Nova Alocação</button></div>
+                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Veículo</label><select id="filtroAlocacoesVeiculo" onchange="carregarTabelaAlocacoes()"><option value="todos">Todos Veículos</option></select></div></div>
+                <div class="card table-container"><table><thead><tr><th>Veículo</th><th>Origem</th><th>Destino</th><th>Data Início</th><th>Data Fim</th><th class="supervisor-only">Ações</th></tr></thead><tbody id="tabelaAlocacoes"></tbody></table></div>
+            </div>
+
+            <!-- LOCAIS -->
+            <div id="pag-locais" class="pagina">
+                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">🏗️ Locais / Obras</h2><p style="color:#64748b; margin:0.25rem 0 0;">Cadastro de locais</p></div><button class="btn btn-primary admin-only" onclick="abrirModalLocal()">➕ Novo Local</button></div>
+                <div class="card table-container"><table><thead><tr><th>Nome</th><th class="admin-only">Ações</th></tr></thead><tbody id="tabelaLocais"></tbody></table></div>
+            </div>
+
+            <!-- USUÁRIOS -->
+            <div id="pag-usuarios" class="pagina admin-only">
+                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">👤 Gerenciar Usuários</h2><p style="color:#64748b; margin:0.25rem 0 0;">Cadastre e gerencie acessos</p></div><button class="btn btn-primary" onclick="abrirModalUsuario()">➕ Novo Usuário</button></div>
+                <div class="card table-container"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tabelaUsuarios"></tbody></table></div>
+            </div>
+
+            <!-- CONFIGURAÇÕES -->
+            <div id="pag-configuracoes" class="pagina admin-only">
+                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">⚙️ Configurações</h2><p style="color:#64748b; margin:0.25rem 0 0;">Parâmetros do sistema</p></div></div>
+                <div class="card" style="padding:1.5rem; margin-bottom:1.5rem;"><h3 style="font-weight:600; margin:0 0 1rem;">⛽ Postos de Abastecimento</h3><div style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;"><input type="text" id="novoPosto" placeholder="Nome do posto" style="flex:1; min-width:200px;"><button class="btn btn-primary" onclick="adicionarPosto()">➕ Adicionar</button></div><div id="listaPostos"></div></div>
+                <div class="card" style="padding:1.5rem; margin-bottom:1.5rem;"><h3 style="font-weight:600; margin:0 0 1rem;">🚛 Categorias de Veículos</h3><div id="listaCategoriasConfig"></div></div>
+                <div class="card" style="padding:1.5rem;"><h3 style="font-weight:600; margin:0 0 1rem;">🔗 Requisitos de Cintas</h3><p style="color:#64748b; font-size:0.875rem; margin-bottom:1rem;">Quantidades mínimas para categorias especiais</p><div id="configCintas"></div></div>
+            </div>
+
+            <!-- LOG -->
+            <div id="pag-log" class="pagina admin-only">
+                <div class="page-header"><div><h2 style="font-size:1.5rem; font-weight:700; margin:0;">📝 Log de Registros</h2><p style="color:#64748b; margin:0.25rem 0 0;">Histórico de ações</p></div><button class="btn btn-secondary" onclick="limparLog()">🗑️ Limpar Log</button></div>
+                <div class="filtro-area"><div class="filtro-titulo">🔍 Filtrar</div><div class="filtro-grupo"><label>Usuário</label><select id="filtroLogUsuario" onchange="carregarLog()"><option value="todos">Todos Usuários</option></select></div><div class="filtro-grupo"><label>Ação</label><select id="filtroLogAcao" onchange="carregarLog()"><option value="todas">Todas Ações</option><option value="login">Login</option><option value="criacao">Criação</option><option value="edicao">Edição</option><option value="exclusao">Exclusão</option></select></div></div>
+                <div class="card table-container"><table><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead><tbody id="tabelaLog"></tbody></table></div>
+            </div>
+
         </main>
     </div>
 
-    <!-- JAVASCRIPT COMPLETO AQUI -->
-        <!-- ARQUIVOS DE FUNCIONALIDADES ORIGINAIS -->
-    <script src="js/app.js"></script>
-    <script src="js/melhorias-veiculos.js"></script>
-    <script src="js/melhorias-checklist-v2.js"></script>
-    <script src="js/melhorias-dashboard.js"></script>
+    <div id="modais"></div>
 
-    <!-- INICIALIZAÇÃO DO DASHBOARD -->
+    <!-- SIDEBAR TOGGLE -->
     <script>
+        function toggleSidebar() {
+            const s = document.getElementById('sidebar');
+            const o = document.querySelector('.sidebar-overlay');
+            if (s) s.classList.toggle('aberto');
+            if (o) o.classList.toggle('ativo');
+        }
+        document.addEventListener('click', function(e) {
+            const l = e.target.closest('.sidebar-link');
+            if (l && window.innerWidth <= 768) toggleSidebar();
+        });
+
+        // Inicializar gráficos do dashboard após carregar app.js
+        let graficosCarregados = false;
+        function carregarGraficosDashboard() {
+            if (graficosCarregados) return;
+            graficosCarregados = true;
+
+            // Gráfico Categorias
+            const catEl = document.getElementById('grafico-categorias');
+            if (catEl && window.echarts) {
+                const ec = echarts.init(catEl);
+                ec.setOption({
+                    tooltip: {trigger: 'item'},
+                    series: [{
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        data: [
+                            {value:0, name:'Carro'},
+                            {value:0, name:'Caminhão'},
+                            {value:0, name:'Máquina'},
+                            {value:0, name:'Utilitário'}
+                        ]
+                    }]
+                });
+            }
+
+            // Gráfico Gastos
+            const gastoEl = document.getElementById('grafico-gastos');
+            if (gastoEl && window.echarts) {
+                const eg = echarts.init(gastoEl);
+                eg.setOption({
+                    tooltip: {trigger: 'axis'},
+                    xAxis: {type:'category', data:['Mar','Abr','Mai','Jun','Jul','Ago']},
+                    yAxis: {type:'value', name:'R$'},
+                    series: [{name:'Gastos', type:'bar', data:[0,0,0,0,0,0], color:'#4f46e5'}]
+                });
+            }
+
+            // Gráfico Status
+            const stEl = document.getElementById('grafico-status');
+            if (stEl && window.echarts) {
+                const es = echarts.init(stEl);
+                es.setOption({
+                    tooltip: {trigger: 'item'},
+                    series: [{
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        data: [
+                            {value:0, name:'Operando'},
+                            {value:0, name:'Disponível'},
+                            {value:0, name:'Manutenção'}
+                        ],
+                        color: ['#22c55e','#3b82f6','#f59e0b']
+                    }]
+                });
+            }
+        }
+
+        // Carregar gráficos após app.js inicializar
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() {
-                if (window.inicializarDashboard) {
-                    window.inicializarDashboard();
-                }
-            }, 300);
+            setTimeout(() => {
+                if (window.echarts) carregarGraficosDashboard();
+            }, 500);
         });
     </script>
+    <script src="app.js"></script>
 </body>
 </html>
