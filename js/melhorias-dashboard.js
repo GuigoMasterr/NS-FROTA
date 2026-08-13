@@ -1,545 +1,524 @@
-/* ============================================================
-   MELHORIAS DASHBOARD v3.1 - Gestão de Frotas
-   Todos os aprimoramentos: filtros, tema, auto-refresh,
-   novos gráficos, alertas, tela cheia, exportar PDF
-   ============================================================ */
+// =====================================================
+// DASHBOARD APRIMORADO - v3.2
+// =====================================================
 
-let chartCategoria, chartGastos, chartStatus, chartTopVeiculos, chartGastosCategoria;
-let autoRefreshInterval = null;
-let dashboardDebug = true;
+let graficoCategoria = null;
+let graficoGastos = null;
+let graficoTopVeiculos = null;
+let graficoCategorias = null;
+let timerAutoRefresh = null;
 
-function inicializarDashboardAprimorado() {
-    if (dashboardDebug) console.log('🚀 [DASHBOARD] Inicializando v3.1...');
-    
-    atualizarDataDashboard();
-    inicializarChartCategoria();
-    inicializarChartGastos();
-    inicializarChartStatus();
-    inicializarChartTopVeiculos();
-    inicializarChartGastosCategoria();
-    carregarDadosDashboardAprimorado();
-    vincularControlesDashboard();
-    inicializarTema();
-    inicializarAutoRefresh();
-    
-    window.addEventListener('resize', function() {
-        [chartCategoria, chartGastos, chartStatus, chartTopVeiculos, chartGastosCategoria].forEach(c => { if (c) c.resize(); });
-    });
-    
-    setTimeout(verificarAlertasManutencao, 1500);
-    
-    if (dashboardDebug) console.log('✅ [DASHBOARD] Inicialização concluída!');
-}
+// =====================================================
+// INICIALIZACAO
+// =====================================================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 [DASHBOARD] Inicializando v3.2...');
+    inicializarControles();
+    carregarDadosERenderizar();
+    verificarAlertas();
+    console.log('✅ [DASHBOARD] Inicializado com sucesso!');
+});
 
-function atualizarDataDashboard() {
-    const el = document.getElementById('dataAtualDashboard');
-    if (!el) return;
-    const hoje = new Date();
-    el.textContent = hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-}
+window.atualizarDashboard = function() {
+    console.log('🔄 [DASHBOARD] Atualização manual solicitada');
+    carregarDadosERenderizar();
+    verificarAlertas();
+};
 
-// ========== GRÁFICO 1: CATEGORIA ==========
-function inicializarChartCategoria() {
-    const el = document.getElementById('chartCategoria');
-    if (!el || typeof echarts === 'undefined') return;
-    chartCategoria = echarts.init(el);
-    chartCategoria.setOption({
-        backgroundColor: 'transparent',
-        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-        legend: { bottom: 0, textStyle: { color: '#64748b', fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
-        series: [{
-            type: 'pie', radius: ['45%', '72%'], center: ['50%', '42%'],
-            itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false },
-            emphasis: { label: { show: true, fontSize: 13, fontWeight: 600 } },
-            data: []
-        }]
-    });
-}
-
-// ========== GRÁFICO 2: GASTOS ==========
-function inicializarChartGastos() {
-    const el = document.getElementById('chartGastos');
-    if (!el || typeof echarts === 'undefined') return;
-    chartGastos = echarts.init(el);
-    chartGastos.setOption({
-        backgroundColor: 'transparent',
-        tooltip: {
-            trigger: 'axis', axisPointer: { type: 'shadow' },
-            formatter: function(params) {
-                let total = 0, html = params[0].axisLabel + '<br/>';
-                params.forEach(p => {
-                    html += '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + p.color + '"></span> ' + p.seriesName + ': <b>R$ ' + p.value.toLocaleString('pt-BR') + '</b><br/>';
-                    total += p.value;
-                });
-                return html + '<b>Total: R$ ' + total.toLocaleString('pt-BR') + '</b>';
-            }
-        },
-        legend: { show: false },
-        grid: { left: '3%', right: '3%', bottom: '3%', top: '8%', containLabel: true },
-        xAxis: { type: 'category', data: [], axisLabel: { color: '#64748b', fontSize: 11 }, axisLine: { lineStyle: { color: '#e2e8f0' } } },
-        yAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 11, formatter: v => 'R$ ' + (v/1000) + 'k' }, splitLine: { lineStyle: { color: '#f1f5f9' } } },
-        series: [
-            { name: 'Combustível', type: 'bar', stack: 'total', data: [], itemStyle: { color: '#4f46e5' }, barWidth: 28 },
-            { name: 'Manutenção', type: 'bar', stack: 'total', data: [], itemStyle: { color: '#06b6d4' }, barWidth: 28 },
-            { name: 'Outros', type: 'bar', stack: 'total', data: [], itemStyle: { borderRadius: [6, 6, 0, 0], color: '#f59e0b' }, barWidth: 28 }
-        ]
-    });
-}
-
-// ========== GRÁFICO 3: STATUS ==========
-function inicializarChartStatus() {
-    const el = document.getElementById('chartStatus');
-    if (!el || typeof echarts === 'undefined') return;
-    chartStatus = echarts.init(el);
-    chartStatus.setOption({
-        backgroundColor: 'transparent',
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        grid: { left: '3%', right: '12%', bottom: '3%', top: '3%', containLabel: true },
-        xAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 11 }, splitLine: { lineStyle: { color: '#f1f5f9' } } },
-        yAxis: { type: 'category', data: ['Inativos', 'Manutenção', 'Operação'], axisLabel: { color: '#1e293b', fontSize: 12, fontWeight: 500 }, axisLine: { show: false } },
-        series: [{
-            type: 'bar', barWidth: 22,
-            label: { show: true, position: 'right', color: '#1e293b', fontWeight: 600, formatter: '{c} un.' },
-            data: [
-                { value: 0, itemStyle: { color: '#dc2626', borderRadius: [0, 6, 6, 0] } },
-                { value: 0, itemStyle: { color: '#f59e0b', borderRadius: [0, 6, 6, 0] } },
-                { value: 0, itemStyle: { color: '#22c55e', borderRadius: [0, 6, 6, 0] } }
-            ]
-        }]
-    });
-}
-
-// ========== GRÁFICO 4: TOP 5 VEÍCULOS ==========
-function inicializarChartTopVeiculos() {
-    const el = document.getElementById('chartTopVeiculos');
-    if (!el || typeof echarts === 'undefined') return;
-    chartTopVeiculos = echarts.init(el);
-    chartTopVeiculos.setOption({
-        backgroundColor: 'transparent',
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: p => p[0].name + '<br/><b>R$ ' + p[0].value.toLocaleString('pt-BR') + '</b>' },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 11, formatter: v => 'R$ ' + (v/1000) + 'k' } },
-        yAxis: { type: 'category', data: [], axisLabel: { color: '#1e293b', fontSize: 11 } },
-        series: [{
-            type: 'bar', barWidth: 18,
-            itemStyle: { borderRadius: [0, 4, 4, 0], color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-                { offset: 0, color: '#4f46e5' }, { offset: 1, color: '#8b5cf6' }
-            ])},
-            data: []
-        }]
-    });
-}
-
-// ========== GRÁFICO 5: GASTOS POR CATEGORIA ==========
-function inicializarChartGastosCategoria() {
-    const el = document.getElementById('chartGastosCategoria');
-    if (!el || typeof echarts === 'undefined') return;
-    chartGastosCategoria = echarts.init(el);
-    chartGastosCategoria.setOption({
-        backgroundColor: 'transparent',
-        tooltip: { trigger: 'item', formatter: '{b}: R$ {c} ({d}%)' },
-        legend: { orient: 'vertical', right: 5, top: 'center', textStyle: { color: '#64748b', fontSize: 11 } },
-        series: [{
-            type: 'pie', radius: ['35%', '65%'], center: ['35%', '50%'],
-            itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false },
-            data: []
-        }]
-    });
-}
-
-// ========== CARREGAR DADOS ==========
-function carregarDadosDashboardAprimorado() {
-    const veiculos = buscarDados('veiculos') || buscarDados('veiculo') || [];
-    const gastos = buscarDados('gastos') || buscarDados('gasto') || buscarDados('despesas') || [];
-    const chamados = buscarDados('chamados') || buscarDados('chamado') || [];
-    const checklists = buscarDados('checklists') || buscarDados('checklist') || [];
-    const manutencoes = buscarDados('manutencoes') || buscarDados('manutencao') || [];
-    
-    if (veiculos.length === 0 && gastos.length === 0 && chamados.length === 0) {
-        mostrarMensagemSemDados();
-        return;
-    }
-    
-    atualizarStatsComDadosReais(veiculos, gastos, chamados);
-    atualizarGraficosComDadosReais(veiculos, gastos);
-    atualizarChecklist(checklists);
-    atualizarAlertas(veiculos, manutencoes);
-    atualizarAtividadesRecentes(veiculos, gastos, chamados, checklists, manutencoes);
-}
-
-function buscarDados(tabela) {
+window.alterarTipoGrafico = function(tipo) {
+    if (!graficoGastos) return;
     try {
-        const chaves = ['frota_' + tabela, tabela, 'dados_' + tabela, 'lista_' + tabela];
-        for (const chave of chaves) {
-            const dados = localStorage.getItem(chave);
-            if (dados) {
-                const parsed = JSON.parse(dados);
-                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-            }
-        }
-        const cap = tabela.charAt(0).toUpperCase() + tabela.slice(1);
-        const nomes = ['lista' + cap, 'dados' + cap, tabela, tabela + 'Lista'];
-        for (const nome of nomes) {
-            if (window[nome] && Array.isArray(window[nome]) && window[nome].length > 0) return window[nome];
-        }
-        return [];
-    } catch (e) { return []; }
-}
-
-function definirTexto(id, texto) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = texto;
-}
-
-// ========== ATUALIZAR STATS ==========
-function atualizarStatsComDadosReais(veiculos, gastos, chamados) {
-    const total = veiculos.length;
-    const operacao = veiculos.filter(v => v.status === 'disponivel' || v.status === 'alocado').length;
-    const manutencao = veiculos.filter(v => v.status === 'manutencao').length;
-    const chamadosAbertos = chamados.filter(c => c.status === 'aberto' || c.status === 'andamento').length;
-    
-    const hoje = new Date();
-    const gastosMes = gastos.filter(g => {
-        const d = new Date(g.data || g.data_criacao || Date.now());
-        return d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear();
-    });
-    const totalGastos = gastosMes.reduce((s, g) => s + (parseFloat(g.valor) || 0), 0);
-    
-    const mesAnt = hoje.getMonth() === 0 ? 11 : hoje.getMonth() - 1;
-    const anoAnt = hoje.getMonth() === 0 ? hoje.getFullYear() - 1 : hoje.getFullYear();
-    const gastosAnt = gastos.filter(g => {
-        const d = new Date(g.data || g.data_criacao || Date.now());
-        return d.getMonth() === mesAnt && d.getFullYear() === anoAnt;
-    }).reduce((s, g) => s + (parseFloat(g.valor) || 0), 0);
-    
-    let tendencia = '—';
-    if (gastosAnt > 0) {
-        const varp = ((totalGastos - gastosAnt) / gastosAnt * 100).toFixed(1);
-        tendencia = varp > 0 ? '▲ ' + Math.abs(varp) + '%' : varp < 0 ? '▼ ' + Math.abs(varp) + '%' : '→ Estável';
-    }
-    
-    const kmTotal = veiculos.reduce((s, v) => s + (parseFloat(v.km_atual || v.kmAtual || v.quilometragem) || 0), 0);
-    const custoKm = totalGastos > 0 && kmTotal > 0 ? (totalGastos / kmTotal) : 0;
-    
-    definirTexto('stat-total', total);
-    definirTexto('stat-operacao', operacao);
-    definirTexto('stat-operacao-percent', (total > 0 ? Math.round((operacao / total) * 100) : 0) + '% da frota');
-    definirTexto('stat-manutencao', manutencao);
-    definirTexto('stat-chamados', chamadosAbertos);
-    definirTexto('stat-gastos', 'R$ ' + totalGastos.toLocaleString('pt-BR', { maximumFractionDigits: 0 }));
-    definirTexto('stat-gastos-tendencia', tendencia);
-    definirTexto('stat-km', kmTotal.toLocaleString('pt-BR'));
-    definirTexto('stat-custo-km', 'Custo/km: R$ ' + custoKm.toFixed(2));
-}
-
-// ========== ATUALIZAR GRÁFICOS ==========
-function atualizarGraficosComDadosReais(veiculos, gastos) {
-    // Categoria
-    const contCat = {};
-    veiculos.forEach(v => { const cat = v.categoria || 'Outros'; contCat[cat] = (contCat[cat] || 0) + 1; });
-    const cores = ['#4f46e5', '#06b6d4', '#f59e0b', '#22c55e', '#dc2626', '#8b5cf6', '#ec4899'];
-    const dadosCat = Object.entries(contCat).map(([n, v], i) => ({ name: n, value: v, itemStyle: { color: cores[i % cores.length] } }));
-    if (chartCategoria && dadosCat.length > 0) chartCategoria.setOption({ series: [{ data: dadosCat }] });
-    
-    // Gastos últimos 6 meses
-    const meses = [], dadosComb = [], dadosManut = [], dadosOut = [];
-    for (let i = 5; i >= 0; i--) {
-        const d = new Date(); d.setMonth(d.getMonth() - i);
-        meses.push(d.toLocaleDateString('pt-BR', { month: 'short' }).charAt(0).toUpperCase() + d.toLocaleDateString('pt-BR', { month: 'short' }).slice(1));
-        const gm = gastos.filter(g => {
-            const gd = new Date(g.data || g.data_criacao || Date.now());
-            return gd.getMonth() === d.getMonth() && gd.getFullYear() === d.getFullYear();
-        });
-        dadosComb.push(gm.filter(g => (g.tipo || '').toLowerCase() === 'combustivel').reduce((s, g) => s + (parseFloat(g.valor) || 0), 0));
-        dadosManut.push(gm.filter(g => (g.tipo || '').toLowerCase() === 'manutencao').reduce((s, g) => s + (parseFloat(g.valor) || 0), 0));
-        dadosOut.push(gm.filter(g => !['combustivel', 'manutencao'].includes((g.tipo || '').toLowerCase())).reduce((s, g) => s + (parseFloat(g.valor) || 0), 0));
-    }
-    if (chartGastos) chartGastos.setOption({ xAxis: { data: meses }, series: [{ data: dadosComb }, { data: dadosManut }, { data: dadosOut }] });
-    
-    // Status
-    const total = veiculos.length;
-    const op = veiculos.filter(v => v.status === 'disponivel' || v.status === 'alocado').length;
-    const man = veiculos.filter(v => v.status === 'manutencao').length;
-    const inat = veiculos.filter(v => v.status === 'inativo').length;
-    if (chartStatus) chartStatus.setOption({
-        xAxis: { max: Math.max(total, 1) },
-        series: [{ data: [
-            { value: inat, itemStyle: { color: '#dc2626', borderRadius: [0, 6, 6, 0] } },
-            { value: man, itemStyle: { color: '#f59e0b', borderRadius: [0, 6, 6, 0] } },
-            { value: op, itemStyle: { color: '#22c55e', borderRadius: [0, 6, 6, 0] } }
-        ]}]
-    });
-    
-    // Top 5 Veículos
-    const gastosPorVeiculo = {};
-    gastos.forEach(g => {
-        const placa = g.veiculo || g.placa || 'Sem placa';
-        gastosPorVeiculo[placa] = (gastosPorVeiculo[placa] || 0) + (parseFloat(g.valor) || 0);
-    });
-    const top5 = Object.entries(gastosPorVeiculo).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    if (chartTopVeiculos && top5.length > 0) {
-        chartTopVeiculos.setOption({
-            yAxis: { data: top5.map(t => t[0]).reverse() },
-            series: [{ data: top5.map(t => t[1]).reverse() }]
-        });
-    }
-    
-    // Gastos por Categoria
-    const gastosPorTipo = {};
-    gastos.forEach(g => {
-        const tipo = g.tipo || 'Outros';
-        gastosPorTipo[tipo] = (gastosPorTipo[tipo] || 0) + (parseFloat(g.valor) || 0);
-    });
-    const coresTipo = { combustivel: '#4f46e5', manutencao: '#06b6d4', pneus: '#f59e0b', pedagio: '#22c55e', seguro: '#8b5cf6', outro: '#94a3b8' };
-    const dadosTipo = Object.entries(gastosPorTipo).map(([n, v]) => ({
-        name: n.charAt(0).toUpperCase() + n.slice(1),
-        value: v,
-        itemStyle: { color: coresTipo[n.toLowerCase()] || '#94a3b8' }
-    }));
-    if (chartGastosCategoria && dadosTipo.length > 0) {
-        chartGastosCategoria.setOption({ series: [{ data: dadosTipo }] });
-    }
-}
-
-// ========== CHECKLIST ==========
-function atualizarChecklist(checklists) {
-    const hoje = new Date().toISOString().split('T')[0];
-    const clHoje = checklists.filter(c => {
-        const d = new Date(c.data || c.data_criacao || Date.now());
-        return d.toISOString().split('T')[0] === hoje;
-    });
-    const concluidos = clHoje.filter(c => (c.status || '').toLowerCase().startsWith('conclu')).length;
-    const total = clHoje.length;
-    const percent = total > 0 ? Math.round((concluidos / total) * 100) : 0;
-    
-    const ring = document.getElementById('checklistProgressRing');
-    if (ring) {
-        ring.style.transition = 'stroke-dashoffset 1s ease';
-        ring.style.strokeDashoffset = 377 - (percent / 100) * 377;
-    }
-    definirTexto('checklistPercent', percent + '%');
-    definirTexto('checklistContagem', concluidos + '/' + total);
-    
-    const cont = document.getElementById('checklistDetalhes');
-    if (cont) {
-        const pend = total - concluidos;
-        const comPend = clHoje.filter(c => (c.status || '').toLowerCase().includes('pendencia') || (c.status || '').toLowerCase() === 'pendente').length;
-        cont.innerHTML = `
-            <div class="mini-stat"><span class="label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;"></span>Concluídos</span><span class="valor">${concluidos}</span></div>
-            <div class="mini-stat"><span class="label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:6px;"></span>Pendentes</span><span class="valor">${pend}</span></div>
-            <div class="mini-stat"><span class="label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc2626;margin-right:6px;"></span>Com pendências</span><span class="valor">${comPend}</span></div>
-        `;
-    }
-}
-
-// ========== ALERTAS ==========
-function atualizarAlertas(veiculos, manutencoes) {
-    const alertas = [];
-    veiculos.filter(v => v.status === 'manutencao').forEach(v => {
-        alertas.push({ tipo: 'atencao', titulo: `${v.placa || 'Veículo'} — Em manutenção`, detalhe: `${v.categoria || ''} ${v.modelo || ''}` });
-    });
-    manutencoes.filter(m => ['aberta', 'andamento', 'pendente'].includes((m.status || '').toLowerCase())).slice(0, 3).forEach(m => {
-        alertas.push({ tipo: 'critico', titulo: `${m.veiculo || m.placa || 'Veículo'} — ${m.tipo || 'Manutenção'}`, detalhe: m.descricao || 'Pendente' });
-    });
-    
-    definirTexto('alertaContagem', alertas.length);
-    const cont = document.getElementById('listaAlertasDashboard');
-    if (!cont) return;
-    if (alertas.length === 0) {
-        cont.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem; text-align:center; padding:1rem 0;">Nenhum alerta.</p>';
-        return;
-    }
-    cont.innerHTML = alertas.slice(0, 5).map(a => `
-        <div class="alerta-item ${a.tipo}"><div class="titulo">${a.titulo}</div><div class="detalhe">${a.detalhe}</div></div>
-    `).join('');
-}
-
-// ========== ATIVIDADES RECENTES ==========
-function atualizarAtividadesRecentes(veiculos, gastos, chamados, checklists, manutencoes) {
-    const atvs = [];
-    checklists.slice(-5).forEach(c => atvs.push({
-        data: c.data || c.data_criacao || Date.now(), veiculo: c.veiculo || c.placa || '—',
-        tipo: 'Check-list', descricao: 'Inspeção ' + (c.status || ''), usuario: c.usuario || c.motorista || 'Sistema',
-        status: (c.status || '').toLowerCase().startsWith('conclu') ? 'OK' : 'Pendente'
-    }));
-    gastos.slice(-5).forEach(g => atvs.push({
-        data: g.data || g.data_criacao || Date.now(), veiculo: g.veiculo || g.placa || '—',
-        tipo: 'Gasto', descricao: `${g.tipo || 'Despesa'} — R$ ${parseFloat(g.valor || 0).toLocaleString('pt-BR')}`,
-        usuario: g.usuario || 'Sistema', status: 'Registrado'
-    }));
-    chamados.slice(-5).forEach(c => atvs.push({
-        data: c.data || c.data_criacao || Date.now(), veiculo: c.veiculo || c.placa || '—',
-        tipo: 'Chamado', descricao: c.titulo || c.descricao || 'Ocorrência',
-        usuario: c.usuario || c.requerente || 'Sistema', status: c.status || 'Aberto'
-    }));
-    
-    atvs.sort((a, b) => new Date(b.data) - new Date(a.data));
-    const tbody = document.getElementById('tabelaAtividadesRecentes');
-    if (!tbody) return;
-    if (atvs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:2rem;">Nenhuma atividade.</td></tr>';
-        return;
-    }
-    tbody.innerHTML = atvs.slice(0, 8).map(a => {
-        const d = new Date(a.data);
-        const ds = d.toLocaleDateString('pt-BR') + ' · ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const bc = a.status === 'OK' || a.status === 'Registrado' ? 'badge-success' :
-                     a.status === 'Pendente' || a.status === 'Aberto' ? 'badge-warning' : 'badge-info';
-        return `<tr><td style="white-space:nowrap;">${ds}</td><td><strong>${a.veiculo}</strong></td><td>${a.tipo}</td><td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.descricao}</td><td>${a.usuario}</td><td><span class="badge ${bc}">${a.status}</span></td></tr>`;
-    }).join('');
-}
-
-// ========== MENSAGEM SEM DADOS ==========
-function mostrarMensagemSemDados() {
-    ['stat-total', 'stat-operacao', 'stat-manutencao', 'stat-chamados'].forEach(id => definirTexto(id, '0'));
-    definirTexto('stat-operacao-percent', '0% da frota');
-    definirTexto('stat-gastos', 'R$ 0');
-    definirTexto('stat-gastos-tendencia', '—');
-    definirTexto('stat-km', '0');
-    definirTexto('stat-custo-km', 'Custo/km: R$ 0,00');
-    
-    if (chartCategoria) chartCategoria.setOption({ series: [{ data: [{ name: 'Sem dados', value: 1, itemStyle: { color: '#cbd5e1' } }] }] });
-    if (chartGastos) chartGastos.setOption({ xAxis: { data: ['Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago'] }, series: [{ data: [0,0,0,0,0,0] }, { data: [0,0,0,0,0,0] }, { data: [0,0,0,0,0,0] }] });
-    if (chartStatus) chartStatus.setOption({ xAxis: { max: 1 }, series: [{ data: [
-        { value: 0, itemStyle: { color: '#dc2626' } },
-        { value: 0, itemStyle: { color: '#f59e0b' } },
-        { value: 0, itemStyle: { color: '#22c55e' } }
-    ]}] });
-    
-    const ring = document.getElementById('checklistProgressRing');
-    if (ring) ring.style.strokeDashoffset = 377;
-    definirTexto('checklistPercent', '0%');
-    definirTexto('checklistContagem', '0/0');
-    definirTexto('alertaContagem', '0');
-}
-
-// ========== ALERTAS DE MANUTENÇÃO ==========
-function verificarAlertasManutencao() {
-    const veiculos = buscarDados('veiculos') || [];
-    if (!veiculos.length) return;
-    const alertas = [];
-    veiculos.forEach(v => {
-        const km = parseFloat(v.kmAtual || v.km_atual || v.quilometragem) || 0;
-        const kmUlt = parseFloat(v.kmUltimaManutencao) || 0;
-        const prox = parseFloat(v.kmProximaManutencao) || (kmUlt + 5000);
-        const falt = prox - km;
-        if (falt <= 0) alertas.push({ tipo: 'critico', msg: `🚨 ${v.placa || v.id}: Manutenção VENCIDA!` });
-        else if (falt < 500) alertas.push({ tipo: 'atencao', msg: `⚠️ ${v.placa || v.id}: Manutenção em ${falt.toFixed(0)} km` });
-        
-        if (v.vencimentoIpva) {
-            const dias = Math.ceil((new Date(v.vencimentoIpva) - new Date()) / 86400000);
-            if (dias <= 0) alertas.push({ tipo: 'critico', msg: `🔴 ${v.placa}: IPVA VENCIDO!` });
-            else if (dias <= 15) alertas.push({ tipo: 'atencao', msg: `🟠 ${v.placa}: IPVA vence em ${dias} dias` });
-        }
-        if (v.vencimentoSeguro) {
-            const dias = Math.ceil((new Date(v.vencimentoSeguro) - new Date()) / 86400000);
-            if (dias <= 0) alertas.push({ tipo: 'critico', msg: `🔴 ${v.placa}: Seguro VENCIDO!` });
-            else if (dias <= 15) alertas.push({ tipo: 'atencao', msg: `🟠 ${v.placa}: Seguro vence em ${dias} dias` });
-        }
-    });
-    
-    const cont = document.getElementById('listaAlertasSistema');
-    if (!cont) return;
-    if (alertas.length === 0) {
-        cont.innerHTML = '<p style="color:#22c55e; font-size:0.875rem; text-align:center; padding:1rem 0;">✅ Nenhum alerta crítico no momento</p>';
-        return;
-    }
-    cont.innerHTML = alertas.map(a => `<div class="alerta-sistema ${a.tipo}">${a.msg}</div>`).join('');
-}
-
-// ========== CONTROLES DO DASHBOARD ==========
-function vincularControlesDashboard() {
-    document.getElementById('btnAtualizarDashboard')?.addEventListener('click', () => {
-        carregarDadosDashboardAprimorado();
-        verificarAlertasManutencao();
-    });
-    
-    document.getElementById('btnTelaCheia')?.addEventListener('click', () => {
-        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-        else document.exitFullscreen();
-    });
-    
-    document.getElementById('btnExportarPDF')?.addEventListener('click', () => {
-        alert('📄 Para exportar em PDF: use Ctrl+P → Salvar como PDF');
-        window.print();
-    });
-    
-    document.getElementById('btnAlternarTema')?.addEventListener('click', alternarTema);
-    
-    document.getElementById('filtroPeriodoDashboard')?.addEventListener('change', e => {
-        const dp = document.getElementById('datasPersonalizadas');
-        const dpf = document.getElementById('datasPersonalizadasFim');
-        const mostrar = e.target.value === 'personalizado';
-        if (dp) dp.style.display = mostrar ? 'flex' : 'none';
-        if (dpf) dpf.style.display = mostrar ? 'flex' : 'none';
-        carregarDadosDashboardAprimorado();
-    });
-    
-    document.getElementById('tipoGrafico')?.addEventListener('change', e => {
-        if (!chartGastos) return;
-        chartGastos.setOption({
-            series: chartGastos.getOption().series.map(s => ({
-                type: e.target.value,
-                smooth: e.target.value === 'line',
-                areaStyle: e.target.value === 'line' ? { opacity: 0.2 } : null,
-                stack: e.target.value === 'bar' ? 'total' : null
+        graficoGastos.setOption({
+            series: graficoGastos.getOption().series.map(s => ({
+                ...s,
+                type: tipo,
+                smooth: tipo === 'line',
+                areaStyle: tipo === 'line' ? { opacity: 0.2 } : null
             }))
         });
-    });
-    
-    document.getElementById('autoRefreshMinutos')?.addEventListener('change', e => {
-        configurarAutoRefresh(parseInt(e.target.value) || 0);
-    });
-}
+        console.log(`📊 [DASHBOARD] Tipo alterado para: ${tipo}`);
+    } catch(e) { console.warn('Erro ao alterar tipo:', e); }
+};
 
-// ========== TEMA ==========
-function inicializarTema() {
-    if (localStorage.getItem('tema_preferido') === 'escuro') {
-        document.body.classList.add('dark-mode');
-        document.getElementById('btnAlternarTema').textContent = '☀️';
+// =====================================================
+// CONTROLES
+// =====================================================
+function inicializarControles() {
+    // Filtro periodo
+    const selPeriodo = document.getElementById('filtroPeriodoDashboard');
+    if (selPeriodo) {
+        selPeriodo.addEventListener('change', (e) => {
+            const datas = document.getElementById('datasPersonalizadasDash');
+            if (datas) datas.style.display = e.target.value === 'personalizado' ? 'flex' : 'none';
+            carregarDadosERenderizar();
+        });
     }
+
+    // Datas personalizadas
+    ['dataInicioDash', 'dataFimDash'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', carregarDadosERenderizar);
+    });
+
+    // Tipo grafico
+    const selTipo = document.getElementById('tipoGrafico');
+    if (selTipo) {
+        selTipo.addEventListener('change', (e) => window.alterarTipoGrafico(e.target.value));
+    }
+
+    // Botoes
+    const btnAtualizar = document.getElementById('btnAtualizarDash');
+    if (btnAtualizar) btnAtualizar.addEventListener('click', window.atualizarDashboard);
+
+    const btnTelaCheia = document.getElementById('btnTelaCheiaDash');
+    if (btnTelaCheia) btnTelaCheia.addEventListener('click', () => {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+    });
+
+    const btnPDF = document.getElementById('btnExportarPDF');
+    if (btnPDF) btnPDF.addEventListener('click', () => {
+        alert('📄 Para exportar em PDF:\n\n1. Pressione CTRL+P (ou Cmd+P no Mac)\n2. Em "Destino", selecione "Salvar como PDF"\n3. Clique em "Salvar"');
+        setTimeout(() => window.print(), 300);
+    });
+
+    const btnTema = document.getElementById('btnAlternarTema');
+    if (btnTema) btnTema.addEventListener('click', alternarTema);
+
+    // Comparativo
+    const chkComp = document.getElementById('chkComparativo');
+    if (chkComp) chkComp.addEventListener('change', carregarDadosERenderizar);
+
+    // Auto refresh
+    const selAuto = document.getElementById('autoRefresh');
+    if (selAuto) {
+        const salvo = localStorage.getItem('dash_autorefresh');
+        if (salvo) selAuto.value = salvo;
+        configurarAutoRefresh(parseInt(selAuto.value) || 0);
+        selAuto.addEventListener('change', (e) => {
+            localStorage.setItem('dash_autorefresh', e.target.value);
+            configurarAutoRefresh(parseInt(e.target.value) || 0);
+        });
+    }
+
+    // Aplicar tema salvo
+    const temaSalvo = localStorage.getItem('dash_tema');
+    if (temaSalvo === 'escuro') document.body.classList.add('dark-mode');
 }
 
 function alternarTema() {
-    document.body.classList.toggle('dark-mode');
-    const escuro = document.body.classList.contains('dark-mode');
-    localStorage.setItem('tema_preferido', escuro ? 'escuro' : 'claro');
-    document.getElementById('btnAlternarTema').textContent = escuro ? '☀️' : '🌙';
-}
-
-// ========== AUTO REFRESH ==========
-function inicializarAutoRefresh() {
-    const salvo = localStorage.getItem('auto_refresh_minutos');
-    if (salvo) {
-        const sel = document.getElementById('autoRefreshMinutos');
-        if (sel) sel.value = salvo;
-        configurarAutoRefresh(parseInt(salvo));
-    }
+    const escuro = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('dash_tema', escuro ? 'escuro' : 'claro');
 }
 
 function configurarAutoRefresh(minutos) {
-    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    if (timerAutoRefresh) clearInterval(timerAutoRefresh);
+    timerAutoRefresh = null;
     if (minutos > 0) {
-        autoRefreshInterval = setInterval(() => {
-            carregarDadosDashboardAprimorado();
-            console.log(`🔄 Dashboard atualizado (a cada ${minutos} min)`);
+        timerAutoRefresh = setInterval(() => {
+            console.log(`⏱️ [DASHBOARD] Auto-refresh (${minutos}min)`);
+            window.atualizarDashboard();
         }, minutos * 60 * 1000);
     }
-    localStorage.setItem('auto_refresh_minutos', minutos.toString());
 }
 
-// ========== INICIALIZAÇÃO ==========
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        if (typeof echarts === 'undefined') {
-            console.error('❌ ECharts não carregado!');
-            return;
+// =====================================================
+// DADOS
+// =====================================================
+function carregarDadosERenderizar() {
+    const dados = buscarDadosReais();
+    atualizarCards(dados);
+    renderizarGraficos(dados);
+}
+
+function buscarDadosReais() {
+    const agora = new Date();
+    let veiculos = [];
+    let gastos = [];
+    let chamados = [];
+    let manutencoes = [];
+
+    // Tenta varias chaves do localStorage
+    const tentativas = [
+        { tipo: 'veiculos', chaves: ['frota_veiculos','veiculos','listaVeiculos','dados_veiculos','cadastro_veiculos'] },
+        { tipo: 'gastos', chaves: ['frota_gastos','gastos','listaGastos','despesas'] },
+        { tipo: 'chamados', chaves: ['frota_chamados','chamados','listaChamados'] },
+        { tipo: 'manutencoes', chaves: ['frota_manutencoes','manutencoes','listaManutencoes'] }
+    ];
+
+    tentativas.forEach(t => {
+        for (const chave of t.chaves) {
+            try {
+                const raw = localStorage.getItem(chave);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        if (t.tipo === 'veiculos') veiculos = parsed;
+                        if (t.tipo === 'gastos') gastos = parsed;
+                        if (t.tipo === 'chamados') chamados = parsed;
+                        if (t.tipo === 'manutencoes') manutencoes = parsed;
+                        break;
+                    }
+                }
+            } catch(e) {}
         }
-        inicializarDashboardAprimorado();
-    }, 300);
+    });
+
+    // Tenta variaveis globais
+    if (veiculos.length === 0) {
+        ['listaVeiculos','dadosVeiculos','veiculos','window.dados?.veiculos'].forEach(n => {
+            try {
+                const v = eval(`typeof ${n} !== 'undefined' ? ${n} : null`);
+                if (Array.isArray(v) && v.length) { veiculos = v; return; }
+            } catch(e) {}
+        });
+    }
+
+    console.log(`📊 [DASHBOARD] Dados: ${veiculos.length} veiculos, ${gastos.length} gastos, ${chamados.length} chamados`);
+    return { veiculos, gastos, chamados, manutencoes, agora };
+}
+
+// =====================================================
+// CARDS
+// =====================================================
+function atualizarCards(dados) {
+    const { veiculos, gastos, chamados } = dados;
+    const total = veiculos.length || 0;
+
+    // Total veiculos
+    atualizarCard('totalVeiculos', total, 'cadastrados');
+
+    // Em operacao (veiculos com status ativo/operacao)
+    let emOperacao = 0;
+    let emManutencao = 0;
+    veiculos.forEach(v => {
+        const s = String(v.status || v.situacao || '').toLowerCase();
+        if (['ativo','operacao','em operação','em operacao','disponivel','disponível'].includes(s)) emOperacao++;
+        if (['manutencao','manutenção','em manutencao','em manutenção','oficina'].includes(s)) emManutencao++;
+    });
+    if (total > 0 && emOperacao === 0 && emManutencao === 0) emOperacao = total;
+    const percOp = total > 0 ? Math.round((emOperacao / total) * 100) : 0;
+    atualizarCard('emOperacao', emOperacao, `${percOp}% da frota`);
+    atualizarCard('emManutencao', emManutencao, emManutencao > 0 ? 'precisam de atenção' : 'tudo ok');
+
+    // Chamados abertos
+    let abertos = 0;
+    chamados.forEach(c => {
+        const s = String(c.status || '').toLowerCase();
+        if (['aberto','pendente','aberta','em andamento'].includes(s)) abertos++;
+    });
+    if (chamados.length === 0) abertos = 0;
+    atualizarCard('chamadosAbertos', abertos, abertos > 0 ? 'pendentes' : 'sem pendências');
+
+    // Gastos do mes
+    const mesAtual = dados.agora.getMonth();
+    const anoAtual = dados.agora.getFullYear();
+    let gastosMes = 0;
+    gastos.forEach(g => {
+        try {
+            const d = new Date(g.data || g.dataGasto || g.data_vencimento || g.createdAt);
+            if (d.getMonth() === mesAtual && d.getFullYear() === anoAtual) {
+                gastosMes += parseFloat(g.valor || g.total || g.amount || 0);
+            }
+        } catch(e) {}
+    });
+
+    // Inclui despesas de viagem aprovadas
+    try {
+        const dv = JSON.parse(localStorage.getItem('frota_despesas_viagem') || '[]');
+        dv.forEach(d => {
+            if (d.status === 'aprovado') {
+                const dt = new Date(d.data);
+                if (dt.getMonth() === mesAtual && dt.getFullYear() === anoAtual) {
+                    gastosMes += parseFloat(d.valorTotal || 0);
+                }
+            }
+        });
+    } catch(e) {}
+
+    // Comparativo mes anterior
+    const mesAnt = mesAtual === 0 ? 11 : mesAtual - 1;
+    const anoAnt = mesAtual === 0 ? anoAtual - 1 : anoAtual;
+    let gastosAnt = 0;
+    gastos.forEach(g => {
+        try {
+            const d = new Date(g.data || g.dataGasto || g.createdAt);
+            if (d.getMonth() === mesAnt && d.getFullYear() === anoAnt) {
+                gastosAnt += parseFloat(g.valor || g.total || 0);
+            }
+        } catch(e) {}
+    });
+
+    let variacao = '';
+    if (gastosAnt > 0) {
+        const pct = ((gastosMes - gastosAnt) / gastosAnt * 100);
+        const sinal = pct > 0 ? '▲' : pct < 0 ? '▼' : '→';
+        const cor = pct > 0 ? 'var(--erro)' : pct < 0 ? 'var(--sucesso)' : 'var(--texto-secundario)';
+        variacao = `<span style="color:${cor};font-weight:600;">${sinal} ${Math.abs(pct).toFixed(1)}% vs mês ant.</span>`;
+    }
+
+    const elGastos = document.getElementById('gastosMes');
+    if (elGastos) {
+        elGastos.innerHTML = `R$ ${gastosMes.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}${variacao ? '<br>'+variacao : ''}`;
+    }
+
+    // KM rodados
+    let kmTotal = 0;
+    veiculos.forEach(v => {
+        kmTotal += parseFloat(v.kmAtual || v.km || v.quilometragem || 0);
+    });
+    const kmFormatado = kmTotal >= 1000 ? (kmTotal/1000).toFixed(1)+'K' : kmTotal.toFixed(0);
+    const custoKm = kmTotal > 0 ? (gastosMes / kmTotal).toFixed(2) : '0.00';
+    atualizarCard('kmRodados', kmFormatado, `Custo/km: R$ ${custoKm}`);
+}
+
+function atualizarCard(id, valor, subtitulo) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = typeof valor === 'number' ? valor.toLocaleString('pt-BR') : valor;
+    const sub = el.parentElement?.querySelector('.stat-sub, small, p:last-child');
+    if (sub && subtitulo) sub.textContent = subtitulo;
+}
+
+// =====================================================
+// GRAFICOS
+// =====================================================
+function renderizarGraficos(dados) {
+    if (typeof echarts === 'undefined') {
+        console.warn('⚠️ ECharts nao carregado');
+        return;
+    }
+
+    const periodo = getPeriodoFiltro();
+    const { veiculos, gastos } = dados;
+
+    // Grafico 1: Categoria veiculos
+    const el1 = document.getElementById('chart-categoria');
+    if (el1) {
+        if (graficoCategoria) graficoCategoria.dispose();
+        graficoCategoria = echarts.init(el1);
+        const categorias = {};
+        veiculos.forEach(v => {
+            const cat = v.categoria || v.tipo || v.classe || 'Outros';
+            categorias[cat] = (categorias[cat] || 0) + 1;
+        });
+        const data = Object.keys(categorias).length > 0
+            ? Object.entries(categorias).map(([name, value]) => ({ name, value }))
+            : [{ name: 'Sem dados', value: 1 }];
+
+        graficoCategoria.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+            legend: { bottom: 0, textStyle: { color: getComputedStyle(document.body).getPropertyValue('--texto-secundario').trim() || '#64748b' } },
+            series: [{
+                type: 'doughnut', radius: ['45%','70%'], center: ['50%','45%'],
+                avoidLabelOverlap: true,
+                itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                label: { show: true, formatter: '{b}\n{c}' },
+                data,
+                color: ['#4f46e5','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899']
+            }]
+        });
+    }
+
+    // Grafico 2: Evolucao gastos 6 meses
+    const el2 = document.getElementById('chart-gastos');
+    if (el2) {
+        if (graficoGastos) graficoGastos.dispose();
+        graficoGastos = echarts.init(el2);
+
+        const meses = [];
+        const combustivel = [];
+        const manutencaoArr = [];
+        const outrosArr = [];
+
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const m = d.getMonth(), a = d.getFullYear();
+            meses.push(d.toLocaleString('pt-BR',{month:'short'}).toUpperCase());
+            let c = 0, man = 0, out = 0;
+            gastos.forEach(g => {
+                try {
+                    const gd = new Date(g.data || g.dataGasto || g.createdAt);
+                    if (gd.getMonth() === m && gd.getFullYear() === a) {
+                        const v = parseFloat(g.valor || g.total || 0);
+                        const t = String(g.categoria || g.tipo || g.grupo || 'outros').toLowerCase();
+                        if (t.includes('combust') || t.includes('gasolina') || t.includes('diesel')) c += v;
+                        else if (t.includes('manut') || t.includes('oficina') || t.includes('peca') || t.includes('peça')) man += v;
+                        else out += v;
+                    }
+                } catch(e) {}
+            });
+            // Adiciona despesas de viagem
+            try {
+                const dv = JSON.parse(localStorage.getItem('frota_despesas_viagem') || '[]');
+                dv.forEach(desp => {
+                    if (desp.status === 'aprovado') {
+                        const dd = new Date(desp.data);
+                        if (dd.getMonth() === m && dd.getFullYear() === a) {
+                            (desp.itens || []).forEach(it => {
+                                const vv = parseFloat(it.valor || 0);
+                                const tt = String(it.tipo || '').toLowerCase();
+                                if (tt === 'combustivel') c += vv;
+                                else if (tt === 'manutencao') man += vv;
+                                else out += vv;
+                            });
+                        }
+                    }
+                });
+            } catch(e) {}
+            combustivel.push(+c.toFixed(2));
+            manutencaoArr.push(+man.toFixed(2));
+            outrosArr.push(+out.toFixed(2));
+        }
+
+        const usarComparativo = document.getElementById('chkComparativo')?.checked;
+        const series = [
+            { name: 'Combustível', type: 'bar', stack: 'total', data: combustivel, itemStyle: { color: '#3b82f6', borderRadius: [0,0,0,0] } },
+            { name: 'Manutenção', type: 'bar', stack: 'total', data: manutencaoArr, itemStyle: { color: '#f59e0b' } },
+            { name: 'Outros', type: 'bar', stack: 'total', data: outrosArr, itemStyle: { color: '#10b981', borderRadius: [4,4,0,0] } }
+        ];
+
+        graficoGastos.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { top: 0, textStyle: { color: getComputedStyle(document.body).getPropertyValue('--texto-secundario').trim() || '#64748b' } },
+            grid: { left: '3%', right: '4%', bottom: '3%', top: '18%', containLabel: true },
+            xAxis: { type: 'category', data: meses, axisLabel: { color: '#94a3b8' } },
+            yAxis: { type: 'value', axisLabel: { color: '#94a3b8', formatter: 'R$ {value}' }, splitLine: { lineStyle: { color: '#e2e8f0' } } },
+            series
+        });
+    }
+
+    // Grafico 3: Top 5 veiculos
+    const el3 = document.getElementById('chart-top-veiculos');
+    if (el3) {
+        if (graficoTopVeiculos) graficoTopVeiculos.dispose();
+        graficoTopVeiculos = echarts.init(el3);
+        const gastosPorV = {};
+        gastos.forEach(g => {
+            const p = g.veiculo || g.placa || g.veiculoId || 'Indefinido';
+            gastosPorV[p] = (gastosPorV[p] || 0) + parseFloat(g.valor || 0);
+        });
+        const top5 = Object.entries(gastosPorV)
+            .sort((a,b) => b[1]-a[1])
+            .slice(0,5);
+        const temDados = top5.length > 0;
+
+        graficoTopVeiculos.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: p => `${p[0].name}<br/>R$ ${p[0].value.toLocaleString('pt-BR',{minimumFractionDigits:2})}` },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'value', axisLabel: { color: '#94a3b8' } },
+            yAxis: { type: 'category', data: temDados ? top5.map(t => t[0]) : ['Sem dados'], axisLabel: { color: '#94a3b8' } },
+            series: [{
+                type: 'bar',
+                data: temDados ? top5.map(t => +t[1].toFixed(2)) : [0],
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#4f46e5'},{offset:1,color:'#8b5cf6'}]),
+                    borderRadius: [0,4,4,0]
+                },
+                barWidth: '55%'
+            }]
+        });
+    }
+
+    // Grafico 4: Gastos por categoria
+    const el4 = document.getElementById('chart-categorias-gastos');
+    if (el4) {
+        if (graficoCategorias) graficoCategorias.dispose();
+        graficoCategorias = echarts.init(el4);
+        const cats = {};
+        gastos.forEach(g => {
+            const c = g.categoria || g.tipo || 'Outros';
+            cats[c] = (cats[c] || 0) + parseFloat(g.valor || 0);
+        });
+        const data = Object.keys(cats).length > 0
+            ? Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([n,v])=>({name:n,value:+v.toFixed(2)}))
+            : [{name:'Sem dados',value:1}];
+
+        graficoCategorias.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: R$ {c} ({d}%)' },
+            legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { color: '#94a3b8' } },
+            series: [{
+                type: 'pie', radius: ['40%','65%'], center: ['35%','50%'],
+                itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+                data,
+                color: ['#4f46e5','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6']
+            }]
+        });
+    }
+
+    // Resize
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+    }, 120);
+}
+
+window.addEventListener('resize', () => {
+    [graficoCategoria, graficoGastos, graficoTopVeiculos, graficoCategorias].forEach(g => g?.resize());
 });
 
-window.atualizarDashboard = carregarDadosDashboardAprimorado;
-window.inicializarDashboardAprimorado = inicializarDashboardAprimorado;
+function getPeriodoFiltro() {
+    const sel = document.getElementById('filtroPeriodoDashboard');
+    return sel?.value || 'semestre';
+}
+
+// =====================================================
+// ALERTAS
+// =====================================================
+function verificarAlertas() {
+    const { veiculos } = buscarDadosReais();
+    const alertas = [];
+    const hoje = new Date();
+
+    veiculos.forEach(v => {
+        const placa = v.placa || v.id || 'Veículo';
+
+        // KM manutencao
+        try {
+            const kmAtual = parseFloat(v.kmAtual || v.km || 0);
+            const kmUlt = parseFloat(v.kmUltimaManutencao || v.ultimaManutencaoKm || 0);
+            const kmProx = parseFloat(v.kmProximaManutencao || (kmUlt + 10000));
+            if (kmAtual > 0 && kmProx > 0) {
+                const faltam = kmProx - kmAtual;
+                if (faltam <= 0) alertas.push(`🔴 ${placa}: Manutenção VENCIDA! Rodou ${kmAtual.toLocaleString('pt-BR')}km`);
+                else if (faltam < 500) alertas.push(`🟡 ${placa}: Manutenção em ${faltam.toFixed(0)}km`);
+            }
+        } catch(e) {}
+
+        // Documentos
+        ['vencimentoIpva','ipvaVencimento','vencimentoSeguro','seguroVencimento','vencimentoLicenciamento'].forEach(campo => {
+            if (v[campo]) {
+                try {
+                    const d = new Date(v[campo]);
+                    if (!isNaN(d.getTime())) {
+                        const dias = Math.ceil((d - hoje) / 86400000);
+                        const nome = campo.toLowerCase().includes('ipva') ? 'IPVA' : campo.toLowerCase().includes('seguro') ? 'Seguro' : 'Licenciamento';
+                        if (dias <= 0) alertas.push(`🔴 ${placa}: ${nome} VENCIDO!`);
+                        else if (dias <= 20) alertas.push(`🟠 ${placa}: ${nome} vence em ${dias} dias`);
+                    }
+                } catch(e) {}
+            }
+        });
+    });
+
+    const container = document.getElementById('painelAlertas');
+    if (!container) return;
+    if (alertas.length === 0) {
+        container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--sucesso);font-weight:600;">✅ Nenhum alerta no momento</div>`;
+    } else {
+        container.innerHTML = `<h4 style="margin:0 0 10px;font-size:14px;color:var(--erro);">🚨 ${alertas.length} alerta(s)</h4>` +
+            alertas.map(a => `<div class="alerta-card">${a}</div>`).join('');
+    }
+}
+
+// =====================================================
+// DEBUG
+// =====================================================
+window.dashboardDebug = function() {
+    console.group('🔍 DASHBOARD DEBUG');
+    console.log('LocalStorage keys:', Object.keys(localStorage));
+    const d = buscarDadosReais();
+    console.log('Dados carregados:', d);
+    console.groupEnd();
+    return d;
+};

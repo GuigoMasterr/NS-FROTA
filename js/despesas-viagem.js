@@ -1,566 +1,529 @@
-/* ============================================================
-   MÓDULO: DESPESAS DE VIAGEM v3.1
-   Com sistema completo de ADIANTAMENTO:
-   - Empresa adianta valor para o motorista
-   - Motorista presta contas com comprovantes
-   - Cálculo automático: saldo a estornar ou valor complementar
-   ============================================================ */
+// =====================================================
+// MODULO: DESPESAS DE VIAGEM - COM SISTEMA DE ADIANTAMENTO
+// =====================================================
 
-const STORAGE_DESPESAS = 'frota_despesas_viagem';
-let despesasViagem = [];
-let comprovantesAnexados = [];
+const STORAGE_KEY = 'frota_despesas_viagem';
+let despesas = [];
+let comprovantesTemp = [];
+let editandoId = null;
 
-// ========== INICIALIZAÇÃO ==========
+// =====================================================
+// INICIALIZACAO
+// =====================================================
 document.addEventListener('DOMContentLoaded', () => {
-    carregarDespesasViagem();
-    vincularEventosFormulario();
-    renderizarListaDespesasViagem();
+    console.log('💰 [DESPESAS] Inicializando modulo...');
+    carregarDespesas();
+    renderizarTudo();
+    vincularEventos();
+    console.log('✅ [DESPESAS] Modulo inicializado!');
 });
 
-// ========== ARMAZENAMENTO ==========
-function carregarDespesasViagem() {
+// =====================================================
+// ARMAZENAMENTO
+// =====================================================
+function carregarDespesas() {
     try {
-        const dados = localStorage.getItem(STORAGE_DESPESAS);
-        despesasViagem = dados ? JSON.parse(dados) : [];
-    } catch (e) {
-        console.error('Erro ao carregar despesas:', e);
-        despesasViagem = [];
+        const raw = localStorage.getItem(STORAGE_KEY);
+        despesas = raw ? JSON.parse(raw) : [];
+    } catch(e) { despesas = []; }
+}
+
+function salvarDespesas() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(despesas));
+    // Notifica dashboard
+    try { if (window.atualizarDashboard) window.atualizarDashboard(); } catch(e){}
+}
+
+// =====================================================
+// EVENTOS
+// =====================================================
+function vincularEventos() {
+    // Botao abrir modal
+    const btnAbrir = document.getElementById('btnAbrirFormDespesa');
+    if (btnAbrir) {
+        btnAbrir.addEventListener('click', () => abrirModal());
+        console.log('✅ [DESPESAS] Botao "Lancar Despesa" vinculado');
+    } else {
+        console.warn('⚠️ [DESPESAS] Botao btnAbrirFormDespesa NAO ENCONTRADO no HTML');
     }
-}
 
-function salvarDespesasViagem() {
-    localStorage.setItem(STORAGE_DESPESAS, JSON.stringify(despesasViagem));
-}
-
-// ========== MODAL ==========
-function abrirModalDespesaViagem() {
-    document.getElementById('tituloModalDV').textContent = '🧾 Lançar Despesa de Viagem';
-    document.getElementById('formDespesaViagem').reset();
-    document.getElementById('dv-id').value = '';
-    document.getElementById('dv-data').valueAsDate = new Date();
-    document.getElementById('dv-adiantamento').value = '';
-    comprovantesAnexados = [];
-    document.getElementById('dv-comprovantes-preview').innerHTML = '';
-    resetarItensLinha();
-    atualizarTotalDespesas();
-    atualizarResumoAdiantamento();
-    document.getElementById('modalDespesaViagem').classList.add('ativo');
-}
-
-function fecharModalDespesaViagem() {
-    document.getElementById('modalDespesaViagem').classList.remove('ativo');
-}
-
-document.addEventListener('click', (e) => {
+    // Fechar modal
     const modal = document.getElementById('modalDespesaViagem');
-    if (modal && e.target === modal) fecharModalDespesaViagem();
-});
+    const btnFechar = document.getElementById('btnFecharModalDespesa');
+    const btnCancelar = document.getElementById('btnCancelarDespesa');
 
-// ========== EVENTOS DO FORMULÁRIO ==========
-function vincularEventosFormulario() {
-    const form = document.getElementById('formDespesaViagem');
-    if (form) form.addEventListener('submit', salvarDespesaViagem);
-    
-    const areaUpload = document.getElementById('dv-area-upload');
-    const inputArquivos = document.getElementById('dv-input-arquivos');
-    
-    if (areaUpload) {
-        areaUpload.addEventListener('click', () => inputArquivos.click());
-        areaUpload.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            areaUpload.classList.add('drag-over');
+    if (btnFechar) btnFechar.addEventListener('click', fecharModal);
+    if (btnCancelar) btnCancelar.addEventListener('click', fecharModal);
+    if (modal) {
+        modal.addEventListener('click', (e) => { if (e.target === modal) fecharModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('ativo')) fecharModal();
         });
+    }
+
+    // Submit form
+    const form = document.getElementById('formDespesaViagem');
+    if (form) {
+        form.addEventListener('submit', salvarDespesa);
+    }
+
+    // Adicionar item
+    const btnAdd = document.getElementById('btnAdicionarItem');
+    if (btnAdd) btnAdd.addEventListener('click', adicionarLinhaItem);
+
+    // Upload
+    const areaUpload = document.getElementById('areaUpload');
+    const inputArquivos = document.getElementById('inputComprovantes');
+    if (areaUpload && inputArquivos) {
+        areaUpload.addEventListener('click', () => inputArquivos.click());
+        areaUpload.addEventListener('dragover', (e) => { e.preventDefault(); areaUpload.classList.add('drag-over'); });
         areaUpload.addEventListener('dragleave', () => areaUpload.classList.remove('drag-over'));
         areaUpload.addEventListener('drop', (e) => {
             e.preventDefault();
             areaUpload.classList.remove('drag-over');
-            processarArquivosComprovantes(e.dataTransfer.files);
+            processarArquivos(e.dataTransfer.files);
         });
+        inputArquivos.addEventListener('change', (e) => processarArquivos(e.target.files));
     }
-    
-    if (inputArquivos) {
-        inputArquivos.addEventListener('change', (e) => processarArquivosComprovantes(e.target.files));
-    }
-    
-    // Atualizar total e saldo ao digitar valores
-    document.addEventListener('input', (e) => {
-        if (e.target.classList.contains('item-valor')) {
-            atualizarTotalDespesas();
-            atualizarResumoAdiantamento();
+
+    // Delegacao: remover item / remover comprovante
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-remover-item')) {
+            const linhas = document.querySelectorAll('.item-linha');
+            if (linhas.length > 1) e.target.closest('.item-linha').remove();
+            atualizarResumoFinanceiro();
         }
-        if (e.target.id === 'dv-adiantamento') {
-            atualizarResumoAdiantamento();
+        if (e.target.classList.contains('comprovante-remover')) {
+            const idx = parseInt(e.target.dataset.index);
+            comprovantesTemp.splice(idx, 1);
+            renderizarComprovantesTemp();
         }
     });
-    
-    // Remover linha de item
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-remover-linha')) {
-            const linhas = document.querySelectorAll('.item-despesa-linha');
-            if (linhas.length > 1) e.target.closest('.item-despesa-linha').remove();
-            atualizarTotalDespesas();
-            atualizarResumoAdiantamento();
+
+    // Input para recalcular
+    document.addEventListener('input', (e) => {
+        if (e.target.classList.contains('item-valor') || e.target.id === 'valorAdiantado') {
+            atualizarResumoFinanceiro();
         }
+    });
+
+    // Filtros
+    ['filtroPeriodoDespesas','filtroStatusDespesas','buscaDespesas'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', renderizarLista);
+        if (el) el.addEventListener('input', renderizarLista);
+        if (el) el.addEventListener('keyup', renderizarLista);
     });
 }
 
-// ========== ITENS DE DESPESA ==========
-function adicionarLinhaItemDV() {
-    const container = document.getElementById('dv-itens-container');
+// =====================================================
+// MODAL
+// =====================================================
+function abrirModal(id = null) {
+    editandoId = id;
+    comprovantesTemp = [];
+    const modal = document.getElementById('modalDespesaViagem');
+    const form = document.getElementById('formDespesaViagem');
+    const titulo = document.getElementById('tituloModalDespesa');
+
+    if (!modal || !form) {
+        console.error('❌ [DESPESAS] Modal ou form nao encontrado!');
+        alert('Erro: formulário não encontrado. Verifique se o HTML está correto.');
+        return;
+    }
+
+    // Reseta form
+    form.reset();
+    document.getElementById('itensContainer').innerHTML = '';
+    document.getElementById('listaComprovantesTemp').innerHTML = '';
+
+    // Adiciona primeira linha
+    adicionarLinhaItem();
+
+    // Data de hoje
+    const inpData = document.getElementById('despesaData');
+    if (inpData) inpData.valueAsDate = new Date();
+
+    if (id) {
+        const d = despesas.find(x => x.id === id);
+        if (d) preencherEdicao(d);
+        if (titulo) titulo.textContent = '✏️ Editar Despesa de Viagem';
+    } else {
+        if (titulo) titulo.textContent = '💰 Lançar Despesa de Viagem';
+    }
+
+    atualizarResumoFinanceiro();
+    modal.classList.add('ativo');
+    document.body.style.overflow = 'hidden';
+}
+
+function fecharModal() {
+    const modal = document.getElementById('modalDespesaViagem');
+    if (modal) modal.classList.remove('ativo');
+    document.body.style.overflow = '';
+    editandoId = null;
+    comprovantesTemp = [];
+}
+
+function preencherEdicao(d) {
+    document.getElementById('despesaMotorista').value = d.motorista || '';
+    document.getElementById('despesaVeiculo').value = d.veiculo || '';
+    document.getElementById('despesaData').value = d.data || '';
+    document.getElementById('despesaTrajeto').value = d.trajeto || '';
+    document.getElementById('valorAdiantado').value = d.valorAdiantado || '';
+    document.getElementById('despesaObs').value = d.observacoes || '';
+
+    // Itens
+    const container = document.getElementById('itensContainer');
+    container.innerHTML = '';
+    (d.itens || []).forEach(it => {
+        adicionarLinhaItem(it.tipo, it.valor);
+    });
+
+    // Comprovantes
+    comprovantesTemp = [...(d.comprovantes || [])];
+    renderizarComprovantesTemp();
+}
+
+// =====================================================
+// ITENS DINAMICOS
+// =====================================================
+function adicionarLinhaItem(tipo = '', valor = '') {
+    const container = document.getElementById('itensContainer');
     if (!container) return;
-    
     const linha = document.createElement('div');
-    linha.className = 'item-despesa-linha';
+    linha.className = 'item-linha';
     linha.innerHTML = `
         <select class="item-tipo" required>
-            <option value="">Selecione...</option>
-            <option value="combustivel">⛽ Combustível</option>
-            <option value="pedagio">🛣️ Pedágio</option>
-            <option value="refeicao">🍽️ Refeição</option>
-            <option value="hospedagem">🏨 Hospedagem</option>
-            <option value="manutencao">🔧 Manutenção</option>
-            <option value="estacionamento">🅿️ Estacionamento</option>
-            <option value="outros">📋 Outros</option>
+            <option value="">Tipo despesa</option>
+            <option value="combustivel" ${tipo==='combustivel'?'selected':''}>⛽ Combustível</option>
+            <option value="pedagio" ${tipo==='pedagio'?'selected':''}>🛣️ Pedágio</option>
+            <option value="refeicao" ${tipo==='refeicao'?'selected':''}>🍽️ Refeição</option>
+            <option value="hospedagem" ${tipo==='hospedagem'?'selected':''}>🏨 Hospedagem</option>
+            <option value="manutencao" ${tipo==='manutencao'?'selected':''}>🔧 Manutenção</option>
+            <option value="estacionamento" ${tipo==='estacionamento'?'selected':''}>🅿️ Estacionamento</option>
+            <option value="outros" ${tipo==='outros'?'selected':''}>📋 Outros</option>
         </select>
-        <input type="number" class="item-valor" step="0.01" min="0" placeholder="R$ 0,00" required>
-        <button type="button" class="btn-remover-linha" title="Remover item">&minus;</button>
+        <input type="number" class="item-valor" step="0.01" min="0" placeholder="R$ 0,00" value="${valor}" required>
+        <button type="button" class="btn-remover-item" title="Remover item">×</button>
     `;
     container.appendChild(linha);
 }
 
-function resetarItensLinha() {
-    const container = document.getElementById('dv-itens-container');
-    if (!container) return;
-    container.innerHTML = '';
-    adicionarLinhaItemDV();
-}
-
-function calcularTotalDespesas() {
-    let total = 0;
-    document.querySelectorAll('.item-despesa-linha').forEach(linha => {
-        const valor = parseFloat(linha.querySelector('.item-valor')?.value) || 0;
-        total += valor;
-    });
-    return total;
-}
-
-function atualizarTotalDespesas() {
-    const total = calcularTotalDespesas();
-    const el = document.getElementById('dv-total-valor');
-    if (el) el.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
-}
-
-// ========== CÁLCULO DE ADIANTAMENTO E SALDO ==========
-function atualizarResumoAdiantamento() {
-    const adiantamento = parseFloat(document.getElementById('dv-adiantamento')?.value) || 0;
-    const totalDespesas = calcularTotalDespesas();
-    const saldo = adiantamento - totalDespesas;
-    
-    const elSaldo = document.getElementById('dv-saldo-valor');
-    const elTipo = document.getElementById('dv-saldo-tipo');
-    const elBadge = document.getElementById('dv-saldo-badge');
-    
-    if (!elSaldo) return;
-    
-    if (adiantamento === 0 && totalDespesas === 0) {
-        elSaldo.textContent = 'R$ 0,00';
-        elSaldo.className = 'valor';
-        if (elTipo) elTipo.textContent = 'Saldo';
-        if (elBadge) elBadge.style.display = 'none';
-        return;
-    }
-    
-    if (elBadge) elBadge.style.display = 'inline-flex';
-    
-    if (saldo > 0) {
-        // Motorista recebeu mais do que gastou → deve estornar para empresa
-        elSaldo.textContent = 'R$ ' + saldo.toFixed(2).replace('.', ',');
-        elSaldo.className = 'valor positivo';
-        if (elTipo) elTipo.textContent = '💰 A Estornar';
-        if (elBadge) {
-            elBadge.className = 'saldo-badge saldo-estorno';
-            elBadge.innerHTML = '↩️ Motorista devolve para empresa';
-        }
-    } else if (saldo < 0) {
-        // Motorista gastou mais do que recebeu → empresa complementa
-        elSaldo.textContent = 'R$ ' + Math.abs(saldo).toFixed(2).replace('.', ',');
-        elSaldo.className = 'valor negativo';
-        if (elTipo) elTipo.textContent = '📌 Complementar';
-        if (elBadge) {
-            elBadge.className = 'saldo-badge saldo-complementar';
-            elBadge.innerHTML = '➡️ Empresa paga diferença';
-        }
-    } else {
-        // Valores exatos → conta fechada
-        elSaldo.textContent = 'R$ 0,00';
-        elSaldo.className = 'valor';
-        if (elTipo) elTipo.textContent = '✅ Conta Fechada';
-        if (elBadge) {
-            elBadge.className = 'saldo-badge saldo-fechado';
-            elBadge.innerHTML = '✓ Valores exatos';
-        }
-    }
-}
-
-// ========== UPLOAD DE COMPROVANTES ==========
-function processarArquivosComprovantes(arquivos) {
-    const lista = document.getElementById('dv-comprovantes-preview');
-    if (!lista) return;
-    
+// =====================================================
+// COMPROVANTES
+// =====================================================
+function processarArquivos(arquivos) {
     Array.from(arquivos).forEach(arq => {
         if (arq.size > 5 * 1024 * 1024) {
-            alert(`⚠️ Arquivo "${arq.name}" excede 5MB e não será anexado.`);
+            alert(`⚠️ Arquivo "${arq.name}" excede 5MB e foi ignorado.`);
             return;
         }
-        
         const leitor = new FileReader();
         leitor.onload = (e) => {
-            const dados = {
+            comprovantesTemp.push({
                 nome: arq.name,
                 tipo: arq.type,
-                tamanho: arq.size,
                 base64: e.target.result
-            };
-            comprovantesAnexados.push(dados);
-            renderizarComprovantePreview(dados, comprovantesAnexados.length - 1);
+            });
+            renderizarComprovantesTemp();
         };
         leitor.readAsDataURL(arq);
     });
 }
 
-function renderizarComprovantePreview(dados, indice) {
-    const lista = document.getElementById('dv-comprovantes-preview');
+function renderizarComprovantesTemp() {
+    const lista = document.getElementById('listaComprovantesTemp');
     if (!lista) return;
-    
-    const item = document.createElement('div');
-    item.className = 'comprovante-item';
-    
-    if (dados.tipo.startsWith('image/')) {
-        item.innerHTML = `
-            <img src="${dados.base64}" alt="${dados.nome}" title="${dados.nome}">
-            <button type="button" class="remover" onclick="removerComprovante(${indice})" title="Remover">&times;</button>
-        `;
+    lista.innerHTML = comprovantesTemp.map((c, i) => {
+        const img = c.tipo?.startsWith('image/')
+            ? `<img src="${c.base64}" alt="${c.nome}">`
+            : `<div class="comprovante-pdf"><span style="font-size:22px;">📄</span>${(c.nome.split('.').pop()||'').toUpperCase()}</div>`;
+        return `<div class="comprovante-item" title="${c.nome}">
+            ${img}
+            <button type="button" class="comprovante-remover" data-index="${i}">×</button>
+        </div>`;
+    }).join('');
+}
+
+// =====================================================
+// RESUMO FINANCEIRO (ADIANTAMENTO)
+// =====================================================
+function atualizarResumoFinanceiro() {
+    let totalGasto = 0;
+    document.querySelectorAll('.item-linha').forEach(linha => {
+        totalGasto += parseFloat(linha.querySelector('.item-valor')?.value || 0);
+    });
+    const adiantado = parseFloat(document.getElementById('valorAdiantado')?.value || 0);
+    const saldo = +(adiantado - totalGasto).toFixed(2);
+
+    // Atualiza total gasto
+    const elTotal = document.getElementById('totalGastoCalc');
+    if (elTotal) elTotal.textContent = formatarReal(totalGasto);
+
+    const elAdiantado = document.getElementById('adiantadoCalc');
+    if (elAdiantado) elAdiantado.textContent = formatarReal(adiantado);
+
+    const elSaldo = document.getElementById('saldoFinal');
+    const elStatus = document.getElementById('statusSaldo');
+    const elLinha = document.querySelector('.resumo-linha.destaque');
+
+    let tipo = 'fechado';
+    let textoStatus = '✅ Conta Fechada';
+    let textoSaldo = formatarReal(0);
+
+    if (Math.abs(saldo) < 0.01) {
+        tipo = 'fechado';
+        textoStatus = '✅ Conta Fechada';
+        textoSaldo = formatarReal(0);
+    } else if (saldo > 0) {
+        tipo = 'estorno';
+        textoStatus = `↩️ Motorista deve ESTORNAR R$ ${saldo.toFixed(2)}`;
+        textoSaldo = `- ${formatarReal(saldo)}`;
     } else {
-        const ext = dados.nome.split('.').pop().toUpperCase();
-        item.innerHTML = `
-            <div class="pdf-icone">
-                📄<small>${ext}</small>
-            </div>
-            <button type="button" class="remover" onclick="removerComprovante(${indice})" title="Remover">&times;</button>
-        `;
+        tipo = 'complementar';
+        textoStatus = `➡️ Empresa COMPLEMENTA R$ ${Math.abs(saldo).toFixed(2)}`;
+        textoSaldo = `+ ${formatarReal(Math.abs(saldo))}`;
     }
-    
-    lista.appendChild(item);
-}
 
-function removerComprovante(indice) {
-    comprovantesAnexados.splice(indice, 1);
-    const lista = document.getElementById('dv-comprovantes-preview');
-    if (lista) {
-        lista.innerHTML = '';
-        comprovantesAnexados.forEach((d, i) => renderizarComprovantePreview(d, i));
+    if (elSaldo) {
+        elSaldo.textContent = textoSaldo;
+        elSaldo.parentElement?.classList.remove('estorno','complementar','fechado');
+        elSaldo.parentElement?.classList.add(tipo);
+    }
+    if (elStatus) {
+        elStatus.textContent = textoStatus;
+        elStatus.className = `status-saldo ${tipo}`;
     }
 }
 
-// ========== SALVAR DESPESA ==========
-function salvarDespesaViagem(e) {
+function formatarReal(v) {
+    return 'R$ ' + (+v||0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// =====================================================
+// SALVAR
+// =====================================================
+function salvarDespesa(e) {
     e.preventDefault();
-    
-    // Coletar itens
+
+    // Coleta itens
     const itens = [];
-    let valorTotal = 0;
-    document.querySelectorAll('.item-despesa-linha').forEach(linha => {
-        const tipo = linha.querySelector('.item-tipo')?.value;
-        const valor = parseFloat(linha.querySelector('.item-valor')?.value) || 0;
+    let totalGasto = 0;
+    document.querySelectorAll('.item-linha').forEach(linha => {
+        const tipo = linha.querySelector('.item-tipo').value;
+        const valor = parseFloat(linha.querySelector('.item-valor').value || 0);
         if (tipo && valor > 0) {
             itens.push({ tipo, valor });
-            valorTotal += valor;
+            totalGasto += valor;
         }
     });
-    
+
     if (itens.length === 0) {
         alert('⚠️ Adicione pelo menos um item de despesa com valor.');
         return;
     }
-    
-    if (comprovantesAnexados.length === 0) {
-        alert('⚠️ Anexe pelo menos um comprovante (cupom fiscal, nota, etc.).');
-        return;
-    }
-    
-    const adiantamento = parseFloat(document.getElementById('dv-adiantamento')?.value) || 0;
-    const saldo = adiantamento - valorTotal;
-    
-    let statusConta = 'fechado';
-    if (adiantamento > 0) {
-        if (saldo > 0.01) statusConta = 'estorno_pendente';
-        else if (saldo < -0.01) statusConta = 'complementar_pendente';
-        else statusConta = 'fechado';
-    }
-    
+
+    const adiantado = parseFloat(document.getElementById('valorAdiantado')?.value || 0);
+    const saldo = +(adiantado - totalGasto).toFixed(2);
+    let tipoSaldo = 'fechado';
+    if (saldo > 0.01) tipoSaldo = 'estorno';
+    else if (saldo < -0.01) tipoSaldo = 'complementar';
+
     const despesa = {
-        id: document.getElementById('dv-id').value || Date.now().toString(),
-        motorista: document.getElementById('dv-motorista').value.trim(),
-        veiculo: document.getElementById('dv-veiculo').value.trim().toUpperCase(),
-        data: document.getElementById('dv-data').value,
-        trajeto: document.getElementById('dv-trajeto').value.trim(),
-        adiantamento,
+        id: editandoId || Date.now().toString(),
+        motorista: document.getElementById('despesaMotorista').value.trim(),
+        veiculo: document.getElementById('despesaVeiculo').value.trim().toUpperCase(),
+        data: document.getElementById('despesaData').value,
+        trajeto: document.getElementById('despesaTrajeto').value.trim(),
+        valorAdiantado: adiantado,
         itens,
-        valorTotal,
+        valorTotal: +totalGasto.toFixed(2),
         saldo,
-        statusConta,
-        comprovantes: [...comprovantesAnexados],
-        observacoes: document.getElementById('dv-observacoes').value.trim(),
-        status: 'pendente',
-        dataCadastro: new Date().toISOString()
+        tipoSaldo,
+        comprovantes: [...comprovantesTemp],
+        observacoes: document.getElementById('despesaObs').value.trim(),
+        status: editandoId ? (despesas.find(d=>d.id===editandoId)?.status || 'pendente') : 'pendente',
+        criadoEm: editandoId ? (despesas.find(d=>d.id===editandoId)?.criadoEm) : new Date().toISOString(),
+        atualizadoEm: new Date().toISOString()
     };
-    
-    const idx = despesasViagem.findIndex(d => d.id === despesa.id);
-    if (idx >= 0) {
-        despesasViagem[idx] = despesa;
+
+    if (editandoId) {
+        const i = despesas.findIndex(d => d.id === editandoId);
+        if (i >= 0) despesas[i] = despesa;
     } else {
-        despesasViagem.unshift(despesa);
+        despesas.unshift(despesa);
     }
-    
-    salvarDespesasViagem();
-    renderizarListaDespesasViagem();
-    fecharModalDespesaViagem();
-    
-    let msg = '✅ Despesa lançada com sucesso!';
-    if (adiantamento > 0) {
-        if (saldo > 0.01) msg += `\n\n💰 Saldo a ESTORNAR pelo motorista: R$ ${saldo.toFixed(2).replace('.', ',')}`;
-        else if (saldo < -0.01) msg += `\n\n📌 Valor COMPLEMENTAR a pagar pela empresa: R$ ${Math.abs(saldo).toFixed(2).replace('.', ',')}`;
-        else msg += '\n\n✅ Conta fechada! Valores exatos.';
-    }
-    alert(msg);
+
+    salvarDespesas();
+    fecharModal();
+    renderizarTudo();
+    alert(`✅ Despesa ${editandoId?'atualizada':'lançada'} com sucesso!\n\nTotal gasto: ${formatarReal(totalGasto)}\nAdiantado: ${formatarReal(adiantado)}\n${despesa.tipoSaldo==='estorno'?`↩️ Estorno: ${formatarReal(saldo)}`:despesa.tipoSaldo==='complementar'?`➡️ Complementar: ${formatarReal(Math.abs(saldo))}`:'✅ Conta fechada'}`);
 }
 
-// ========== RENDERIZAR LISTA ==========
-function renderizarListaDespesasViagem() {
+// =====================================================
+// RENDERIZACAO
+// =====================================================
+function renderizarTudo() {
+    renderizarCardsResumo();
+    renderizarLista();
+}
+
+function renderizarCardsResumo() {
+    const total = despesas.reduce((s,d) => s + (d.valorTotal||0), 0);
+    const pend = despesas.filter(d => d.status === 'pendente').length;
+    const aprov = despesas.filter(d => d.status === 'aprovado').length;
+    const rej = despesas.filter(d => d.status === 'rejeitado').length;
+
+    setCard('resumoTotal', formatarReal(total), 'Total lançado');
+    setCard('resumoPendentes', pend, pend === 1 ? 'pendente' : 'pendentes');
+    setCard('resumoAprovadas', aprov, aprov === 1 ? 'aprovada' : 'aprovadas');
+    setCard('resumoRejeitadas', rej, rej === 1 ? 'rejeitada' : 'rejeitadas');
+}
+
+function setCard(id, valor, sub) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = valor;
+    const p = el.parentElement?.querySelector('.label');
+    if (p && sub) p.textContent = sub;
+}
+
+function renderizarLista() {
     const container = document.getElementById('listaDespesasViagem');
     if (!container) return;
-    
-    const filtroPeriodo = document.getElementById('filtroDVPeriodo')?.value || 'mes';
-    const filtroStatus = document.getElementById('filtroDVStatus')?.value || 'todos';
-    const filtroMotorista = (document.getElementById('filtroDVMotorista')?.value || '').toLowerCase();
-    
-    let filtradas = [...despesasViagem];
-    const agora = new Date();
-    
-    // Filtro período
-    if (filtroPeriodo === 'semana') {
-        const semana = new Date(Date.now() - 7 * 86400000);
-        filtradas = filtradas.filter(d => new Date(d.data + 'T00:00:00') >= semana);
-    } else if (filtroPeriodo === 'mes') {
-        filtradas = filtradas.filter(d => {
-            const dt = new Date(d.data + 'T00:00:00');
-            return dt.getMonth() === agora.getMonth() && dt.getFullYear() === agora.getFullYear();
-        });
-    } else if (filtroPeriodo === 'anterior') {
-        const ultMes = agora.getMonth() === 0 ? 11 : agora.getMonth() - 1;
-        const ano = agora.getMonth() === 0 ? agora.getFullYear() - 1 : agora.getFullYear();
-        filtradas = filtradas.filter(d => {
-            const dt = new Date(d.data + 'T00:00:00');
-            return dt.getMonth() === ultMes && dt.getFullYear() === ano;
-        });
-    } else if (filtroPeriodo === 'ano') {
-        filtradas = filtradas.filter(d => new Date(d.data + 'T00:00:00').getFullYear() === agora.getFullYear());
-    }
-    
-    // Filtro status
-    if (filtroStatus !== 'todos') {
-        filtradas = filtradas.filter(d => d.status === filtroStatus);
-    }
-    
-    // Filtro motorista
-    if (filtroMotorista) {
-        filtradas = filtradas.filter(d => d.motorista.toLowerCase().includes(filtroMotorista));
-    }
-    
-    // Atualizar cards resumo
-    atualizarCardsResumo(filtradas);
-    
-    if (filtradas.length === 0) {
-        container.innerHTML = '<p class="sem-dados">Nenhuma despesa encontrada.</p>';
+
+    const filtroPeriodo = document.getElementById('filtroPeriodoDespesas')?.value || 'todos';
+    const filtroStatus = document.getElementById('filtroStatusDespesas')?.value || 'todos';
+    const busca = (document.getElementById('buscaDespesas')?.value || '').toLowerCase();
+    const hoje = new Date();
+
+    let lista = despesas.filter(d => {
+        // Status
+        if (filtroStatus !== 'todos' && d.status !== filtroStatus) return false;
+        // Busca
+        if (busca && !(d.motorista||'').toLowerCase().includes(busca) && !(d.veiculo||'').toLowerCase().includes(busca)) return false;
+        // Periodo
+        const dt = new Date(d.data + 'T00:00:00');
+        if (filtroPeriodo === 'mes') {
+            if (dt.getMonth() !== hoje.getMonth() || dt.getFullYear() !== hoje.getFullYear()) return false;
+        } else if (filtroPeriodo === 'semana') {
+            if ((hoje - dt) > 7 * 86400000) return false;
+        } else if (filtroPeriodo === 'anterior') {
+            const mAnt = hoje.getMonth() === 0 ? 11 : hoje.getMonth() - 1;
+            const aAnt = hoje.getMonth() === 0 ? hoje.getFullYear() - 1 : hoje.getFullYear();
+            if (dt.getMonth() !== mAnt || dt.getFullYear() !== aAnt) return false;
+        } else if (filtroPeriodo === 'ano') {
+            if (dt.getFullYear() !== hoje.getFullYear()) return false;
+        }
+        return true;
+    });
+
+    if (lista.length === 0) {
+        container.innerHTML = `<div class="sem-dados">📭 Nenhuma despesa encontrada.<br><small>Clique em "+ Lançar Despesa" para começar.</small></div>`;
         return;
     }
-    
-    const iconesTipo = {
-        combustivel: '⛽', pedagio: '🛣️', refeicao: '🍽️',
-        hospedagem: '🏨', manutencao: '🔧', estacionamento: '🅿️', outros: '📋'
-    };
-    
-    const nomesTipo = {
-        combustivel: 'Combustível', pedagio: 'Pedágio', refeicao: 'Refeição',
-        hospedagem: 'Hospedagem', manutencao: 'Manutenção', estacionamento: 'Estacionamento', outros: 'Outros'
-    };
-    
-    container.innerHTML = filtradas.map(d => {
+
+    const icones = { combustivel:'⛽', pedagio:'🛣️', refeicao:'🍽️', hospedagem:'🏨', manutencao:'🔧', estacionamento:'🅿️', outros:'📋' };
+
+    container.innerHTML = lista.map(d => {
         const dt = new Date(d.data + 'T00:00:00');
         const dtFmt = `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
-        
-        const statusClasse = d.status === 'aprovado' ? 'status-aprovado' : 
-                           d.status === 'rejeitado' ? 'status-rejeitado' : 'status-pendente';
-        const statusTexto = d.status === 'aprovado' ? '✅ Aprovado' : 
-                          d.status === 'rejeitado' ? '❌ Rejeitado' : '⏳ Pendente';
-        
-        const itensResumo = d.itens.map(i => 
-            `${iconesTipo[i.tipo] || '•'} ${nomesTipo[i.tipo] || i.tipo} — R$ ${i.valor.toFixed(2).replace('.',',')}`
-        ).join(' · ');
-        
-        // Informações de adiantamento e saldo
-        let infoAdiantamento = '';
-        if (d.adiantamento > 0) {
-            const saldo = d.saldo || 0;
-            if (saldo > 0.01) {
-                infoAdiantamento = `<div class="despesa-saldo" style="background:#ecfdf5; color:#059669;">
-                    💰 Adiantado: R$ ${d.adiantamento.toFixed(2).replace('.',',')} · 
-                    ↩️ <strong>A estornar: R$ ${saldo.toFixed(2).replace('.',',')}</strong>
-                </div>`;
-            } else if (saldo < -0.01) {
-                infoAdiantamento = `<div class="despesa-saldo" style="background:#fef2f2; color:#b91c1c;">
-                    💰 Adiantado: R$ ${d.adiantamento.toFixed(2).replace('.',',')} · 
-                    ➡️ <strong>Complementar: R$ ${Math.abs(saldo).toFixed(2).replace('.',',')}</strong>
-                </div>`;
-            } else {
-                infoAdiantamento = `<div class="despesa-saldo" style="background:#eff6ff; color:#1e40af;">
-                    💰 Adiantado: R$ ${d.adiantamento.toFixed(2).replace('.',',')} · 
-                    ✅ <strong>Conta fechada</strong>
-                </div>`;
-            }
-        }
-        
+        const statusBadge = d.status === 'aprovado' ? 'status-aprovado-badge ✅ Aprovado'
+            : d.status === 'rejeitado' ? 'status-rejeitado-badge ❌ Rejeitado'
+            : 'status-pendente-badge ⏳ Pendente';
+        const [clsBadge, txtBadge] = statusBadge.split(' ', 2);
+        const saldoTexto = d.tipoSaldo === 'estorno' ? `↩️ Estorno ${formatarReal(d.saldo)}`
+            : d.tipoSaldo === 'complementar' ? `➡️ Complementa ${formatarReal(Math.abs(d.saldo||0))}`
+            : '✅ Fechado';
+        const saldoCls = d.tipoSaldo || 'fechado';
+        const itensHtml = (d.itens||[]).map(i =>
+            `<span class="item-tag">${icones[i.tipo]||'•'} ${formatarReal(i.valor)}</span>`
+        ).join('');
+
         return `
-            <div class="cartao-despesa ${statusClasse}">
-                <div class="despesa-cabecalho">
-                    <div>
-                        <div class="despesa-motorista">${d.motorista} <span style="font-weight:400; color:#64748b;">— ${d.veiculo}</span></div>
-                        <div class="despesa-info">
-                            <span>📅 ${dtFmt}</span>
-                            ${d.trajeto ? `<span>🛣️ ${d.trajeto}</span>` : ''}
-                        </div>
-                    </div>
-                    <div>
-                        <div class="despesa-valor">R$ ${d.valorTotal.toFixed(2).replace('.',',')}</div>
-                        <div style="text-align:right; margin-top:4px;"><span class="despesa-status">${statusTexto}</span></div>
+        <div class="cartao-despesa status-${d.status}">
+            <div class="despesa-cabecalho">
+                <div class="despesa-motorista-info">
+                    <div class="despesa-motorista">👤 ${d.motorista} • 🚛 ${d.veiculo}</div>
+                    <div class="despesa-detalhes">
+                        <span>📅 ${dtFmt}</span>
+                        ${d.trajeto ? `<span>📍 ${d.trajeto}</span>` : ''}
+                        <span>💸 Adiantado: ${formatarReal(d.valorAdiantado||0)}</span>
+                        <span>📎 ${d.comprovantes?.length||0} comprovante(s)</span>
                     </div>
                 </div>
-                <div class="despesa-itens">${itensResumo}</div>
-                ${infoAdiantamento}
-                ${d.observacoes ? `<div style="font-size:13px; color:#64748b; margin-top:8px;">📝 ${d.observacoes}</div>` : ''}
-                <div class="despesa-rodape">
-                    <span>📎 ${d.comprovantes.length} comprovante(s)</span>
-                    <div class="despesa-acoes">
-                        <button class="btn-ver" onclick="verComprovantes('${d.id}')">👁️ Ver</button>
-                        ${d.status === 'pendente' ? `
-                            <button class="btn-aprovar" onclick="aprovarDespesa('${d.id}')">✓ Aprovar</button>
-                            <button class="btn-rejeitar" onclick="rejeitarDespesa('${d.id}')">✗ Rejeitar</button>
-                        ` : ''}
-                    </div>
+                <div class="despesa-valores">
+                    <div class="despesa-valor-total">${formatarReal(d.valorTotal||0)}</div>
+                    <span class="despesa-saldo ${saldoCls}">${saldoTexto}</span>
+                    <span class="status-badge ${clsBadge}">${txtBadge}</span>
                 </div>
             </div>
-        `;
+            ${itensHtml ? `<div class="despesa-itens">${itensHtml}</div>` : ''}
+            ${d.observacoes ? `<div style="font-size:12px;color:var(--texto-secundario);margin-top:6px;">📝 ${d.observacoes}</div>` : ''}
+            <div class="despesa-acoes">
+                ${d.status === 'pendente' ? `<button class="btn-mini sucesso" onclick="aprovarDespesa('${d.id}')">✅ Aprovar</button>` : ''}
+                ${d.status === 'pendente' ? `<button class="btn-mini erro" onclick="rejeitarDespesa('${d.id}')">❌ Rejeitar</button>` : ''}
+                <button class="btn-mini" onclick="abrirModal('${d.id}')">✏️ Editar</button>
+                ${d.comprovantes?.length ? `<button class="btn-mini" onclick="verComprovantes('${d.id}')">📎 Ver comprovantes</button>` : ''}
+                <button class="btn-mini erro" onclick="excluirDespesa('${d.id}')">🗑️ Excluir</button>
+            </div>
+        </div>`;
     }).join('');
 }
 
-// ========== CARDS RESUMO ==========
-function atualizarCardsResumo(filtradas) {
-    const totalLancado = filtradas.reduce((s, d) => s + d.valorTotal, 0);
-    const pendentes = filtradas.filter(d => d.status === 'pendente').length;
-    const totalAprovado = filtradas.filter(d => d.status === 'aprovado').reduce((s, d) => s + d.valorTotal, 0);
-    const rejeitadas = filtradas.filter(d => d.status === 'rejeitado').length;
-    
-    definirTexto('dv-total-lancado', 'R$ ' + totalLancado.toLocaleString('pt-BR', { maximumFractionDigits: 2, minimumFractionDigits: 2 }));
-    definirTexto('dv-pendentes', pendentes);
-    definirTexto('dv-aprovadas', 'R$ ' + totalAprovado.toLocaleString('pt-BR', { maximumFractionDigits: 2, minimumFractionDigits: 2 }));
-    definirTexto('dv-rejeitadas', rejeitadas);
-}
-
-function definirTexto(id, texto) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = texto;
-}
-
-// ========== AÇÕES ==========
-function aprovarDespesa(id) {
+// =====================================================
+// ACOES
+// =====================================================
+window.aprovarDespesa = function(id) {
     if (!confirm('✅ Confirmar aprovação desta despesa?')) return;
-    const d = despesasViagem.find(x => x.id === id);
-    if (d) {
-        d.status = 'aprovado';
-        salvarDespesasViagem();
-        renderizarListaDespesasViagem();
-    }
-}
+    const d = despesas.find(x => x.id === id);
+    if (d) { d.status = 'aprovado'; salvarDespesas(); renderizarTudo(); }
+};
 
-function rejeitarDespesa(id) {
+window.rejeitarDespesa = function(id) {
     if (!confirm('❌ Confirmar rejeição desta despesa?')) return;
-    const d = despesasViagem.find(x => x.id === id);
-    if (d) {
-        d.status = 'rejeitado';
-        salvarDespesasViagem();
-        renderizarListaDespesasViagem();
-    }
-}
+    const d = despesas.find(x => x.id === id);
+    if (d) { d.status = 'rejeitado'; salvarDespesas(); renderizarTudo(); }
+};
 
-function verComprovantes(id) {
-    const d = despesasViagem.find(x => x.id === id);
-    if (!d || !d.comprovantes.length) return;
-    
-    let html = `<!DOCTYPE html><html><head><title>Comprovantes - ${d.motorista}</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: #f8fafc; }
-        h2 { color: #0f172a; margin-bottom: 8px; }
-        .info { color: #64748b; margin-bottom: 24px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
-        .item { background: white; border-radius: 10px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .item img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; cursor: pointer; }
-        .pdf-link { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 160px; background: #fee2e2; border-radius: 6px; color: #991b1b; text-decoration: none; font-weight: 600; }
-        .pdf-link span { font-size: 40px; margin-bottom: 8px; }
-        .nome { font-size: 12px; color: #64748b; margin-top: 8px; text-align: center; word-break: break-all; }
-        .resumo { background: white; padding: 16px; border-radius: 10px; margin-bottom: 20px; }
-        .resumo-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
-        .resumo-item:last-child { border-bottom: none; }
-    </style></head><body>
-    <h2>📎 Comprovantes de Viagem</h2>
-    <div class="info"><strong>${d.motorista}</strong> — ${d.veiculo} — ${d.data}</div>`;
-    
-    if (d.adiantamento > 0) {
-        const saldo = d.saldo || 0;
-        let textoSaldo = '';
-        if (saldo > 0.01) textoSaldo = `<span style="color:#059669;">↩️ A estornar: R$ ${saldo.toFixed(2).replace('.',',')}</span>`;
-        else if (saldo < -0.01) textoSaldo = `<span style="color:#b91c1c;">➡️ Complementar: R$ ${Math.abs(saldo).toFixed(2).replace('.',',')}</span>`;
-        else textoSaldo = `<span style="color:#1e40af;">✅ Conta fechada</span>`;
-        
-        html += `<div class="resumo">
-            <div class="resumo-item"><span>💰 Adiantamento</span><strong>R$ ${d.adiantamento.toFixed(2).replace('.',',')}</strong></div>
-            <div class="resumo-item"><span>📊 Total gasto</span><strong>R$ ${d.valorTotal.toFixed(2).replace('.',',')}</strong></div>
-            <div class="resumo-item"><span>Saldo</span><strong>${textoSaldo}</strong></div>
-        </div>`;
-    }
-    
-    html += '<div class="grid">';
-    
-    d.comprovantes.forEach(c => {
-        if (c.tipo.startsWith('image/')) {
-            html += `<div class="item"><img src="${c.base64}" onclick="window.open('${c.base64}')" title="Clique para ampliar"><div class="nome">${c.nome}</div></div>`;
-        } else {
-            html += `<div class="item"><a href="${c.base64}" download="${c.nome}" class="pdf-link"><span>📄</span>${c.nome.split('.').pop().toUpperCase()}</a><div class="nome">${c.nome}</div></div>`;
-        }
-    });
-    
-    html += '</div></body></html>';
-    
-    const modal = window.open('', '_blank', 'width=850,height=700');
-    modal.document.write(html);
-    modal.document.close();
-}
+window.excluirDespesa = function(id) {
+    if (!confirm('🗑️ Tem certeza que deseja EXCLUIR esta despesa?\nEsta ação não pode ser desfeita.')) return;
+    despesas = despesas.filter(d => d.id !== id);
+    salvarDespesas();
+    renderizarTudo();
+};
 
-// ========== FUNÇÕES GLOBAIS ==========
-window.abrirModalDespesaViagem = abrirModalDespesaViagem;
-window.fecharModalDespesaViagem = fecharModalDespesaViagem;
-window.adicionarLinhaItemDV = adicionarLinhaItemDV;
-window.removerComprovante = removerComprovante;
-window.renderizarListaDespesasViagem = renderizarListaDespesasViagem;
-window.aprovarDespesa = aprovarDespesa;
-window.rejeitarDespesa = rejeitarDespesa;
-window.verComprovantes = verComprovantes;
+window.verComprovantes = function(id) {
+    const d = despesas.find(x => x.id === id);
+    if (!d || !d.comprovantes?.length) return;
+    const win = window.open('', '_blank', 'width=900,height=700');
+    win.document.write(`
+        <html><head><title>Comprovantes - ${d.motorista} - ${d.data}</title>
+        <style>body{font-family:Arial,sans-serif;padding:20px;background:#f8fafc;}
+        h1{font-size:18px;color:#0f172a;}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:16px;}
+        .item{background:white;padding:10px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.1);}
+        .item img{width:100%;border-radius:4px;max-height:260px;object-fit:cover;}
+        .pdf{display:flex;align-items:center;gap:10px;padding:20px;background:#fef2f2;color:#b91c1c;border-radius:6px;font-weight:600;}
+        .nome{font-size:12px;color:#64748b;margin-top:6px;word-break:break-all;}
+        .resumo{background:#eef2ff;padding:12px;border-radius:8px;margin-bottom:12px;}
+        </style></head><body>
+        <h1>📎 Comprovantes da Viagem</h1>
+        <div class="resumo"><strong>👤 ${d.motorista}</strong> • 🚛 ${d.veiculo} • 📅 ${d.data}<br>
+        💸 Adiantado: ${formatarReal(d.valorAdiantado||0)} • 🧾 Gasto: ${formatarReal(d.valorTotal||0)}</div>
+        <div class="grid">
+        ${d.comprovantes.map(c => c.tipo?.startsWith('image/')
+            ? `<div class="item"><img src="${c.base64}"><div class="nome">${c.nome}</div></div>`
+            : `<div class="item"><div class="pdf">📄 ${c.nome}</div><a href="${c.base64}" download="${c.nome}" style="display:block;margin-top:8px;font-size:12px;">⬇️ Baixar PDF</a></div>`
+        ).join('')}
+        </div></body></html>
+    `);
+    win.document.close();
+};
+
+// Formatar real para uso em outras janelas
+window.formatarReal = formatarReal;
+
+// Expor para debug
+window._despesas = despesas;
