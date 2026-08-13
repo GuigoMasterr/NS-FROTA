@@ -24,21 +24,45 @@ document.addEventListener('DOMContentLoaded', () => {
 // ARMAZENAMENTO
 // ============================================================
 function carregarDespesas() {
-  try {
-    const dados = localStorage.getItem(STORAGE_KEY);
-    despesas = dados ? JSON.parse(dados) : [];
-  } catch (e) {
-    despesas = [];
+  // Usa o BD global (que integra com Supabase + localStorage)
+  if (window.BD && window.BD.despesasViagem) {
+    despesas = [...window.BD.despesasViagem];
+  } else {
+    // Fallback para localStorage antigo
+    try {
+      const dados = localStorage.getItem(STORAGE_KEY);
+      despesas = dados ? JSON.parse(dados) : [];
+    } catch (e) {
+      despesas = [];
+    }
   }
 }
 
 function salvarDespesas() {
+  // Salva no BD global (que sincroniza com Supabase e localStorage)
+  if (window.BD) {
+    window.BD.despesasViagem = [...despesas];
+    if (typeof salvarDados === 'function') {
+      salvarDados();
+    }
+  }
+  // Também mantém no localStorage para compatibilidade
   localStorage.setItem(STORAGE_KEY, JSON.stringify(despesas));
+  
   // Atualiza dashboard automaticamente
-  if (window.atualizarDashboard) {
+  if (window.atualizarDashboardCompleto) {
+    setTimeout(() => window.atualizarDashboardCompleto(), 100);
+  } else if (window.atualizarDashboard) {
     setTimeout(() => window.atualizarDashboard(), 100);
   }
 }
+
+// Função global para compatibilidade com auth.js
+window.carregarListaDespesas = function() {
+  carregarDespesas();
+  renderizarLista();
+  atualizarResumoDespesas();
+};
 
 // ============================================================
 // VINCULAR EVENTOS

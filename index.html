@@ -554,6 +554,107 @@
             margin-bottom: 1rem;
             opacity: 0.5;
         }
+        
+        /* Cartões de Despesa de Viagem */
+        .cartao-despesa {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #e2e8f0;
+            transition: box-shadow 0.2s;
+        }
+        .cartao-despesa:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .cartao-despesa.pendente { border-left: 4px solid #f59e0b; }
+        .cartao-despesa.aprovado { border-left: 4px solid #10b981; }
+        .cartao-despesa.rejeitado { border-left: 4px solid #ef4444; }
+        
+        .despesa-cabecalho {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        .despesa-motorista {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 0.95rem;
+        }
+        .despesa-info {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 0.2rem;
+        }
+        .despesa-valor-total {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #2563eb;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+        .status-pendente { background: #fef3c7; color: #92400e; }
+        .status-aprovado { background: #d1fae5; color: #065f46; }
+        .status-rejeitado { background: #fee2e2; color: #991b1b; }
+        
+        .despesa-itens {
+            font-size: 0.8rem;
+            color: #64748b;
+            padding: 0.5rem 0;
+            border-top: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f1f5f9;
+            margin: 0.5rem 0;
+        }
+        .despesa-acoes {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-top: 0.75rem;
+        }
+        .btn-mini {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-mini:hover { background: #e2e8f0; }
+        .btn-aprovar { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+        .btn-aprovar:hover { background: #a7f3d0; }
+        .btn-rejeitar { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+        .btn-rejeitar:hover { background: #fecaca; }
+        .btn-comprovantes { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+        .btn-comprovantes:hover { background: #bfdbfe; }
+        
+        .adiantamento-resumo {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+        }
+        .adiantamento-resumo.saldo-zerado { background: #f8fafc; }
+        .adiantamento-resumo.saldo-positivo { background: #d1fae5; }
+        .adiantamento-resumo.saldo-negativo { background: #fee2e2; }
+        .adiantamento-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .adiantamento-item .label { color: #64748b; font-size: 0.7rem; }
+        .adiantamento-item .valor { font-weight: 600; color: #0f172a; }
+        .saldo-destaque { font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -987,11 +1088,17 @@
                 <div class="card-header">
                     <div class="card-title">Lista de Despesas</div>
                     <div class="filtros-bar" style="margin: 0;">
+                        <select id="filtroPeriodoDespesas">
+                            <option value="todos">📅 Todos os períodos</option>
+                            <option value="mes">📅 Este Mês</option>
+                            <option value="anterior">📅 Mês Passado</option>
+                            <option value="ano">📅 Este Ano</option>
+                        </select>
                         <select id="filtroStatusDespesas">
                             <option value="todos">Todos os status</option>
-                            <option value="pendente">Pendentes</option>
-                            <option value="aprovado">Aprovadas</option>
-                            <option value="rejeitado">Rejeitadas</option>
+                            <option value="pendente">⏳ Pendentes</option>
+                            <option value="aprovado">✅ Aprovadas</option>
+                            <option value="rejeitado">❌ Rejeitadas</option>
                         </select>
                         <input type="text" id="buscaDespesas" placeholder="🔍 Buscar motorista, veículo..." style="flex: 1; min-width: 200px;">
                     </div>
@@ -1224,13 +1331,13 @@
 <!-- 8. Dashboard (carrega DEPOIS) -->
 <script src="js/melhorias-dashboard.js"></script>
 
-<!-- 9. Despesas de Viagem -->
+<!-- 9. Despesas de Viagem (carrega ANTES do script de inicialização) -->
 <script src="js/despesas-viagem.js"></script>
 
 <!-- 10. App Principal -->
 <script src="js/app.js"></script>
 
-<!-- 11. Scripts de inicialização customizados -->
+<!-- 11. Scripts de inicialização customizados (carrega POR ÚLTIMO) -->
 <script>
     // Data de hoje no topbar
     document.getElementById('topbarData').textContent = new Date().toLocaleDateString('pt-BR', { 
@@ -1262,6 +1369,13 @@
         const titulo = titulosPaginas[pagina] || 'Sistema';
         document.getElementById('topbarTitulo').textContent = titulo;
         document.getElementById('sidebar').classList.remove('aberta');
+        
+        // Atualiza filtros de veículos nas páginas específicas
+        if (typeof atualizarListaVeiculosNosFiltros === 'function') {
+            if (pagina === 'manutencao' || pagina === 'gastos') {
+                atualizarListaVeiculosNosFiltros();
+            }
+        }
     };
     
     // Botão sair
@@ -1271,10 +1385,24 @@
         sairDoSistema();
     });
     
-    // Função global para fechar modal
+    // Função global para fechar modal (funciona com TODOS os tipos)
     window.fecharModal = function() {
+        // Fecha modais no container geral
         const container = document.getElementById('modais');
         if (container) container.innerHTML = '';
+        
+        // Fecha modal específico de despesas de viagem
+        const modalDespesa = document.getElementById('modalDespesa');
+        if (modalDespesa) modalDespesa.classList.remove('ativo');
+        
+        // Fecha modal de comprovantes
+        const modalComprovantes = document.getElementById('modalComprovantes');
+        if (modalComprovantes) modalComprovantes.classList.remove('aberto');
+        
+        // Reseta formulário de despesas se a função existir
+        if (typeof resetarFormulario === 'function') {
+            resetarFormulario();
+        }
     };
     
     // Função global para toast
@@ -1316,6 +1444,34 @@
     // Inicializar sistema
     document.addEventListener('DOMContentLoaded', () => {
         verificarSessao();
+        
+        // Eventos dos filtros
+        const filtroManut = document.getElementById('filtroVeiculoManutencao');
+        if (filtroManut) {
+            filtroManut.addEventListener('change', () => {
+                if (typeof carregarTabelaManutencao === 'function') {
+                    carregarTabelaManutencao(filtroManut.value);
+                }
+            });
+        }
+        
+        const filtroGastos = document.getElementById('filtroVeiculoGastos');
+        if (filtroGastos) {
+            filtroGastos.addEventListener('change', () => {
+                if (typeof carregarTabelaGastos === 'function') {
+                    carregarTabelaGastos(filtroGastos.value);
+                }
+            });
+        }
+        
+        const buscaVeiculos = document.getElementById('buscaVeiculos');
+        if (buscaVeiculos) {
+            buscaVeiculos.addEventListener('input', () => {
+                if (typeof carregarTabelaVeiculos === 'function') {
+                    carregarTabelaVeiculos();
+                }
+            });
+        }
     });
 </script>
 

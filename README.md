@@ -1,189 +1,101 @@
 # 🚛 NS-FROTA - Sistema de Gestão de Frotas
-## Arquivos Atualizados - Versão Completa
+## Arquivos Atualizados - Versão 2.0 (Análise Completa + Correções)
 
-### 📦 O que foi alterado:
+### 🔍 Análise Completa Realizada
 
-| Arquivo | Status | Descrição |
-|---------|--------|-----------|
-| `index.html` | ✅ **Reescrito** | Sistema completo com sidebar, login, 9 páginas |
-| `js/supabase.js` | ✅ **Reescrito** | Integração REAL com Supabase (não é mais mock) |
-| `js/banco-dados.js` | ✅ **Reescrito** | CRUD completo + dados de demonstração |
-| `js/auth.js` | ✅ **Ajustado** | Login funcional com sessão |
-| `js/veiculos.js` | ✅ **Reescrito** | Gestão completa de veículos |
-| `js/manutencao.js` | ✅ **Reescrito** | Preventiva e corretiva |
-| `js/gastos.js` | ✅ **Reescrito** | Controle de despesas |
-| `js/chamados.js` | ✅ **Reescrito** | Ocorrências e chamados |
-| `js/checklist.js` | ✅ **Reescrito** | Inspeção diária com 15 itens |
-| `js/alocacoes.js` | ✅ **Reescrito** | Entrada/saída de veículos |
-| `js/usuarios.js` | ✅ **Reescrito** | Gestão de usuários e perfis |
-| `js/sync.js` | ✅ **Ajustado** | Não tenta localhost em produção |
-
-### 🗑️ Arquivos para REMOVER (antigos/descontinuados):
-- `js/js_despesas-viagem.js`
-- `js/js_melhorias-dashboard.js`
+Analisei profundamente todo o sistema e identifiquei vários bugs e pontos de incompatibilidade entre os módulos. Todos foram corrigidos e aprimorados.
 
 ---
 
-### 🔑 Credenciais já configuradas no código:
-- **URL:** `https://ccacecyqkseniqmrvnap.supabase.co`
-- **Key:** `sb_publishable_aRQgU6fTTModcqdb4hSgHQ_bPKp2R3m`
+### 🐛 BUGS CORRIGIDOS
+
+| Problema | Arquivo | Solução |
+|----------|---------|---------|
+| **Dashboard não carregava dados reais** | `js/melhorias-dashboard.js` | Reescrito completamente para usar o `BD` global |
+| **Campos incompatíveis no dashboard** | `js/melhorias-dashboard.js` | Usava `kmAtual`, `kmProximaManutencao`, `vencimentoIpva` → agora usa `km_atual`, `proxima_revisao_km`, `seguro_vencimento` |
+| **Status incompatíveis no dashboard** | `js/melhorias-dashboard.js` | Usava `operacao` → agora usa `disponivel`/`alocado` |
+| **`correcoes.js` sobrescrevia `abrirModalVeiculo`** | `js/correcoes.js` | Adicionado fallback `window.abrirModalVeiculo = window.abrirModalVeiculo \|\| function(...)` |
+| **`despesas-viagem.js` usava armazenamento próprio** | `js/despesas-viagem.js` | Integrado com `BD.despesasViagem` e Supabase |
+| **Faltava `filtroPeriodoDespesas` no HTML** | `index.html` | Adicionado filtro de período nas despesas de viagem |
+| **`fecharModal` sobrescrito por despesas-viagem** | `index.html` | Ordem dos scripts ajustada + função `fecharModal` melhorada para fechar TODOS os tipos de modais |
+| **Faltava CSS para cartões de despesa** | `index.html` | Adicionado estilos completos para `.cartao-despesa`, `.status-badge`, `.btn-mini`, etc. |
+| **Filtros não atualizavam tabelas automaticamente** | `index.html` | Adicionados eventos `change` e `input` nos filtros |
 
 ---
 
-### 📋 Como instalar:
+### ✨ MELHORIAS IMPLEMENTADAS
+
+#### 1. Dashboard Completamente Reescrito (`js/melhorias-dashboard.js`)
+- ✅ Integração 100% com o `BD` global
+- ✅ Usa campos corretos: `km_atual`, `proxima_revisao_km`, `seguro_vencimento`
+- ✅ Usa status corretos: `disponivel`, `alocado`, `manutencao`, `inativo`
+- ✅ Alertas inteligentes: manutenção vencida/por vencer, seguro vencido/por vencer (30 dias)
+- ✅ Alertas de veículos em manutenção e chamados abertos
+- ✅ 4 gráficos ECharts funcionando:
+  - Distribuição por Categoria (rosca)
+  - Evolução de Gastos (barras empilhadas)
+  - Top 5 Veículos com mais gastos (barras horizontais)
+  - Gastos por Categoria (pizza)
+- ✅ Funções globais: `atualizarDashboardCompleto()`, `atualizarDashboard()`, `alterarTipoGrafico()`, `exportarDashboardPDF()`
+
+#### 2. Despesas de Viagem Integrado (`js/despesas-viagem.js`)
+- ✅ Agora salva e carrega do `BD.despesasViagem` global
+- ✅ Sincroniza com Supabase automaticamente
+- ✅ Mantém compatibilidade com localStorage antigo
+- ✅ Função `carregarListaDespesas()` global para o auth.js
+- ✅ Atualiza dashboard automaticamente ao salvar
+
+#### 3. Melhorias de UX/UI (`index.html`)
+- ✅ Filtro de período adicionado nas despesas de viagem
+- ✅ CSS completo para cartões de despesa com design profissional
+- ✅ Filtros atualizam tabelas em tempo real
+- ✅ `fecharModal()` funciona para TODOS os tipos de modais
+- ✅ Atualiza lista de veículos nos filtros ao navegar entre páginas
+- ✅ `alert()` substituído por toasts visuais em todo o sistema
+
+#### 4. Correções.js Seguro (`js/correcoes.js`)
+- ✅ Não sobrescreve mais funções já definidas
+- ✅ Usa padrão `window.funcao = window.funcao || function(...)`
+
+---
+
+### 📦 ARQUIVOS INCLUÍDOS NO PACOTE
+
+| Arquivo | Status |
+|---------|--------|
+| `index.html` | ✅ **Atualizado** (filtros, CSS, eventos, fecharModal) |
+| `js/supabase.js` | ✅ Integração real com Supabase |
+| `js/banco-dados.js` | ✅ CRUD completo + dados demo |
+| `js/auth.js` | ✅ Login e sessão |
+| `js/veiculos.js` | ✅ Gestão de veículos |
+| `js/manutencao.js` | ✅ Preventiva e corretiva |
+| `js/gastos.js` | ✅ Controle de gastos |
+| `js/chamados.js` | ✅ Chamados e ocorrências |
+| `js/checklist.js` | ✅ Check-list de inspeção |
+| `js/alocacoes.js` | ✅ Alocações de veículos |
+| `js/usuarios.js` | ✅ Gestão de usuários |
+| `js/sync.js` | ✅ Ajustado para produção |
+| `js/melhorias-dashboard.js` | ✅ **Reescrito** - integração correta |
+| `js/correcoes.js` | ✅ **Corrigido** - não sobrescreve funções |
+| `js/despesas-viagem.js` | ✅ **Integrado** com BD e Supabase |
+
+---
+
+### 📝 COMO INSTALAR
 
 1. **Substitua** os arquivos na sua pasta do projeto pelos arquivos deste pacote
-2. **Remova** os arquivos descontinuados listados acima
-3. **Crie as tabelas** no Supabase (execute o SQL abaixo no SQL Editor)
-4. **Faça o deploy** (git add, commit, push)
-
----
-
-### 🗄️ SQL para criar tabelas no Supabase:
-
-```sql
--- Tabela: locais
-CREATE TABLE locais (
-  id SERIAL PRIMARY KEY,
-  nome TEXT UNIQUE NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela: veiculos
-CREATE TABLE veiculos (
-  id SERIAL PRIMARY KEY,
-  placa TEXT UNIQUE NOT NULL,
-  categoria TEXT,
-  marca TEXT,
-  modelo TEXT,
-  ano INTEGER,
-  km_atual INTEGER DEFAULT 0,
-  km_inicial INTEGER DEFAULT 0,
-  proxima_revisao_km INTEGER,
-  seguro_vencimento DATE,
-  status TEXT DEFAULT 'disponivel',
-  obra_atual TEXT,
-  responsavel TEXT,
-  data_cadastro DATE,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela: usuarios
-CREATE TABLE usuarios (
-  id SERIAL PRIMARY KEY,
-  nome TEXT NOT NULL,
-  usuario TEXT UNIQUE NOT NULL,
-  senha TEXT NOT NULL,
-  perfil TEXT DEFAULT 'operacional',
-  ativo BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela: manutencoes
-CREATE TABLE manutencoes (
-  id SERIAL PRIMARY KEY,
-  veiculoId INTEGER REFERENCES veiculos(id),
-  tipo TEXT NOT NULL,
-  servico TEXT,
-  dataPrevista DATE,
-  kmPrevisto INTEGER,
-  intervaloKm INTEGER,
-  intervaloDias INTEGER,
-  custo DECIMAL(10,2),
-  status TEXT DEFAULT 'Pendente',
-  criadoPor TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela: gastos
-CREATE TABLE gastos (
-  id SERIAL PRIMARY KEY,
-  data DATE,
-  veiculoId INTEGER REFERENCES veiculos(id),
-  tipo TEXT,
-  obra TEXT,
-  valor DECIMAL(10,2),
-  observacao TEXT,
-  lancadoPor TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela: chamados
-CREATE TABLE chamados (
-  id SERIAL PRIMARY KEY,
-  veiculoId INTEGER REFERENCES veiculos(id),
-  tipo TEXT,
-  obra TEXT,
-  km INTEGER,
-  descricao TEXT,
-  status TEXT DEFAULT 'Aberto',
-  responsavel TEXT,
-  data TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela: checklists
-CREATE TABLE checklists (
-  id SERIAL PRIMARY KEY,
-  veiculoId INTEGER REFERENCES veiculos(id),
-  placaVeiculo TEXT,
-  motorista TEXT,
-  data TIMESTAMP,
-  km INTEGER,
-  itens JSONB,
-  statusGeral TEXT,
-  observacoes TEXT,
-  criadoPor TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela: alocacoes
-CREATE TABLE alocacoes (
-  id SERIAL PRIMARY KEY,
-  veiculoId INTEGER REFERENCES veiculos(id),
-  motorista TEXT,
-  dataSaida DATE,
-  kmSaida INTEGER,
-  origem TEXT,
-  destino TEXT,
-  dataRetorno DATE,
-  kmRetorno INTEGER,
-  status TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela: despesas_viagem
-CREATE TABLE despesas_viagem (
-  id SERIAL PRIMARY KEY,
-  motorista TEXT,
-  veiculo TEXT,
-  data DATE,
-  trajeto TEXT,
-  adiantamento DECIMAL(10,2),
-  itens JSONB,
-  total DECIMAL(10,2),
-  status TEXT DEFAULT 'pendente',
-  observacoes TEXT,
-  comprovantes JSONB,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Dados padrão
-INSERT INTO locais (nome) VALUES 
-  ('Pátio Metálica'), 
-  ('Pátio Usina Conc.'), 
-  ('Obra')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO usuarios (nome, usuario, senha, perfil, ativo) VALUES
-  ('Administrador', 'admin', 'admin123', 'admin', true),
-  ('Operador', 'operador', '1234', 'operador', true)
-ON CONFLICT DO NOTHING;
+2. **Execute o SQL** no Supabase (se ainda não o fez)
+3. **Faça o deploy**:
+```bash
+git add .
+git commit -m "Análise completa: bugs corrigidos e sistema aprimorado"
+git push origin main
 ```
 
 ---
 
-### 🔐 Credenciais de acesso:
+### 🔑 CREDENCIAIS DE ACESSO
+
 | Usuário | Senha | Perfil |
 |---------|-------|--------|
 | `admin` | `admin123` | 👑 Administrador |
@@ -191,14 +103,12 @@ ON CONFLICT DO NOTHING;
 
 ---
 
-### ✨ Principais melhorias:
-- ✅ Sidebar com navegação entre todas as seções
-- ✅ Tela de login moderna e segura
-- ✅ Integração REAL com Supabase
-- ✅ Dados de demonstração carregados automaticamente
-- ✅ Design moderno com Tailwind CSS
-- ✅ Totalmente responsivo (mobile + desktop)
-- ✅ Notificações visuais (toasts)
-- ✅ Modais consistentes em todo o sistema
-- ✅ Filtros e buscas nas listagens
-- ✅ 9 páginas completas e funcionais
+### 🎯 RESUMO DAS MELHORIAS
+
+- 🚀 **Dashboard funcionando** com dados reais do sistema
+- 💰 **Despesas de viagem integradas** com o banco de dados
+- 🛡️ **Sem conflitos** entre módulos JavaScript
+- 🎨 **UI completa** com cartões de despesa estilizados
+- ⚡ **Filtros em tempo real** atualizando tabelas automaticamente
+- 🔧 **Modais funcionando** em todas as páginas
+- 📱 **Sistema robusto** e pronto para produção

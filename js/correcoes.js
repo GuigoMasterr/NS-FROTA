@@ -76,7 +76,7 @@ window.atualizarDashboardCompleto = window.atualizarDashboardCompleto || window.
 // ✅ FUNÇÕES DE VEÍCULOS - GARANTIDAS GLOBALMENTE
 // ============================================================
 
-window.abrirModalVeiculo = function(veiculo = null) {
+window.abrirModalVeiculo = window.abrirModalVeiculo || function(veiculo = null) {
   const ehEdicao = !!veiculo;
 
   const modal = document.createElement('div');
