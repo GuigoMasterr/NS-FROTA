@@ -6,7 +6,7 @@
    ============================================================ */
 
 // ============================================================
-const BD = window.BD;
+var BD = window.BD;
 // DADOS E ARMAZENAMENTO
 // ============================================================
 let adiantamentoSelecionado = null;
@@ -26,9 +26,9 @@ function carregarDados() {
 }
 
 // Salva no BD global
-function salvarDados() {
-  if (typeof salvarDados === 'function') {
-    window.salvarDados();
+function salvarDadosDespesas() {
+  if (typeof window.salvarDados === "function") {
+    window.salvarDadosDespesas();
   } else {
     localStorage.setItem('bd_frotas', JSON.stringify(BD));
   }
@@ -222,7 +222,7 @@ function abrirModalAdiantamento(adiantamento = null) {
       BD.adiantamentos.push(dados);
     }
     
-    salvarDados();
+    salvarDadosDespesas();
     alert('✅ Adiantamento liberado com sucesso!');
     fecharModal();
     renderizarTudo();
@@ -349,7 +349,7 @@ function abrirModalGastoViagem(gasto = null) {
     const adto = BD.adiantamentos.find(a => String(a.id) === String(adiantamentoSelecionado));
     if (adto) atualizarStatusAdiantamento(adto);
     
-    salvarDados();
+    salvarDadosDespesas();
     alert('✅ Gasto lançado com sucesso!');
     fecharModal();
     renderizarTudo();
@@ -701,7 +701,7 @@ function excluirAdiantamento(id) {
   BD.adiantamentos = BD.adiantamentos.filter(a => String(a.id) !== String(id));
   BD.gastosViagem = (BD.gastosViagem || []).filter(g => String(g.adiantamentoId) !== String(id));
   
-  salvarDados();
+  salvarDadosDespesas();
   alert('✅ Adiantamento excluído!');
   renderizarTudo();
 }
@@ -715,7 +715,7 @@ function excluirGastoViagem(id) {
   const adto = BD.adiantamentos.find(a => String(a.id) === String(adiantamentoSelecionado));
   if (adto) atualizarStatusAdiantamento(adto);
   
-  salvarDados();
+  salvarDadosDespesas();
   alert('✅ Gasto excluído!');
   renderizarTudo();
   atualizarDetalhesAdiantamento();
@@ -731,7 +731,7 @@ function fecharAdiantamento(id) {
     atualizarStatusAdiantamento(adto);
   }
   
-  salvarDados();
+  salvarDadosDespesas();
   alert('✅ Adiantamento fechado!');
   renderizarTudo();
 }
@@ -801,3 +801,6 @@ window.fecharAdiantamento = fecharAdiantamento;
 window.verComprovantes = verComprovantes;
 window.removerComprovanteTemp = removerComprovanteTemp;
 window.renderizarTudoDespesas = renderizarTudo;
+// ✅ Correção: disponibiliza globalmente
+window.salvarDadosDespesas = salvarDadosDespesas;
+console.log('✅ despesas-viagem.js carregado (corrigido)');

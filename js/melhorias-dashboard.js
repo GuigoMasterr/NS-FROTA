@@ -1,23 +1,17 @@
 /* ============================================================
-   DASHBOARD APRIMORADO - Gestão de Frotas
-   Integração: 100% compatível com o novo sistema
+   DASHBOARD APRIMORADO - ✅ CORRIGIDO
+   Correção: const BD → var BD (evita redeclaração)
    ============================================================ */
-
-// ============================================================
-// VARIÁVEIS GLOBAIS
-// ============================================================
 let graficoCategoria = null;
 let graficoGastos = null;
 let graficoTopVeiculos = null;
 let graficoGastosCategoria = null;
 
-// ============================================================
-// INICIALIZAÇÃO
-// ============================================================
-const BD = window.BD;
+// ✅ CORREÇÃO: var permite redeclaração, const não
+var BD = window.BD;
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 [DASHBOARD] Inicializando...');
-  // Aguarda o BD ser carregado pelo auth.js
   setTimeout(() => {
     inicializarDashboard();
     console.log('✅ [DASHBOARD] Inicializado com sucesso!');
@@ -28,13 +22,10 @@ function inicializarDashboard() {
   try {
     atualizarDashboardCompleto();
   } catch (erro) {
-    console.error('❌ [DASHBOARD] Erro na inicialização:', erro);
+    console.error('❌ [DASHBOARD] Erro:', erro);
   }
 }
 
-// ============================================================
-// FUNÇÕES AUXILIARES
-// ============================================================
 function formatarMoeda(v) {
   return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -45,11 +36,11 @@ function formatarKM(km) {
   return k.toLocaleString('pt-BR');
 }
 
-// ============================================================
-// ATUALIZAR DASHBOARD COMPLETO (chamado globalmente)
-// ============================================================
 window.atualizarDashboardCompleto = function() {
-  if (!window.BD) {
+  // ✅ Sempre recarrega BD do window (garante dados atualizados)
+  BD = window.BD || { veiculos: [], gastos: [], chamados: [], manutencoes: [], alocacoes: [], gastosViagem: [] };
+  
+  if (!BD || !BD.veiculos) {
     console.warn('⚠️ [DASHBOARD] BD ainda não disponível, tentando novamente...');
     setTimeout(atualizarDashboardCompleto, 300);
     return;
@@ -61,12 +52,8 @@ window.atualizarDashboardCompleto = function() {
   verificarAlertas(dados);
 };
 
-// Alias para compatibilidade
 window.atualizarDashboard = window.atualizarDashboardCompleto;
 
-// ============================================================
-// CARREGAR DADOS DO BD GLOBAL
-// ============================================================
 function carregarDadosDoBD() {
   const veiculos = BD.veiculos || [];
   const gastos = BD.gastos || [];
@@ -75,7 +62,6 @@ function carregarDadosDoBD() {
   const alocacoes = BD.alocacoes || [];
   const gastosViagem = BD.gastosViagem || [];
   
-  // Inclui gastos de viagem nos gastos totais
   const todosGastos = [...gastos, ...gastosViagem.map(gv => ({
     data: gv.data,
     valor: gv.valor || 0,
@@ -86,9 +72,6 @@ function carregarDadosDoBD() {
   return { veiculos, gastos: todosGastos, chamados, manutencoes, alocacoes, gastosViagem };
 }
 
-// ============================================================
-// CARDS DE ESTATÍSTICAS
-// ============================================================
 function atualizarCardsEstatisticos(dados) {
   const { veiculos, gastos, chamados } = dados;
   const hoje = new Date();
@@ -96,26 +79,17 @@ function atualizarCardsEstatisticos(dados) {
   const anoAtual = hoje.getFullYear();
   
   const total = veiculos.length;
-  
-  // Em operação = disponivel OU alocado
   const emOperacao = veiculos.filter(v => v.status === 'disponivel' || v.status === 'alocado').length;
   const emManutencao = veiculos.filter(v => v.status === 'manutencao').length;
+  const chamadosAbertos = Array.isArray(chamados) ? chamados.filter(c => c.status !== 'Resolvido' && c.status !== 'fechado').length : 0;
   
-  // Chamados abertos = status não é Resolvido
-  const chamadosAbertos = Array.isArray(chamados) 
-    ? chamados.filter(c => c.status !== 'Resolvido' && c.status !== 'fechado').length 
-    : 0;
-  
-  // Gastos do mês atual
   const gastosMes = gastos.filter(g => {
     const d = new Date(g.data + 'T00:00:00');
     return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
   }).reduce((s, g) => s + (Number(g.valor) || 0), 0);
   
-  // KM total rodado = soma de km_atual de todos os veículos
   const kmTotal = veiculos.reduce((s, v) => s + (Number(v.km_atual) || 0), 0);
   
-  // Atualiza cada card
   atualizarCard('cardTotalVeiculos', total, 'cadastrados');
   atualizarCard('cardEmOperacao', emOperacao, `${total ? Math.round(emOperacao/total*100) : 0}% da frota`);
   atualizarCard('cardEmManutencao', emManutencao, 'precisam de atenção');
@@ -123,7 +97,6 @@ function atualizarCardsEstatisticos(dados) {
   atualizarCard('cardGastosMes', formatarMoeda(gastosMes), 'gastos este mês');
   atualizarCard('cardKmRodados', formatarKM(kmTotal), 'Total rodado');
   
-  // Atualiza também o elemento de porcentagem separado
   const elPct = document.getElementById('cardEmOperacaoPct');
   if (elPct) elPct.textContent = `${total ? Math.round(emOperacao/total*100) : 0}% da frota`;
 }
@@ -131,24 +104,18 @@ function atualizarCardsEstatisticos(dados) {
 function atualizarCard(id, valor, detalhe = '') {
   const el = document.getElementById(id);
   if (!el) return;
-  
   const valorEl = el.querySelector('.stat-valor');
   const detalheEl = el.querySelector('.stat-detalhe');
-  
   if (valorEl) valorEl.textContent = valor;
   if (detalheEl && detalhe) detalheEl.textContent = detalhe;
 }
 
-// ============================================================
-// GRÁFICOS (ECharts)
-// ============================================================
 function inicializarGraficos(dados) {
   if (typeof echarts === 'undefined') {
     console.warn('⚠️ [DASHBOARD] ECharts não carregado');
     return;
   }
   
-  // Limpa gráficos anteriores
   [graficoCategoria, graficoGastos, graficoTopVeiculos, graficoGastosCategoria]
     .forEach(g => g && g.dispose());
   
@@ -157,7 +124,6 @@ function inicializarGraficos(dados) {
   criarGraficoTopVeiculos(dados);
   criarGraficoGastosCategoria(dados);
   
-  // Responsividade
   window.addEventListener('resize', () => {
     [graficoCategoria, graficoGastos, graficoTopVeiculos, graficoGastosCategoria]
       .forEach(g => g && g.resize());
@@ -246,14 +212,12 @@ function criarGraficoTopVeiculos(dados) {
   
   const porVeiculo = {};
   dados.gastos.forEach(g => {
-    // Busca placa pelo veiculoId ou usa o campo veiculo
     let placa = g.veiculo;
     if (!placa && g.veiculoId) {
       const v = (BD.veiculos || []).find(x => String(x.id) === String(g.veiculoId));
       placa = v?.placa || 'Sem ID';
     }
     if (!placa) placa = 'Sem identificação';
-    
     porVeiculo[placa] = (porVeiculo[placa] || 0) + (Number(g.valor) || 0);
   });
   
@@ -266,7 +230,7 @@ function criarGraficoTopVeiculos(dados) {
     tooltip: { 
       trigger: 'axis', 
       axisPointer: { type: 'shadow' }, 
-      formatter: p => `${p[0].name}<br/>R$ ${Number(p[0].value).toLocaleString('pt-BR')}` 
+      formatter: p => `${p[0].name}<br />R$ ${Number(p[0].value).toLocaleString('pt-BR')}` 
     },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: { type: 'value', axisLabel: { formatter: 'R$ {value}' } },
@@ -311,9 +275,6 @@ function criarGraficoGastosCategoria(dados) {
   });
 }
 
-// ============================================================
-// ALTERAR TIPO DE GRÁFICO
-// ============================================================
 window.alterarTipoGrafico = function(tipo) {
   if (!graficoGastos) return;
   graficoGastos.setOption({
@@ -326,9 +287,6 @@ window.alterarTipoGrafico = function(tipo) {
   });
 };
 
-// ============================================================
-// ALERTAS
-// ============================================================
 function verificarAlertas(dados) {
   const container = document.getElementById('painelAlertas');
   if (!container) return;
@@ -340,7 +298,6 @@ function verificarAlertas(dados) {
     const kmAtual = Number(v.km_atual) || 0;
     const kmProxima = Number(v.proxima_revisao_km) || 0;
     
-    // Alerta de manutenção por KM
     if (kmProxima > 0) {
       const faltante = kmProxima - kmAtual;
       if (faltante <= 0) {
@@ -350,27 +307,20 @@ function verificarAlertas(dados) {
       }
     }
     
-    // Alerta de vencimento do seguro
     if (v.seguro_vencimento) {
       try {
         const venc = new Date(v.seguro_vencimento + 'T00:00:00');
         const dias = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
-        
-        if (dias <= 0) {
-          alertas.push({ tipo: 'perigo', texto: `🔴 ${v.placa}: Seguro VENCIDO!` });
-        } else if (dias <= 30) {
-          alertas.push({ tipo: 'aviso', texto: `🟠 ${v.placa}: Seguro vence em ${dias} dias` });
-        }
+        if (dias <= 0) alertas.push({ tipo: 'perigo', texto: `🔴 ${v.placa}: Seguro VENCIDO!` });
+        else if (dias <= 30) alertas.push({ tipo: 'aviso', texto: `🟠 ${v.placa}: Seguro vence em ${dias} dias` });
       } catch(e) {}
     }
     
-    // Alerta de veículo em manutenção
     if (v.status === 'manutencao') {
       alertas.push({ tipo: 'info', texto: `🔧 ${v.placa}: Veículo em manutenção` });
     }
   });
   
-  // Alertas de chamados abertos
   const chamadosAbertos = (dados.chamados || []).filter(c => c.status !== 'Resolvido');
   chamadosAbertos.slice(0, 3).forEach(c => {
     const v = (BD.veiculos || []).find(x => String(x.id) === String(c.veiculoId));
@@ -379,28 +329,18 @@ function verificarAlertas(dados) {
   });
   
   if (alertas.length === 0) {
-    container.innerHTML = `
-      <div class="alerta alerta-sucesso">
-        <i class="fa-solid fa-check-circle"></i>
-        <span>Nenhum alerta no momento. Tudo em ordem!</span>
-      </div>`;
+    container.innerHTML = `<div class="alerta alerta-sucesso"><i class="fa-solid fa-check-circle"></i><span>Nenhum alerta no momento. Tudo em ordem!</span></div>`;
     return;
   }
   
-  // Mostra apenas os 10 alertas mais importantes
   container.innerHTML = alertas.slice(0, 10).map(a => `
-    <div class="alerta alerta-${a.tipo}">
-      <span>${a.texto}</span>
-    </div>
+    <div class="alerta alerta-${a.tipo}"><span>${a.texto}</span></div>
   `).join('');
 }
 
-// ============================================================
-// EXPORTAR PDF
-// ============================================================
 window.exportarDashboardPDF = function() {
-  if (typeof mostrarToast === 'function') {
-    mostrarToast('Preparando para exportar...', 'info');
-  }
+  if (typeof mostrarToast === 'function') mostrarToast('Preparando para exportar...', 'info');
   setTimeout(() => window.print(), 300);
 };
+
+console.log('✅ melhorias-dashboard.js carregado');
