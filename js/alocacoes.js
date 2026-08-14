@@ -3,11 +3,12 @@
 // ==================================================
 
 // ✅ Abre modal de nova alocação
-const BD = window.BD;
+// ✅ CORREÇÃO: Função getBD() para dados sempre atualizados
+function getBD() { return window.BD || {}; }
 function abrirModalAlocacao(alocacao = null) {
   const ehEdicao = !!alocacao;
-  const veiculos = BD.veiculos || [];
-  const locais = BD.locais || [];
+  const veiculos = getBD().veiculos || [];
+  const locais = getBD().locais || [];
   
   const opcoesVeiculos = veiculos.map(v => 
     `<option value="${v.id}" ${String(alocacao?.veiculoId) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo}</option>`
@@ -131,7 +132,7 @@ async function carregarTabelaAlocacoes() {
   const corpo = document.getElementById('tabelaAlocacoes');
   if (!corpo) return;
   
-  const alocacoes = BD.alocacoes || [];
+  const alocacoes = getBD().alocacoes || [];
   
   if (!alocacoes.length) {
     corpo.innerHTML = `<tr><td colspan="10" class="estado-vazio">
@@ -142,7 +143,7 @@ async function carregarTabelaAlocacoes() {
   }
   
   corpo.innerHTML = alocacoes.map(a => {
-    const veic = (BD.veiculos || []).find(v => String(v.id) === String(a.veiculoId));
+    const veic = (getBD().veiculos || []).find(v => String(v.id) === String(a.veiculoId));
     const statusClasse = a.status === 'Concluída' ? 'badge-success' : 
                          a.status === 'Em Andamento' ? 'badge-warning' : 'badge-secondary';
     
@@ -172,7 +173,7 @@ async function carregarTabelaAlocacoes() {
 async function excluirAlocacao(id) {
   if (!confirm('⚠️ Tem certeza que deseja excluir esta alocação?')) return;
   
-  BD.alocacoes = (BD.alocacoes || []).filter(a => String(a.id) !== String(id));
+  getBD().alocacoes = (getBD().alocacoes || []).filter(a => String(a.id) !== String(id));
   
   if (typeof salvarDados === 'function') salvarDados();
   else localStorage.setItem('bd_frotas', JSON.stringify(BD));

@@ -3,7 +3,8 @@
 // ==================================================
 
 // Itens padrão do check-list
-const BD = window.BD;
+// ✅ CORREÇÃO: Função getBD() para dados sempre atualizados
+function getBD() { return window.BD || {}; }
 const ITENS_CHECKLIST = [
   { id: 'pneus', label: '🚛 Pneus e Calibragem' },
   { id: 'freios', label: '🛑 Freios' },
@@ -25,7 +26,7 @@ const ITENS_CHECKLIST = [
 // ✅ Abre modal de novo check-list
 function abrirModalChecklist(checklist = null) {
   const ehEdicao = !!checklist;
-  const veiculos = BD.veiculos || [];
+  const veiculos = getBD().veiculos || [];
   
   const opcoesVeiculos = veiculos.map(v => 
     `<option value="${v.id}" ${String(checklist?.veiculoId) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo}</option>`
@@ -172,7 +173,7 @@ async function carregarTabelaChecklist() {
   const corpo = document.getElementById('tabelaChecklist');
   if (!corpo) return;
   
-  const checklists = BD.checklists || [];
+  const checklists = getBD().checklists || [];
   
   if (!checklists.length) {
     corpo.innerHTML = `<tr><td colspan="6" class="estado-vazio">
@@ -192,7 +193,7 @@ async function carregarTabelaChecklist() {
   };
   
   corpo.innerHTML = ordenados.slice(0, 50).map(c => {
-    const veic = (BD.veiculos || []).find(v => String(v.id) === String(c.veiculoId));
+    const veic = (getBD().veiculos || []).find(v => String(v.id) === String(c.veiculoId));
     const dataFormatada = c.data ? new Date(c.data).toLocaleDateString('pt-BR') : '—';
     
     return `<tr>

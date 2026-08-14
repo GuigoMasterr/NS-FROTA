@@ -162,14 +162,41 @@ function sincronizarUsuarioNaTela() {
   }
 }
 
-// Conecta o formulário de login
-document.addEventListener('DOMContentLoaded', () => {
+
+// ==================================================
+// ✅ CORREÇÃO: Inicialização imediata + onclick direto
+// ==================================================
+function inicializarAuth() {
+  const btnLogin = document.querySelector('#formLogin button[type="submit"]');
   const form = document.getElementById('formLogin');
-  if (form) {
-    form.addEventListener('submit', e => {
+  
+  // Conecta onclick diretamente no botão (mais robusto)
+  if (btnLogin) {
+    btnLogin.onclick = function(e) {
       e.preventDefault();
       entrarNoSistema();
-    });
+      return false;
+    };
   }
+  
+  // Também conecta o submit do formulário como fallback
+  if (form) {
+    form.onsubmit = function(e) {
+      e.preventDefault();
+      entrarNoSistema();
+      return false;
+    };
+  }
+  
   sincronizarUsuarioNaTela();
-});
+  verificarSessao();
+}
+
+// Executa imediatamente (scripts estão no final do body)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', inicializarAuth);
+} else if (document.body) {
+  inicializarAuth();
+} else {
+  setTimeout(inicializarAuth, 50);
+}

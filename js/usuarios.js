@@ -3,7 +3,8 @@
 // ==================================================
 
 // ✅ Abre modal de cadastro/edição de usuário
-const BD = window.BD;
+// ✅ CORREÇÃO: Função getBD() para dados sempre atualizados
+function getBD() { return window.BD || {}; }
 function abrirModalUsuario(usuario = null) {
   const ehEdicao = !!usuario;
   const modal = document.createElement('div');
@@ -83,7 +84,7 @@ function abrirModalUsuario(usuario = null) {
     
     // Verifica usuário duplicado
     if (!ehEdicao) {
-      const existe = BD.usuarios?.find(u => u.usuario === usuarioLogin);
+      const existe = getBD().usuarios?.find(u => u.usuario === usuarioLogin);
       if (existe) {
         alert('❌ Já existe um usuário com este login!');
         return;
@@ -121,7 +122,7 @@ function carregarTabelaUsuarios() {
   const corpo = document.getElementById('tabelaUsuarios');
   if (!corpo) return;
   
-  const usuarios = BD.usuarios || [];
+  const usuarios = getBD().usuarios || [];
   
   if (!usuarios.length) {
     corpo.innerHTML = `<tr><td colspan="5" class="estado-vazio">
@@ -161,7 +162,7 @@ async function excluirUsuario(id) {
   if (!confirm('⚠️ Tem certeza que deseja excluir este usuário?')) return;
   
   // Remove diretamente do BD (evita conflito de nome com a função do banco-dados)
-  BD.usuarios = (BD.usuarios || []).filter(u => String(u.id) !== String(id));
+  getBD().usuarios = (getBD().usuarios || []).filter(u => String(u.id) !== String(id));
   
   // Salva no armazenamento
   if (typeof salvarDados === 'function') salvarDados();

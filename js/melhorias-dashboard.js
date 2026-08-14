@@ -8,15 +8,26 @@ let graficoTopVeiculos = null;
 let graficoGastosCategoria = null;
 
 // ✅ CORREÇÃO: var permite redeclaração, const não
-var BD = window.BD;
-
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 [DASHBOARD] Inicializando...');
+// ✅ CORREÇÃO: Função getBD() para dados sempre atualizados
+function getBD() { return window.BD || {}; }
+// ==================================================
+// ✅ CORREÇÃO: Inicialização imediata
+// ==================================================
+function inicializarDashboardModule() {
+  console.log("🚀 [DASHBOARD] Inicializando...");
   setTimeout(() => {
     inicializarDashboard();
-    console.log('✅ [DASHBOARD] Inicializado com sucesso!');
+    console.log("✅ [DASHBOARD] Inicializado com sucesso!");
   }, 500);
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", inicializarDashboardModule);
+} else if (document.body) {
+  inicializarDashboardModule();
+} else {
+  setTimeout(inicializarDashboardModule, 50);
+}
 
 function inicializarDashboard() {
   try {
@@ -40,7 +51,7 @@ window.atualizarDashboardCompleto = function() {
   // ✅ Sempre recarrega BD do window (garante dados atualizados)
   BD = window.BD || { veiculos: [], gastos: [], chamados: [], manutencoes: [], alocacoes: [], gastosViagem: [] };
   
-  if (!BD || !BD.veiculos) {
+  if (!getBD() || !getBD().veiculos) {
     console.warn('⚠️ [DASHBOARD] BD ainda não disponível, tentando novamente...');
     setTimeout(atualizarDashboardCompleto, 300);
     return;
@@ -55,12 +66,12 @@ window.atualizarDashboardCompleto = function() {
 window.atualizarDashboard = window.atualizarDashboardCompleto;
 
 function carregarDadosDoBD() {
-  const veiculos = BD.veiculos || [];
-  const gastos = BD.gastos || [];
-  const chamados = BD.chamados || [];
-  const manutencoes = BD.manutencoes || [];
-  const alocacoes = BD.alocacoes || [];
-  const gastosViagem = BD.gastosViagem || [];
+  const veiculos = getBD().veiculos || [];
+  const gastos = getBD().gastos || [];
+  const chamados = getBD().chamados || [];
+  const manutencoes = getBD().manutencoes || [];
+  const alocacoes = getBD().alocacoes || [];
+  const gastosViagem = getBD().gastosViagem || [];
   
   const todosGastos = [...gastos, ...gastosViagem.map(gv => ({
     data: gv.data,
@@ -214,7 +225,7 @@ function criarGraficoTopVeiculos(dados) {
   dados.gastos.forEach(g => {
     let placa = g.veiculo;
     if (!placa && g.veiculoId) {
-      const v = (BD.veiculos || []).find(x => String(x.id) === String(g.veiculoId));
+      const v = (getBD().veiculos || []).find(x => String(x.id) === String(g.veiculoId));
       placa = v?.placa || 'Sem ID';
     }
     if (!placa) placa = 'Sem identificação';
@@ -323,7 +334,7 @@ function verificarAlertas(dados) {
   
   const chamadosAbertos = (dados.chamados || []).filter(c => c.status !== 'Resolvido');
   chamadosAbertos.slice(0, 3).forEach(c => {
-    const v = (BD.veiculos || []).find(x => String(x.id) === String(c.veiculoId));
+    const v = (getBD().veiculos || []).find(x => String(x.id) === String(c.veiculoId));
     const placa = v?.placa || 'Veículo';
     alertas.push({ tipo: 'aviso', texto: `📢 ${placa}: ${c.tipo} - ${c.status}` });
   });

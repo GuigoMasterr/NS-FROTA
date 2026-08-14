@@ -6,7 +6,8 @@
    ============================================================ */
 
 // ============================================================
-var BD = window.BD;
+// ✅ CORREÇÃO: Função getBD() para dados sempre atualizados
+function getBD() { return window.BD || {}; }
 // DADOS E ARMAZENAMENTO
 // ============================================================
 let adiantamentoSelecionado = null;
@@ -15,9 +16,9 @@ let comprovantesTemp = [];
 // Garante que a estrutura existe no BD
 function garantirEstruturaBD() {
   if (!window.BD) window.BD = {};
-  if (!BD.adiantamentos) BD.adiantamentos = [];
-  if (!BD.gastosViagem) BD.gastosViagem = [];
-  if (!BD.despesasViagem) BD.despesasViagem = [];
+  if (!getBD().adiantamentos) getBD().adiantamentos = [];
+  if (!getBD().gastosViagem) getBD().gastosViagem = [];
+  if (!getBD().despesasViagem) getBD().despesasViagem = [];
 }
 
 // Carrega dados do BD global
@@ -28,9 +29,10 @@ function carregarDados() {
 // Salva no BD global
 function salvarDadosDespesas() {
   if (typeof window.salvarDados === "function") {
-    window.salvarDadosDespesas();
+    // ✅ CORREÇÃO: Chamar window.salvarDados(), não window.salvarDadosDespesas()
+    window.salvarDados();
   } else {
-    localStorage.setItem('bd_frotas', JSON.stringify(BD));
+    localStorage.setItem('bd_frotas', JSON.stringify(getBD()));
   }
   // Atualiza dashboard
   if (window.atualizarDashboardCompleto) setTimeout(() => window.atualizarDashboardCompleto(), 100);
@@ -51,16 +53,16 @@ function formatarData(d) {
 }
 
 function obterUsuarios() {
-  return BD.usuarios || [];
+  return getBD().usuarios || [];
 }
 
 function obterVeiculos() {
-  return BD.veiculos || [];
+  return getBD().veiculos || [];
 }
 
 // Calcula o total gasto em um adiantamento
 function calcularTotalGasto(adiantamentoId) {
-  return (BD.gastosViagem || [])
+  return (getBD().gastosViagem || [])
     .filter(g => String(g.adiantamentoId) === String(adiantamentoId))
     .reduce((s, g) => s + Number(g.valor || 0), 0);
 }
@@ -108,7 +110,7 @@ function abrirModalAdiantamento(adiantamento = null) {
   const ehEdicao = !!adiantamento;
   const usuarios = obterUsuarios();
   const veiculos = obterVeiculos();
-  const locais = BD.locais || [];
+  const locais = getBD().locais || [];
   
   const opcoesUsuarios = usuarios.map(u => 
     `<option value="${u.nome}" ${adiantamento?.motorista === u.nome ? 'selected' : ''}>${u.nome} (${u.usuario})</option>`
@@ -208,18 +210,18 @@ function abrirModalAdiantamento(adiantamento = null) {
     };
     
     if (ehEdicao) {
-      const idx = BD.adiantamentos.findIndex(a => String(a.id) === String(adiantamento.id));
+      const idx = getBD().adiantamentos.findIndex(a => String(a.id) === String(adiantamento.id));
       if (idx >= 0) {
-        BD.adiantamentos[idx] = { ...BD.adiantamentos[idx], ...dados };
-        atualizarStatusAdiantamento(BD.adiantamentos[idx]);
+        getBD().adiantamentos[idx] = { ...getBD().adiantamentos[idx], ...dados };
+        atualizarStatusAdiantamento(getBD().adiantamentos[idx]);
       }
     } else {
-      dados.id = BD.adiantamentos.length > 0 ? Math.max(...BD.adiantamentos.map(a => a.id || 0)) + 1 : 1;
+      dados.id = getBD().adiantamentos.length > 0 ? Math.max(...getBD().adiantamentos.map(a => a.id || 0)) + 1 : 1;
       dados.status = 'liberado';
       dados.totalGasto = 0;
       dados.saldoRestante = valor;
       dados.percentualUsado = 0;
-      BD.adiantamentos.push(dados);
+      getBD().adiantamentos.push(dados);
     }
     
     salvarDadosDespesas();
@@ -239,7 +241,7 @@ function abrirModalGastoViagem(gasto = null) {
   }
   
   const ehEdicao = !!gasto;
-  const adiantamento = BD.adiantamentos.find(a => String(a.id) === String(adiantamentoSelecionado));
+  const adiantamento = getBD().adiantamentos.find(a => String(a.id) === String(adiantamentoSelecionado));
   if (!adiantamento) return;
   
   comprovantesTemp = gasto?.comprovantes ? [...gasto.comprovantes] : [];
@@ -338,15 +340,15 @@ function abrirModalGastoViagem(gasto = null) {
     };
     
     if (ehEdicao) {
-      const idx = BD.gastosViagem.findIndex(g => String(g.id) === String(gasto.id));
-      if (idx >= 0) BD.gastosViagem[idx] = { ...BD.gastosViagem[idx], ...dados };
+      const idx = getBD().gastosViagem.findIndex(g => String(g.id) === String(gasto.id));
+      if (idx >= 0) getBD().gastosViagem[idx] = { ...getBD().gastosViagem[idx], ...dados };
     } else {
-      dados.id = BD.gastosViagem.length > 0 ? Math.max(...BD.gastosViagem.map(g => g.id || 0)) + 1 : 1;
-      BD.gastosViagem.push(dados);
+      dados.id = getBD().gastosViagem.length > 0 ? Math.max(...getBD().gastosViagem.map(g => g.id || 0)) + 1 : 1;
+      getBD().gastosViagem.push(dados);
     }
     
     // Atualiza status do adiantamento
-    const adto = BD.adiantamentos.find(a => String(a.id) === String(adiantamentoSelecionado));
+    const adto = getBD().adiantamentos.find(a => String(a.id) === String(adiantamentoSelecionado));
     if (adto) atualizarStatusAdiantamento(adto);
     
     salvarDadosDespesas();
@@ -411,7 +413,7 @@ function renderizarListaAdiantamentos() {
   const filtroStatus = document.getElementById('filtroStatusAdiantamento')?.value || 'todos';
   const busca = (document.getElementById('buscaAdiantamento')?.value || '').toLowerCase();
   
-  let lista = [...(BD.adiantamentos || [])];
+  let lista = [...(getBD().adiantamentos || [])];
   
   // Atualiza status de todos
   lista = lista.map(a => atualizarStatusAdiantamento({ ...a }));
@@ -525,7 +527,7 @@ function atualizarSelectAdiantamentos() {
   const select = document.getElementById('filtroAdiantamentoGasto');
   if (!select) return;
   
-  const lista = (BD.adiantamentos || [])
+  const lista = (getBD().adiantamentos || [])
     .map(a => atualizarStatusAdiantamento({ ...a }))
     .filter(a => a.status !== 'fechado')
     .sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -554,7 +556,7 @@ function atualizarDetalhesAdiantamento() {
   }
   
   adiantamentoSelecionado = select.value;
-  const adiantamento = BD.adiantamentos.find(a => String(a.id) === String(adiantamentoSelecionado));
+  const adiantamento = getBD().adiantamentos.find(a => String(a.id) === String(adiantamentoSelecionado));
   if (!adiantamento) return;
   
   atualizarStatusAdiantamento(adiantamento);
@@ -608,7 +610,7 @@ function renderizarListaGastos() {
     return;
   }
   
-  const gastos = (BD.gastosViagem || [])
+  const gastos = (getBD().gastosViagem || [])
     .filter(g => String(g.adiantamentoId) === String(adiantamentoSelecionado))
     .sort((a, b) => new Date(b.data) - new Date(a.data));
   
@@ -698,8 +700,8 @@ function verComprovantes(comprovantes) {
 function excluirAdiantamento(id) {
   if (!confirm('⚠️ Tem certeza? Isso também excluirá todos os gastos deste adiantamento!')) return;
   
-  BD.adiantamentos = BD.adiantamentos.filter(a => String(a.id) !== String(id));
-  BD.gastosViagem = (BD.gastosViagem || []).filter(g => String(g.adiantamentoId) !== String(id));
+  getBD().adiantamentos = getBD().adiantamentos.filter(a => String(a.id) !== String(id));
+  getBD().gastosViagem = (getBD().gastosViagem || []).filter(g => String(g.adiantamentoId) !== String(id));
   
   salvarDadosDespesas();
   alert('✅ Adiantamento excluído!');
@@ -709,10 +711,10 @@ function excluirAdiantamento(id) {
 function excluirGastoViagem(id) {
   if (!confirm('⚠️ Tem certeza que deseja excluir este gasto?')) return;
   
-  BD.gastosViagem = (BD.gastosViagem || []).filter(g => String(g.id) !== String(id));
+  getBD().gastosViagem = (getBD().gastosViagem || []).filter(g => String(g.id) !== String(id));
   
   // Atualiza status do adiantamento
-  const adto = BD.adiantamentos.find(a => String(a.id) === String(adiantamentoSelecionado));
+  const adto = getBD().adiantamentos.find(a => String(a.id) === String(adiantamentoSelecionado));
   if (adto) atualizarStatusAdiantamento(adto);
   
   salvarDadosDespesas();
@@ -724,7 +726,7 @@ function excluirGastoViagem(id) {
 function fecharAdiantamento(id) {
   if (!confirm('⚠️ Deseja fechar este adiantamento? Não será possível lançar mais gastos.')) return;
   
-  const adto = BD.adiantamentos.find(a => String(a.id) === String(id));
+  const adto = getBD().adiantamentos.find(a => String(a.id) === String(id));
   if (adto) {
     adto.fechado = true;
     adto.status = 'fechado';
@@ -740,7 +742,7 @@ function fecharAdiantamento(id) {
 // CARDS RESUMO
 // ============================================================
 function atualizarCardsResumo() {
-  const adiantamentos = (BD.adiantamentos || []).map(a => atualizarStatusAdiantamento({ ...a }));
+  const adiantamentos = (getBD().adiantamentos || []).map(a => atualizarStatusAdiantamento({ ...a }));
   
   const totalAdiantado = adiantamentos.reduce((s, a) => s + Number(a.valor || 0), 0);
   const totalGasto = adiantamentos.reduce((s, a) => s + Number(a.totalGasto || 0), 0);
@@ -785,10 +787,22 @@ document.addEventListener('change', (e) => {
 });
 
 // Inicializa quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', () => {
+// ==================================================
+// ✅ CORREÇÃO: Inicialização imediata
+// ==================================================
+function inicializarDespesas() {
   carregarDados();
   renderizarTudo();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", inicializarDespesas);
+} else if (document.body) {
+  inicializarDespesas();
+} else {
+  setTimeout(inicializarDespesas, 50);
+}
+
 
 // Expor funções globalmente
 window.trocarAbaDespesas = trocarAbaDespesas;

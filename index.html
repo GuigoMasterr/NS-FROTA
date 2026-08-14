@@ -1781,38 +1781,47 @@
         }
     };
     
-    // Inicializar sistema
-    document.addEventListener('DOMContentLoaded', () => {
-        verificarSessao();
-        
+    // ==================================================
+    // ✅ CORREÇÃO: Inicialização imediata
+    // verificarSessao() já é chamado no auth.js
+    // ==================================================
+    function inicializarSistemaInline() {
         // Eventos dos filtros
-        const filtroManut = document.getElementById('filtroVeiculoManutencao');
+        const filtroManut = document.getElementById("filtroVeiculoManutencao");
         if (filtroManut) {
-            filtroManut.addEventListener('change', () => {
-                if (typeof carregarTabelaManutencao === 'function') {
+            filtroManut.addEventListener("change", () => {
+                if (typeof carregarTabelaManutencao === "function") {
                     carregarTabelaManutencao(filtroManut.value);
                 }
             });
         }
         
-        const filtroGastos = document.getElementById('filtroVeiculoGastos');
+        const filtroGastos = document.getElementById("filtroVeiculoGastos");
         if (filtroGastos) {
-            filtroGastos.addEventListener('change', () => {
-                if (typeof carregarTabelaGastos === 'function') {
+            filtroGastos.addEventListener("change", () => {
+                if (typeof carregarTabelaGastos === "function") {
                     carregarTabelaGastos(filtroGastos.value);
                 }
             });
         }
         
-        const buscaVeiculos = document.getElementById('buscaVeiculos');
+        const buscaVeiculos = document.getElementById("buscaVeiculos");
         if (buscaVeiculos) {
-            buscaVeiculos.addEventListener('input', () => {
-                if (typeof carregarTabelaVeiculos === 'function') {
+            buscaVeiculos.addEventListener("input", () => {
+                if (typeof carregarTabelaVeiculos === "function") {
                     carregarTabelaVeiculos();
                 }
             });
         }
-    });
+    }
+    
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", inicializarSistemaInline);
+    } else if (document.body) {
+        inicializarSistemaInline();
+    } else {
+        setTimeout(inicializarSistemaInline, 50);
+    }
 </script>
 
 </body>

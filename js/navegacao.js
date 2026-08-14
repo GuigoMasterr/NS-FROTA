@@ -7,7 +7,6 @@ if (!window.__navegacaoInicializada) {
 
   paginas.forEach(secao => {
     secao.classList.remove('ativa');
-    secao.style.display = 'none';
   });
 
   if (!alvo) {
@@ -16,7 +15,6 @@ if (!window.__navegacaoInicializada) {
   }
 
   alvo.classList.add('ativa');
-  alvo.style.display = 'block';
 
   document.querySelectorAll('.sidebar-link').forEach(botao => botao.classList.remove('ativo'));
   const botaoAtivo = document.querySelector('.sidebar-link[data-pagina="' + pagina + '"]');
@@ -55,9 +53,21 @@ if (!window.__navegacaoInicializada) {
     }
   });
 
-  window.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('sistemaPrincipal')) {
-      mostrarPagina('dashboard');
-    }
-  });
+
+// ==================================================
+// ✅ CORREÇÃO: Inicialização imediata
+// ==================================================
+function inicializarNavegacao() {
+  if (document.getElementById('sistemaPrincipal')) {
+    mostrarPagina('dashboard');
+  }
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', inicializarNavegacao);
+} else if (document.body) {
+  inicializarNavegacao();
+} else {
+  setTimeout(inicializarNavegacao, 50);
+}
 }
