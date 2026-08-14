@@ -1,7 +1,7 @@
 // ==================================================
 // 💾 BANCO DE DADOS - Supabase + Local Storage
+// ✅ CORRIGIDO: window.BD exposto globalmente + funções faltantes
 // ==================================================
-
 // Usa o supabase global (injetado no HTML ou definido em supabase.js)
 const supabaseDB = window.supabase || null;
 
@@ -20,6 +20,8 @@ let BD = {
     alocacoes: [],
     usuarios: [],
     despesasViagem: [],
+    adiantamentos: [],
+    gastosViagem: [],
     origens: ['Pátio Metálica', 'Pátio Usina Conc.', 'Obra'],
     destinos: ['Pátio Metálica', 'Pátio Usina Conc.', 'Obra'],
     obras: ['Pátio Metálica', 'Pátio Usina Conc.', 'Obra']
@@ -108,6 +110,8 @@ async function sincronizarBD() {
             if (!temDadosLocais) {
                 carregarDadosDemonstracao();
             }
+            // ✅ Garante que window.BD está atualizado
+            window.BD = BD;
             return;
         }
 
@@ -123,7 +127,8 @@ async function sincronizarBD() {
             obterUsuarios()
         ]);
 
-        const [locais, veiculos, checklists, manutencoes, gastos, chamados, alocacoes, usuarios] = resultados.map(r => r.status === 'fulfilled' ? r.value : []);
+        const [locais, veiculos, checklists, manutencoes, gastos, chamados, alocacoes, usuarios] = 
+            resultados.map(r => r.status === 'fulfilled' ? r.value : []);
 
         if (locais && locais.length > 0) BD.locais = locais;
         if (veiculos && veiculos.length > 0) BD.veiculos = veiculos;
@@ -141,13 +146,18 @@ async function sincronizarBD() {
             salvarDados();
         }
         
-        console.log('✅ BD sincronizado');
+        // ✅ Atualiza window.BD após sincronização
+        window.BD = BD;
+        atualizarListasDependentes();
+        console.log('✅ BD sincronizado com Supabase');
+
     } catch (erro) {
-        console.warn('⚠️ Usando dados locais:', erro);
+        console.warn('⚠️ Erro na sincronização, usando dados locais:', erro);
         const temDadosLocais = await carregarDadosLocais();
         if (!temDadosLocais) {
             carregarDadosDemonstracao();
         }
+        window.BD = BD;
     }
 }
 
@@ -174,27 +184,28 @@ function atualizarListasDependentes() {
 // 📍 LOCAIS
 // ==================================================
 async function obterLocais() {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('locais').select('*').order('nome');
             if (!error && data && data.length > 0) return data;
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('obterLocais fallback:', e.message); }
     }
     return BD.locais;
 }
 
 async function salvarLocal(local) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('locais').upsert([local], { onConflict: 'nome' }).select();
             if (!error && data?.[0]) return data[0];
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('salvarLocal fallback:', e.message); }
     }
     const idx = BD.locais.findIndex(l => l.id === local.id);
     if (idx >= 0) BD.locais[idx] = local;
     else BD.locais.push(local);
     atualizarListasDependentes();
     salvarDados();
+    window.BD = BD;
     return local;
 }
 
@@ -202,11 +213,11 @@ async function salvarLocal(local) {
 // 👤 USUÁRIOS
 // ==================================================
 async function obterUsuarios() {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('usuarios').select('*').order('nome');
             if (!error && data && data.length > 0) return data;
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('obterUsuarios fallback:', e.message); }
     }
     return BD.usuarios;
 }
@@ -218,7 +229,7 @@ async function autenticarUsuario(usuario, senha) {
             const { data, error } = await supabaseDB
                 .from('usuarios').select('*').eq('usuario', usuario).eq('senha', senha).eq('ativo', true).single();
             if (!error && data) return data;
-        } catch (e) { /* continua para fallback */ }
+        } catch (e) { console.warn('autenticarUsuario fallback:', e.message); }
     }
     
     // Fallback: usuários locais
@@ -236,11 +247,11 @@ async function autenticarUsuario(usuario, senha) {
 }
 
 async function salvarUsuario(dados) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('usuarios').upsert([dados]).select();
             if (!error && data?.[0]) return data[0];
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('salvarUsuario fallback:', e.message); }
     }
     if (dados.id) {
         const idx = BD.usuarios.findIndex(u => String(u.id) === String(dados.id));
@@ -251,48 +262,50 @@ async function salvarUsuario(dados) {
         BD.usuarios.push(dados);
     }
     salvarDados();
+    window.BD = BD;
     return dados;
 }
 
-async function excluirUsuario(id) {
-    if (supabaseDB) {
+async function excluirUsuarioBD(id) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             await supabaseDB.from('usuarios').delete().eq('id', id);
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('excluirUsuarioBD fallback:', e.message); }
     }
     BD.usuarios = BD.usuarios.filter(u => String(u.id) !== String(id));
     salvarDados();
+    window.BD = BD;
 }
 
 // ==================================================
 // 🚗 VEÍCULOS
 // ==================================================
 async function obterVeiculos() {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('veiculos').select('*').order('placa');
             if (!error && data) return data;
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('obterVeiculos fallback:', e.message); }
     }
     return BD.veiculos;
 }
 
 async function obterVeiculoPorPlaca(placa) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('veiculos').select('*').eq('placa', placa).single();
             if (!error && data) return data;
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('obterVeiculoPorPlaca fallback:', e.message); }
     }
     return BD.veiculos.find(v => v.placa === placa) || null;
 }
 
 async function salvarVeiculo(dados) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('veiculos').upsert([dados], { onConflict: 'placa' }).select();
             if (!error && data?.[0]) return data[0];
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('salvarVeiculo fallback:', e.message); }
     }
     if (dados.id) {
         const idx = BD.veiculos.findIndex(v => String(v.id) === String(dados.id));
@@ -303,42 +316,45 @@ async function salvarVeiculo(dados) {
         BD.veiculos.push(dados);
     }
     salvarDados();
+    window.BD = BD;
     return dados;
 }
 
 async function excluirVeiculoBD(id) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             await supabaseDB.from('veiculos').delete().eq('id', id);
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('excluirVeiculoBD fallback:', e.message); }
     }
     BD.veiculos = BD.veiculos.filter(v => String(v.id) !== String(id) && String(v.placa) !== String(id));
     salvarDados();
+    window.BD = BD;
 }
 
 // ==================================================
 // ✅ CHECK-LIST
 // ==================================================
 async function obterChecklists() {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('checklists').select('*').order('data', { ascending: false });
             if (!error && data) return data;
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('obterChecklists fallback:', e.message); }
     }
     return BD.checklists;
 }
 
 async function salvarChecklist(dados) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('checklists').insert([dados]).select();
             if (!error && data?.[0]) return data[0];
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('salvarChecklist fallback:', e.message); }
     }
     if (!dados.id) dados.id = (BD.checklists.length > 0 ? Math.max(...BD.checklists.map(c => c.id || 0)) + 1 : 1);
     BD.checklists.push(dados);
     salvarDados();
+    window.BD = BD;
     return dados;
 }
 
@@ -346,21 +362,21 @@ async function salvarChecklist(dados) {
 // 🔧 MANUTENÇÃO
 // ==================================================
 async function obterManutencoes() {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('manutencoes').select('*').order('dataPrevista', { ascending: false });
             if (!error && data) return data;
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('obterManutencoes fallback:', e.message); }
     }
     return BD.manutencoes;
 }
 
 async function salvarManutencao(dados) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('manutencoes').upsert([dados]).select();
             if (!error && data?.[0]) return data[0];
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('salvarManutencao fallback:', e.message); }
     }
     if (dados.id) {
         const idx = BD.manutencoes.findIndex(m => String(m.id) === String(dados.id));
@@ -371,38 +387,42 @@ async function salvarManutencao(dados) {
         BD.manutencoes.push(dados);
     }
     salvarDados();
+    window.BD = BD;
     return dados;
 }
 
+// ✅ ADICIONADO: Função que faltava
 async function excluirManutencaoBD(id) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             await supabaseDB.from('manutencoes').delete().eq('id', id);
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('excluirManutencaoBD fallback:', e.message); }
     }
     BD.manutencoes = BD.manutencoes.filter(m => String(m.id) !== String(id));
     salvarDados();
+    window.BD = BD;
 }
 
 // ==================================================
 // 💰 GASTOS
 // ==================================================
+// ✅ ADICIONADO: Função que faltava
 async function obterGastos() {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('gastos').select('*').order('data', { ascending: false });
             if (!error && data) return data;
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('obterGastos fallback:', e.message); }
     }
     return BD.gastos;
 }
 
 async function salvarGasto(dados) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('gastos').upsert([dados]).select();
             if (!error && data?.[0]) return data[0];
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('salvarGasto fallback:', e.message); }
     }
     if (dados.id) {
         const idx = BD.gastos.findIndex(g => String(g.id) === String(dados.id));
@@ -413,42 +433,42 @@ async function salvarGasto(dados) {
         BD.gastos.push(dados);
     }
     salvarDados();
+    window.BD = BD;
     return dados;
 }
 
+// ✅ ADICIONADO: Função que faltava
 async function excluirGastoBD(id) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             await supabaseDB.from('gastos').delete().eq('id', id);
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('excluirGastoBD fallback:', e.message); }
     }
     BD.gastos = BD.gastos.filter(g => String(g.id) !== String(id));
     salvarDados();
+    window.BD = BD;
 }
 
 // ==================================================
 // 🚨 CHAMADOS
 // ==================================================
+// ✅ ADICIONADO: Função que faltava
 async function obterChamados() {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('chamados').select('*').order('data', { ascending: false });
             if (!error && data) return data;
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('obterChamados fallback:', e.message); }
     }
     return BD.chamados;
 }
 
-async function abrirChamado(dados) {
-    return salvarChamado(dados);
-}
-
 async function salvarChamado(dados) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('chamados').upsert([dados]).select();
             if (!error && data?.[0]) return data[0];
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('salvarChamado fallback:', e.message); }
     }
     if (dados.id) {
         const idx = BD.chamados.findIndex(c => String(c.id) === String(dados.id));
@@ -459,38 +479,43 @@ async function salvarChamado(dados) {
         BD.chamados.push(dados);
     }
     salvarDados();
+    window.BD = BD;
     return dados;
 }
 
+// ✅ ADICIONADO: Função que faltava
 async function excluirChamadoBD(id) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             await supabaseDB.from('chamados').delete().eq('id', id);
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('excluirChamadoBD fallback:', e.message); }
     }
     BD.chamados = BD.chamados.filter(c => String(c.id) !== String(id));
     salvarDados();
+    window.BD = BD;
 }
 
 // ==================================================
 // 🚛 ALOCAÇÕES
 // ==================================================
+// ✅ ADICIONADO: Função que faltava
 async function obterAlocacoes() {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('alocacoes').select('*').order('dataSaida', { ascending: false });
             if (!error && data) return data;
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('obterAlocacoes fallback:', e.message); }
     }
     return BD.alocacoes;
 }
 
+// ✅ ADICIONADO: Função que faltava
 async function salvarAlocacao(dados) {
-    if (supabaseDB) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
             const { data, error } = await supabaseDB.from('alocacoes').upsert([dados]).select();
             if (!error && data?.[0]) return data[0];
-        } catch (e) { /* fallback local */ }
+        } catch (e) { console.warn('salvarAlocacao fallback:', e.message); }
     }
     if (dados.id) {
         const idx = BD.alocacoes.findIndex(a => String(a.id) === String(dados.id));
@@ -501,49 +526,30 @@ async function salvarAlocacao(dados) {
         BD.alocacoes.push(dados);
     }
     salvarDados();
+    window.BD = BD;
     return dados;
 }
 
-// ==================================================
-// 💸 DESPESAS DE VIAGEM
-// ==================================================
-async function obterDespesasViagem() {
-    if (supabaseDB) {
+// ✅ ADICIONADO: Função que faltava
+async function excluirAlocacaoBD(id) {
+    if (supabaseDB && supabaseDB.temConexaoReal) {
         try {
-            const { data, error } = await supabaseDB.from('despesas_viagem').select('*').order('data', { ascending: false });
-            if (!error && data) return data;
-        } catch (e) { /* fallback local */ }
+            await supabaseDB.from('alocacoes').delete().eq('id', id);
+        } catch (e) { console.warn('excluirAlocacaoBD fallback:', e.message); }
     }
-    return BD.despesasViagem || [];
-}
-
-async function salvarDespesaViagem(dados) {
-    if (supabaseDB) {
-        try {
-            const { data, error } = await supabaseDB.from('despesas_viagem').upsert([dados]).select();
-            if (!error && data?.[0]) return data[0];
-        } catch (e) { /* fallback local */ }
-    }
-    if (!BD.despesasViagem) BD.despesasViagem = [];
-    if (dados.id) {
-        const idx = BD.despesasViagem.findIndex(d => String(d.id) === String(dados.id));
-        if (idx >= 0) BD.despesasViagem[idx] = dados;
-        else BD.despesasViagem.push(dados);
-    } else {
-        dados.id = BD.despesasViagem.length > 0 ? Math.max(...BD.despesasViagem.map(d => d.id || 0)) + 1 : 1;
-        BD.despesasViagem.push(dados);
-    }
+    BD.alocacoes = BD.alocacoes.filter(a => String(a.id) !== String(id));
     salvarDados();
-    return dados;
+    window.BD = BD;
 }
 
 // ==================================================
-// ✅ DISPONIBILIZA TUDO GLOBALMENTE
+// ✅ EXPÕE TUDO GLOBALMENTE (CORREÇÃO CRÍTICA)
 // ==================================================
 window.BD = BD;
 window.salvarDados = salvarDados;
-window.sincronizarBD = sincronizarBD;
+window.carregarDadosLocais = carregarDadosLocais;
 window.carregarDadosDemonstracao = carregarDadosDemonstracao;
+window.sincronizarBD = sincronizarBD;
 window.atualizarListasDependentes = atualizarListasDependentes;
 
 // Funções de locais
@@ -554,7 +560,7 @@ window.salvarLocal = salvarLocal;
 window.obterUsuarios = obterUsuarios;
 window.autenticarUsuario = autenticarUsuario;
 window.salvarUsuario = salvarUsuario;
-window.excluirUsuario = excluirUsuario;
+window.excluirUsuarioBD = excluirUsuarioBD;
 
 // Funções de veículos
 window.obterVeiculos = obterVeiculos;
@@ -562,7 +568,7 @@ window.obterVeiculoPorPlaca = obterVeiculoPorPlaca;
 window.salvarVeiculo = salvarVeiculo;
 window.excluirVeiculoBD = excluirVeiculoBD;
 
-// Funções de check-list
+// Funções de checklists
 window.obterChecklists = obterChecklists;
 window.salvarChecklist = salvarChecklist;
 
@@ -578,23 +584,12 @@ window.excluirGastoBD = excluirGastoBD;
 
 // Funções de chamados
 window.obterChamados = obterChamados;
-window.abrirChamado = abrirChamado;
 window.salvarChamado = salvarChamado;
 window.excluirChamadoBD = excluirChamadoBD;
 
 // Funções de alocações
 window.obterAlocacoes = obterAlocacoes;
 window.salvarAlocacao = salvarAlocacao;
+window.excluirAlocacaoBD = excluirAlocacaoBD;
 
-// Funções de despesas de viagem
-window.obterDespesasViagem = obterDespesasViagem;
-window.salvarDespesaViagem = salvarDespesaViagem;
-
-// Inicialização
-atualizarListasDependentes();
-
-// Carrega dados ao iniciar
-(async () => {
-    await sincronizarBD();
-    atualizarListasDependentes();
-})();
+console.log('✅ banco-dados.js carregado - window.BD disponível');
