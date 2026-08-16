@@ -936,6 +936,10 @@
                 <i class="fa-solid fa-users"></i>
                 <span>Usuários</span>
             </div>
+            <div class="sidebar-link" data-pagina="solicitacoes">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Solicitações</span>
+            </div>
             <div class="sidebar-link" data-pagina="relatorios">
                 <i class="fas fa-chart-bar"></i>
                 <span>Relatórios</span>
@@ -971,6 +975,10 @@
                     <div style="font-size: 0.7rem; color: #64748b;" id="perfilUsuario">Admin</div>
                 </div>
                 <div class="user-avatar" id="userAvatar">U</div>
+                <div id="sinoNotificacoes" style="position:relative;display:inline-flex;align-items:center;margin:0 12px;cursor:pointer;" onclick="mostrarPagina('solicitacoes')" title="Solicitações pendentes">
+                    <i class="fas fa-bell" style="font-size:1.1rem;color:#64748b;"></i>
+                    <span id="badgeNotificacoes" style="display:none;position:absolute;top:-6px;right:-8px;background:#dc2626;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;align-items:center;justify-content:center;min-width:18px;padding:0 4px;">0</span>
+                </div>
                 <button class="btn btn-secundario btn-sm" id="btnSair">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     Sair
@@ -1487,6 +1495,44 @@
                 </div>
             </div>
         </section>
+
+        <!-- ============================================================
+             PÁGINA: SOLICITAÇÕES DE TRANSFERÊNCIA
+             ============================================================ -->
+        <section class="pagina" id="pagina-solicitacoes">
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 class="page-title">🔄 Solicitações de Transferência</h1>
+                    <p class="page-subtitle">Gerencie transferências de responsabilidade entre motoristas</p>
+                </div>
+            </div>
+            
+            <div class="card" style="overflow-x: auto;">
+                <div class="card-header">
+                    <div class="card-title">Todas as Solicitações</div>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Veículo</th>
+                                    <th>De</th>
+                                    <th>Para</th>
+                                    <th>Status</th>
+                                    <th>Observação</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaSolicitacoes">
+                                <tr><td colspan="7" style="text-align:center;padding:40px;color:#64748b;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
         
 
         <!-- ============================================================
@@ -1614,6 +1660,7 @@
 <script src="js/chamados.js"></script>
 <script src="js/checklist.js"></script>
 <script src="js/alocacoes.js"></script>
+<script src="js/transferencias.js"></script>
 <script src="js/relatorios.js"></script>
 <script src="js/usuarios.js"></script>
 

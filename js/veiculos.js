@@ -53,6 +53,7 @@ function carregarTabelaVeiculos() {
                     '<button onclick="abrirModalVeiculo(' + v.id + ')" style="padding:6px 10px;border:none;background:#3b82f6;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">Editar</button>' +
                     '<button onclick="verHistoricoCondutores(' + v.id + ')" style="padding:6px 10px;border:none;background:#7c3aed;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">Historico</button>' +
                     '<button onclick="excluirVeiculo(' + v.id + ')" style="padding:6px 10px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;font-size:12px;">Excluir</button>' +
+                    '<button onclick="abrirModalSolicitarTransferencia(' + v.id + ')" style="padding:6px 10px;border:none;background:#f59e0b;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">🔄 Transferir</button>' +
                 '</td>' +
                 '</tr>';
         }

@@ -62,6 +62,7 @@ function inicializarBD() {
             { nome: 'Maria Santos', usuario: 'maria', senha: '1234', perfil: 'motorista', ativo: true }
         ],
         historicoCondutores: [],
+        solicitacoesTransferencia: [],
         origens: ['Patio Metalica', 'Patio Usina Conc.', 'Obra'],
         destinos: ['Patio Metalica', 'Patio Usina Conc.', 'Obra'],
         obras: ['Patio Metalica', 'Patio Usina Conc.', 'Obra'],
