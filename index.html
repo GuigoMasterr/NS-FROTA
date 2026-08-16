@@ -920,476 +920,115 @@
 <!-- Container para Modais -->
 
         
-                <section class="pagina" id="pagina-configuracoes">
+                        <section class="pagina" id="pagina-configuracoes">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                 <div>
                     <h1 class="page-title">⚙️ Configurações do Sistema</h1>
-                    <p class="page-subtitle">Personalize todos os parâmetros do sistema de gestão de frotas</p>
+                    <p class="page-subtitle">Personalize todos os parâmetros do sistema</p>
                 </div>
-                <button class="btn btn-primario" onclick="salvarTodasConfiguracoes()">
+                <button class="btn btn-primario" onclick="salvarConfiguracoesSimples()">
                     <i class="fa-solid fa-save"></i> 💾 Salvar Todas as Configurações
                 </button>
             </div>
 
-            <!-- Abas de Configurações -->
-            <div style="display: flex; gap: 4px; border-bottom: 2px solid #e5e7eb; margin-bottom: 1.5rem; flex-wrap: wrap;">
-                <button class="aba-config-btn ativo" data-aba="dados-gerais" onclick="trocarAbaConfig('dados-gerais')" style="padding: 0.75rem 1.25rem; border: none; background: transparent; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;">
-                    📋 Dados Gerais
-                </button>
-                <button class="aba-config-btn" data-aba="sistema" onclick="trocarAbaConfig('sistema')" style="padding: 0.75rem 1.25rem; border: none; background: transparent; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;">
-                    ⚙️ Sistema
-                </button>
-                <button class="aba-config-btn" data-aba="notificacoes" onclick="trocarAbaConfig('notificacoes')" style="padding: 0.75rem 1.25rem; border: none; background: transparent; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;">
-                    🔔 Notificações
-                </button>
-                <button class="aba-config-btn" data-aba="regras" onclick="trocarAbaConfig('regras')" style="padding: 0.75rem 1.25rem; border: none; background: transparent; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;">
-                    📜 Regras de Negócio
-                </button>
-                <button class="aba-config-btn" data-aba="seguranca" onclick="trocarAbaConfig('seguranca')" style="padding: 0.75rem 1.25rem; border: none; background: transparent; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;">
-                    🔒 Segurança
-                </button>
-                <button class="aba-config-btn" data-aba="integracoes" onclick="trocarAbaConfig('integracoes')" style="padding: 0.75rem 1.25rem; border: none; background: transparent; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;">
-                    🌐 Integrações
-                </button>
+            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
+                <div class="stat-card">
+                    <div class="stat-titulo">🌐 Conexão Supabase</div>
+                    <div class="stat-valor" id="cfgStatusSupabase" style="font-size: 1rem;">Verificando...</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-titulo">🚛 Veículos</div>
+                    <div class="stat-valor" id="cfgStatusVeiculos">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-titulo">💰 Gastos</div>
+                    <div class="stat-valor" id="cfgStatusGastos">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-titulo">👥 Usuários</div>
+                    <div class="stat-valor" id="cfgStatusUsuarios">0</div>
+                </div>
             </div>
 
-            <!-- ==================== ABA: DADOS GERAIS ==================== -->
-            <div id="aba-config-dados-gerais" class="aba-config-conteudo">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
-                    <!-- Locais / Obras -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">📍 Locais / Obras</div>
+            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">📋 Dados Gerais</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">📍 Locais / Obras</div></div>
+                    <div class="card-body">
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                            <input type="text" id="cfgNovoLocal" placeholder="Novo local..." style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;">
+                            <button class="btn btn-primario" onclick="cfgAdicionar('locais','cfgNovoLocal','cfgListaLocais','cfgRemoverLocal')" style="padding: 0.5rem 0.75rem;">+</button>
                         </div>
-                        <div class="card-body">
-                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                                <input type="text" id="novoLocal" placeholder="Nome do local/obra..." style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
-                                <button class="btn btn-primario" onclick="adicionarLocal()" style="padding: 0.5rem 1rem;">
-                                    <i class="fa-solid fa-plus"></i>
-                                </button>
-                            </div>
-                            <div id="listaLocais" style="display: grid; gap: 0.5rem; max-height: 250px; overflow-y: auto;"></div>
-                        </div>
+                        <div id="cfgListaLocais" style="display: grid; gap: 0.4rem; max-height: 180px; overflow-y: auto;"></div>
                     </div>
-
-                    <!-- Categorias de Veículos -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🚛 Categorias de Veículos</div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">🚛 Categorias de Veículos</div></div>
+                    <div class="card-body">
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                            <input type="text" id="cfgNovaCategoria" placeholder="Nova categoria..." style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;">
+                            <button class="btn btn-primario" onclick="cfgAdicionar('categoriasVeiculo','cfgNovaCategoria','cfgListaCategorias','cfgRemoverCategoria')" style="padding: 0.5rem 0.75rem;">+</button>
                         </div>
-                        <div class="card-body">
-                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                                <input type="text" id="novaCategoria" placeholder="Ex: Caminhão, Carro, Máquina..." style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
-                                <button class="btn btn-primario" onclick="adicionarCategoria()" style="padding: 0.5rem 1rem;">
-                                    <i class="fa-solid fa-plus"></i>
-                                </button>
-                            </div>
-                            <div id="listaCategorias" style="display: grid; gap: 0.5rem; max-height: 250px; overflow-y: auto;"></div>
-                        </div>
+                        <div id="cfgListaCategorias" style="display: grid; gap: 0.4rem; max-height: 180px; overflow-y: auto;"></div>
                     </div>
-
-                    <!-- Tipos de Gastos -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">💰 Tipos de Gastos</div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">💰 Tipos de Gastos</div></div>
+                    <div class="card-body">
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                            <input type="text" id="cfgNovoTipoGasto" placeholder="Novo tipo..." style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;">
+                            <button class="btn btn-primario" onclick="cfgAdicionar('tiposGasto','cfgNovoTipoGasto','cfgListaTiposGasto','cfgRemoverTipoGasto')" style="padding: 0.5rem 0.75rem;">+</button>
                         </div>
-                        <div class="card-body">
-                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                                <input type="text" id="novoTipoGasto" placeholder="Ex: Combustível, Manutenção..." style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
-                                <button class="btn btn-primario" onclick="adicionarTipoGasto()" style="padding: 0.5rem 1rem;">
-                                    <i class="fa-solid fa-plus"></i>
-                                </button>
-                            </div>
-                            <div id="listaTiposGasto" style="display: grid; gap: 0.5rem; max-height: 250px; overflow-y: auto;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Origens e Destinos -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🔄 Origens / Destinos</div>
-                        </div>
-                        <div class="card-body">
-                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                                <input type="text" id="novaOrigemDestino" placeholder="Ex: Patio, Obra, Filial..." style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
-                                <button class="btn btn-primario" onclick="adicionarOrigemDestino()" style="padding: 0.5rem 1rem;">
-                                    <i class="fa-solid fa-plus"></i>
-                                </button>
-                            </div>
-                            <div id="listaOrigensDestinos" style="display: grid; gap: 0.5rem; max-height: 250px; overflow-y: auto;"></div>
-                        </div>
+                        <div id="cfgListaTiposGasto" style="display: grid; gap: 0.4rem; max-height: 180px; overflow-y: auto;"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- ==================== ABA: SISTEMA ==================== -->
-            <div id="aba-config-sistema" class="aba-config-conteudo" style="display: none;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🏢 Identificação da Empresa</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Nome da Empresa</label>
-                                <input type="text" id="cfgNomeEmpresa" placeholder="NS Frota" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">CNPJ</label>
-                                <input type="text" id="cfgCNPJ" placeholder="00.000.000/0001-00" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">E-mail de Contato</label>
-                                <input type="email" id="cfgEmail" placeholder="contato@empresa.com.br" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Telefone</label>
-                                <input type="text" id="cfgTelefone" placeholder="(00) 00000-0000" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">URL do Logo (opcional)</label>
-                                <input type="text" id="cfgLogo" placeholder="https://..." style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🌍 Padrões do Sistema</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Moeda</label>
-                                <select id="cfgMoeda" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box; background: white;">
-                                    <option value="BRL">R$ - Real Brasileiro</option>
-                                    <option value="USD">US$ - Dólar Americano</option>
-                                    <option value="EUR">€ - Euro</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Unidade de Distância</label>
-                                <select id="cfgDistancia" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box; background: white;">
-                                    <option value="km">Quilômetros (km)</option>
-                                    <option value="mi">Milhas (mi)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Formato de Data</label>
-                                <select id="cfgFormatoData" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box; background: white;">
-                                    <option value="pt-BR">DD/MM/AAAA (Brasil)</option>
-                                    <option value="en-US">MM/DD/AAAA (EUA)</option>
-                                    <option value="en-GB">DD/MM/AAAA (Europa)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Fuso Horário</label>
-                                <select id="cfgFusoHorario" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box; background: white;">
-                                    <option value="America/Sao_Paulo">Brasília (UTC-3)</option>
-                                    <option value="America/Manaus">Manaus (UTC-4)</option>
-                                    <option value="America/Rio_Branco">Rio Branco (UTC-5)</option>
-                                    <option value="Atlantic/Fernando_de_Noronha">Fernando de Noronha (UTC-2)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">⚙️ Sistema</h2>
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Nome da Empresa</label><input type="text" id="cfgNomeEmpresa" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">CNPJ</label><input type="text" id="cfgCNPJ" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">E-mail</label><input type="email" id="cfgEmail" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Telefone</label><input type="text" id="cfgTelefone" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Moeda</label><select id="cfgMoeda" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; background:white; box-sizing:border-box;"><option value="BRL">R$ - Real</option><option value="USD">US$ - Dólar</option><option value="EUR">€ - Euro</option></select></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Formato de Data</label><select id="cfgFormatoData" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; background:white; box-sizing:border-box;"><option value="pt-BR">DD/MM/AAAA</option><option value="en-US">MM/DD/AAAA</option></select></div>
                 </div>
             </div>
 
-            <!-- ==================== ABA: NOTIFICAÇÕES ==================== -->
-            <div id="aba-config-notificacoes" class="aba-config-conteudo" style="display: none;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🔧 Manutenção Preventiva</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">KM para aviso prévio de manutenção</label>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <input type="number" id="cfgKmAviso" value="500" min="0" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                                    <span style="color: #64748b; font-size: 0.875rem;">km antes</span>
-                                </div>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Dias para aviso de vencimento</label>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <input type="number" id="cfgDiasAviso" value="15" min="0" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                                    <span style="color: #64748b; font-size: 0.875rem;">dias antes</span>
-                                </div>
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgAvisoManutencao" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Ativar avisos de manutenção no dashboard</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🚨 Alertas de Veículos</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgAlertaKm" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Alertar veículos com alta quilometragem</span>
-                            </label>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Limite de KM para alerta</label>
-                                <input type="number" id="cfgLimiteKm" value="200000" min="0" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgAlertaStatus" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Alertar veículos parados há muito tempo</span>
-                            </label>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Dias parado para alertar</label>
-                                <input type="number" id="cfgDiasParado" value="30" min="0" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">📧 E-mail para Notificações</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">E-mail para receber alertas</label>
-                                <input type="email" id="cfgEmailAlerta" placeholder="gerencia@empresa.com.br" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                            </div>
-                            <div style="padding: 0.75rem; background: #fef3c7; border-radius: 8px; font-size: 0.8rem; color: #92400e;">
-                                <i class="fa-solid fa-info-circle"></i> As notificações por e-mail requerem configuração de servidor SMTP.
-                            </div>
-                        </div>
-                    </div>
+            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">🔔 Notificações e Alertas</h2>
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">KM para aviso de manutenção</label><input type="number" id="cfgKmAviso" value="500" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Dias para aviso de vencimento</label><input type="number" id="cfgDiasAviso" value="15" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Limite KM para alerta</label><input type="number" id="cfgLimiteKm" value="200000" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Dias parado para alertar</label><input type="number" id="cfgDiasParado" value="30" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">E-mail para alertas</label><input type="email" id="cfgEmailAlerta" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
                 </div>
             </div>
 
-            <!-- ==================== ABA: REGRAS DE NEGÓCIO ==================== -->
-            <div id="aba-config-regras" class="aba-config-conteudo" style="display: none;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🔄 Transferências de Responsabilidade</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgExigirChecklist" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Exigir check-list para aceitar transferência</span>
-                            </label>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Aprovação mínima no check-list (%)</label>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <input type="number" id="cfgPctAprovacao" value="70" min="0" max="100" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                                    <span style="color: #64748b; font-size: 0.875rem;">%</span>
-                                </div>
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgPermitirMotoristaAceitar" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Permitir que motorista destino aceite transferência</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgAtualizarResponsavelAuto" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Atualizar responsável do veículo automaticamente</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">💸 Adiantamentos</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Valor máximo sem aprovação</label>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <span style="color: #64748b; font-size: 0.875rem;">R$</span>
-                                    <input type="number" id="cfgValorMaxAdiantamento" value="500" min="0" step="0.01" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                                </div>
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgExigirPrestacaoContas" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Exigir prestação de contas para fechar adiantamento</span>
-                            </label>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Dias limite para prestação de contas</label>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <input type="number" id="cfgDiasPrestacao" value="7" min="0" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                                    <span style="color: #64748b; font-size: 0.875rem;">dias</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">📋 Alocações</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgExigirChecklistAlocacao" style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Exigir check-list ao iniciar alocação</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgBloquearVeiculoAlocado" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Bloquear veículo alocado para novas alocações</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgRegistrarHistorico" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Registrar histórico automático de condutores</span>
-                            </label>
-                        </div>
-                    </div>
+            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">📜 Regras de Negócio</h2>
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">% mínima aprovação check-list</label><input type="number" id="cfgPctAprovacao" value="70" min="0" max="100" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Valor máx adiantamento (R$)</label><input type="number" id="cfgValorMaxAdiantamento" value="500" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Dias limite prestação contas</label><input type="number" id="cfgDiasPrestacao" value="7" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tempo sessão (minutos)</label><input type="number" id="cfgTempoSessao" value="240" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tamanho mín senha</label><input type="number" id="cfgTamanhoMinSenha" value="4" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
+                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tentativas login</label><input type="number" id="cfgTentativasLogin" value="5" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
                 </div>
             </div>
 
-            <!-- ==================== ABA: SEGURANÇA ==================== -->
-            <div id="aba-config-seguranca" class="aba-config-conteudo" style="display: none;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">⏱️ Sessão de Login</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Tempo de expiração da sessão</label>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <input type="number" id="cfgTempoSessao" value="240" min="5" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                                    <span style="color: #64748b; font-size: 0.875rem;">minutos</span>
-                                </div>
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgManterSessao" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Manter sessão ativa ao fechar navegador</span>
-                            </label>
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Tentativas de login antes do bloqueio</label>
-                                <input type="number" id="cfgTentativasLogin" value="5" min="1" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🔐 Política de Senhas</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Tamanho mínimo da senha</label>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <input type="number" id="cfgTamanhoMinSenha" value="4" min="4" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; box-sizing: border-box;">
-                                    <span style="color: #64748b; font-size: 0.875rem;">caracteres</span>
-                                </div>
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgSenhaNumero" style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Exigir números na senha</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgSenhaMaiuscula" style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Exigir letras maiúsculas</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">📜 Log de Auditoria</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgLogAcoes" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Registrar log de ações importantes</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; background: #f8fafc; border-radius: 8px;">
-                                <input type="checkbox" id="cfgLogLogin" checked style="width: 18px; height: 18px;">
-                                <span style="font-size: 0.875rem; color: #374151;">Registrar logins e logouts</span>
-                            </label>
-                            <div style="padding: 0.75rem; background: #dbeafe; border-radius: 8px; font-size: 0.8rem; color: #1e40af;">
-                                <i class="fa-solid fa-shield-halved"></i> Logs armazenados localmente e sincronizados com Supabase.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ==================== ABA: INTEGRAÇÕES ==================== -->
-            <div id="aba-config-integracoes" class="aba-config-conteudo" style="display: none;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">🌐 Supabase</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <div style="padding: 1rem; border-radius: 8px; background: #f8fafc;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                    <span style="font-weight: 500; color: #374151;">Status da Conexão:</span>
-                                    <span id="statusConexaoSupabase" style="font-weight: 600; color: #f59e0b;">Verificando...</span>
-                                </div>
-                                <div style="font-size: 0.8rem; color: #64748b;">
-                                    URL: <code style="background: white; padding: 2px 6px; border-radius: 4px;">ccacecyqkseniqmrvnap.supabase.co</code>
-                                </div>
-                            </div>
-                            <button class="btn btn-primario" onclick="testarConexaoSupabase()" style="width: 100%;">
-                                <i class="fa-solid fa-plug"></i> Testar Conexão
-                            </button>
-                            <button class="btn btn-secundario" onclick="sincronizarManualmente()" style="width: 100%;">
-                                <i class="fa-solid fa-sync"></i> Sincronizar Agora
-                            </button>
-                            <button class="btn btn-secundario" onclick="enviarTodosDadosParaNuvem()" style="width: 100%;">
-                                <i class="fa-solid fa-cloud-arrow-up"></i> Enviar Todos os Dados
-                            </button>
-                            <button class="btn btn-secundario" onclick="carregarDadosDaNuvem()" style="width: 100%;">
-                                <i class="fa-solid fa-cloud-arrow-down"></i> Baixar Dados da Nuvem
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">💾 Backup</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 1rem;">
-                            <button class="btn btn-secundario" onclick="exportarDadosJSON()" style="width: 100%;">
-                                <i class="fa-solid fa-download"></i> 📤 Exportar Backup (JSON)
-                            </button>
-                            <button class="btn btn-secundario" onclick="document.getElementById('importarArquivoConf2').click()" style="width: 100%;">
-                                <i class="fa-solid fa-upload"></i> 📥 Restaurar Backup
-                            </button>
-                            <input type="file" id="importarArquivoConf2" accept=".json" style="display: none;" onchange="importarDadosJSON(event)">
-                            <button class="btn" onclick="recarregarDadosDemo()" style="width: 100%; background: #fef3c7; color: #92400e;">
-                                <i class="fa-solid fa-database"></i> 📦 Restaurar Dados Demo
-                            </button>
-                            <button class="btn" onclick="limparTodosDados()" style="width: 100%; background: #fee2e2; color: #991b1b;">
-                                <i class="fa-solid fa-trash"></i> 🗑️ Limpar Dados Locais
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">ℹ️ Informações</div>
-                        </div>
-                        <div class="card-body" style="display: grid; gap: 0.75rem; font-size: 0.875rem;">
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: #64748b;">Versão do Sistema:</span>
-                                <strong style="color: #374151;">2.0.0</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: #64748b;">Armazenamento:</span>
-                                <strong style="color: #374151;">Local + Nuvem</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: #64748b;">Último Salvamento:</span>
-                                <strong id="cfgUltimoSalvamento" style="color: #374151;">--</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: #64748b;">Tamanho dos Dados:</span>
-                                <strong id="cfgTamanhoDados" style="color: #374151;">--</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">🌐 Integrações e Backup</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <button class="btn btn-primario" onclick="sincronizarManualmente()" style="padding: 0.75rem;">🔄 Sincronizar com Supabase</button>
+                <button class="btn btn-secundario" onclick="enviarTodosDadosParaNuvem()" style="padding: 0.75rem;">☁️ Enviar para Nuvem</button>
+                <button class="btn btn-secundario" onclick="carregarDadosDaNuvem()" style="padding: 0.75rem;">⬇️ Baixar da Nuvem</button>
+                <button class="btn btn-secundario" onclick="exportarDadosJSON()" style="padding: 0.75rem;">📤 Exportar JSON</button>
+                <button class="btn" onclick="document.getElementById('cfgImportarArquivo').click()" style="padding: 0.75rem; background: #e0f2fe; color: #0369a1;">📥 Importar JSON</button>
+                <input type="file" id="cfgImportarArquivo" accept=".json" style="display:none;" onchange="importarDadosJSON(event)">
+                <button class="btn" onclick="recarregarDadosDemo()" style="padding: 0.75rem; background: #fef3c7; color: #92400e;">📦 Dados Demo</button>
+                <button class="btn" onclick="limparTodosDados()" style="padding: 0.75rem; background: #fee2e2; color: #991b1b;">🗑️ Limpar Dados</button>
             </div>
         </section>
 
@@ -2823,6 +2462,140 @@ document.addEventListener('DOMContentLoaded',function(){
     if(document.getElementById('pagina-configuracoes')&&document.getElementById('pagina-configuracoes').classList.contains('ativa')){
         setTimeout(inicializarPaginaConfig,200);
     }
+});
+</script>
+
+
+<script>
+function cfgValor(id) { var e = document.getElementById(id); return e ? e.value : ''; }
+function cfgSetValor(id, v) { var e = document.getElementById(id); if (e) e.value = v || ''; }
+
+function cfgCarregarLista(chave, containerId, funcRemover) {
+    try {
+        if (!window.BD) return;
+        if (!window.BD.config) window.BD.config = {};
+        var lista = window.BD.config[chave] || [];
+        var padroes = {
+            'locais': ['Patio Metalica','Patio Usina Conc.','Obra'],
+            'categoriasVeiculo': ['Caminhão','Carro Passeio','Utilitário','Máquina','Van','Ônibus','Moto'],
+            'tiposGasto': ['Combustível','Manutenção','Peças','Pneus','Seguro','IPVA','Pedágio','Multas','Serviços','Outros']
+        };
+        if (lista.length === 0 && padroes[chave]) { lista = padroes[chave]; window.BD.config[chave] = lista; }
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        for (var i = 0; i < lista.length; i++) {
+            var d = document.createElement('div');
+            d.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.6rem;background:#f8fafc;border-radius:6px;font-size:0.85rem;';
+            d.innerHTML = '<span style="color:#374151;">' + lista[i] + '</span><button onclick="' + funcRemover + '(' + i + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;padding:2px 6px;border-radius:4px;font-size:0.8rem;">✕</button>';
+            container.appendChild(d);
+        }
+    } catch(e) { console.error(e); }
+}
+
+function cfgAdicionar(chave, inputId, containerId, funcRemover) {
+    try {
+        var inp = document.getElementById(inputId);
+        if (!inp || !inp.value.trim()) return;
+        if (!window.BD.config) window.BD.config = {};
+        if (!window.BD.config[chave]) window.BD.config[chave] = [];
+        if (window.BD.config[chave].includes(inp.value.trim())) return;
+        window.BD.config[chave].push(inp.value.trim());
+        inp.value = '';
+        if (typeof salvarDados === 'function') salvarDados();
+        cfgCarregarLista(chave, containerId, funcRemover);
+    } catch(e) { console.error(e); }
+}
+
+function cfgRemoverLocal(i) { window.BD.config.locais.splice(i,1); if(typeof salvarDados==='function')salvarDados(); cfgCarregarLista('locais','cfgListaLocais','cfgRemoverLocal'); }
+function cfgRemoverCategoria(i) { window.BD.config.categoriasVeiculo.splice(i,1); if(typeof salvarDados==='function')salvarDados(); cfgCarregarLista('categoriasVeiculo','cfgListaCategorias','cfgRemoverCategoria'); }
+function cfgRemoverTipoGasto(i) { window.BD.config.tiposGasto.splice(i,1); if(typeof salvarDados==='function')salvarDados(); cfgCarregarLista('tiposGasto','cfgListaTiposGasto','cfgRemoverTipoGasto'); }
+
+function cfgCarregarTudo() {
+    try {
+        if (!window.BD || !window.BD.config) return;
+        var c = window.BD.config;
+        cfgSetValor('cfgNomeEmpresa', c.nomeEmpresa);
+        cfgSetValor('cfgCNPJ', c.cnpj);
+        cfgSetValor('cfgEmail', c.email);
+        cfgSetValor('cfgTelefone', c.telefone);
+        cfgSetValor('cfgMoeda', c.moeda || 'BRL');
+        cfgSetValor('cfgFormatoData', c.formatoData || 'pt-BR');
+        cfgSetValor('cfgKmAviso', c.kmAviso || 500);
+        cfgSetValor('cfgDiasAviso', c.diasAviso || 15);
+        cfgSetValor('cfgLimiteKm', c.limiteKm || 200000);
+        cfgSetValor('cfgDiasParado', c.diasParado || 30);
+        cfgSetValor('cfgEmailAlerta', c.emailAlerta);
+        cfgSetValor('cfgPctAprovacao', c.pctAprovacao || 70);
+        cfgSetValor('cfgValorMaxAdiantamento', c.valorMaxAdiantamento || 500);
+        cfgSetValor('cfgDiasPrestacao', c.diasPrestacao || 7);
+        cfgSetValor('cfgTempoSessao', c.tempoSessao || 240);
+        cfgSetValor('cfgTamanhoMinSenha', c.tamanhoMinSenha || 4);
+        cfgSetValor('cfgTentativasLogin', c.tentativasLogin || 5);
+        cfgCarregarLista('locais', 'cfgListaLocais', 'cfgRemoverLocal');
+        cfgCarregarLista('categoriasVeiculo', 'cfgListaCategorias', 'cfgRemoverCategoria');
+        cfgCarregarLista('tiposGasto', 'cfgListaTiposGasto', 'cfgRemoverTipoGasto');
+        var el = document.getElementById('cfgStatusSupabase');
+        if (el) {
+            var ok = window.supabase && window.supabase.temConexaoReal;
+            el.textContent = ok ? '✅ Conectado' : '⚠️ Apenas Local';
+            el.style.color = ok ? '#10b981' : '#f59e0b';
+        }
+        if (document.getElementById('cfgStatusVeiculos') && window.BD.veiculos)
+            document.getElementById('cfgStatusVeiculos').textContent = window.BD.veiculos.length;
+        if (document.getElementById('cfgStatusGastos') && window.BD.gastos)
+            document.getElementById('cfgStatusGastos').textContent = window.BD.gastos.length;
+        if (document.getElementById('cfgStatusUsuarios') && window.BD.usuarios)
+            document.getElementById('cfgStatusUsuarios').textContent = window.BD.usuarios.length;
+    } catch(e) { console.error('Erro carregar cfg:', e); }
+}
+
+function salvarConfiguracoesSimples() {
+    try {
+        if (!window.BD) window.BD = {};
+        if (!window.BD.config) window.BD.config = {};
+        var c = window.BD.config;
+        c.nomeEmpresa = cfgValor('cfgNomeEmpresa');
+        c.cnpj = cfgValor('cfgCNPJ');
+        c.email = cfgValor('cfgEmail');
+        c.telefone = cfgValor('cfgTelefone');
+        c.moeda = cfgValor('cfgMoeda');
+        c.formatoData = cfgValor('cfgFormatoData');
+        c.kmAviso = Number(cfgValor('cfgKmAviso'));
+        c.diasAviso = Number(cfgValor('cfgDiasAviso'));
+        c.limiteKm = Number(cfgValor('cfgLimiteKm'));
+        c.diasParado = Number(cfgValor('cfgDiasParado'));
+        c.emailAlerta = cfgValor('cfgEmailAlerta');
+        c.pctAprovacao = Number(cfgValor('cfgPctAprovacao'));
+        c.valorMaxAdiantamento = Number(cfgValor('cfgValorMaxAdiantamento'));
+        c.diasPrestacao = Number(cfgValor('cfgDiasPrestacao'));
+        c.tempoSessao = Number(cfgValor('cfgTempoSessao'));
+        c.tamanhoMinSenha = Number(cfgValor('cfgTamanhoMinSenha'));
+        c.tentativasLogin = Number(cfgValor('cfgTentativasLogin'));
+        c.ultimaAtualizacao = new Date().toLocaleString('pt-BR');
+        if (typeof salvarDados === 'function') salvarDados();
+        if (c.nomeEmpresa) {
+            var el = document.querySelector('.sidebar-logo-text strong');
+            if (el) el.textContent = c.nomeEmpresa;
+        }
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('✅ Configurações salvas!', 'sucesso');
+        } else {
+            alert('✅ Configurações salvas!');
+        }
+    } catch(e) {
+        console.error(e);
+        alert('❌ Erro: ' + e.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        var pg = document.getElementById('pagina-configuracoes');
+        if (pg && pg.classList.contains('ativa')) {
+            cfgCarregarTudo();
+        }
+    }, 300);
 });
 </script>
 
