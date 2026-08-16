@@ -22,6 +22,83 @@
     <link rel="stylesheet" href="css/estilos-aprimorados.css">
     
     <style>
+        /* ======================================================
+   🔒 AJUSTE AUTOMÁTICO DO LAYOUT — Sem bagunçar botões
+   ====================================================== */
+html, body {
+    width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+/* Áreas principais que precisam se ajustar */
+.main-content,
+.pagina,
+.card,
+.card-body,
+.table-container,
+.form-grid,
+.config-secao,
+.stats-grid,
+.config-cards-topo {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* Corrige largura do conteúdo ao lado da sidebar */
+.main-content {
+    margin-left: 240px;
+    width: calc(100% - 240px);
+    max-width: calc(100% - 240px);
+}
+
+/* Tabelas com scroll horizontal */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    min-width: 800px;
+    width: 100%;
+}
+
+/* Inputs e selects se ajustam */
+input, select, textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* 📱 Telas menores — Sidebar sai, conteúdo ocupa tudo */
+@media (max-width: 1024px) {
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+/* 📱 Ajuste de fonte automático */
+@media (max-width: 1400px) { html { font-size: 15px; } }
+@media (max-width: 1024px) { html { font-size: 14px; } }
+@media (max-width: 768px)  { html { font-size: 13px; } }
+@media (max-width: 480px)  { html { font-size: 12px; } }
+
+/* ✅ EXCEÇÃO: Botões e ícones NÃO mudam de tamanho */
+button, .btn, .acao-btn, .status-badge, .user-avatar,
+.botao-acao, .btn-editar, .btn-excluir, .btn-historico, .btn-transferir {
+    width: auto !important;
+    max-width: none !important;
+    flex-shrink: 0;
+}
+
+        /* CSS Customizado */
         * { box-sizing: border-box; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
