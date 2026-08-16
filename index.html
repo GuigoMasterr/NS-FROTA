@@ -1,835 +1,81 @@
+<!-- ============================================================
+     SISTEMA DE GESTÃO DE FROTAS - VERSÃO FINAL RESPONSIVA
+     Layout auto-ajustável em qualquer dispositivo 📱💻🖥️
+     ============================================================ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gestão de Frotas | Sistema Completo</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-    
-    <!-- ECharts -->
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    
-    <!-- Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- CSS Customizado -->
-    <link rel="stylesheet" href="css/estilos.css">
-    <link rel="stylesheet" href="css/estilos-aprimorados.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <style>
-        * { box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f1f5f9;
+        /* ======================================================
+           🔒 RESET GLOBAL - Tudo cabe na tela
+           ====================================================== */
+        * {
+            box-sizing: border-box !important;
             margin: 0;
+            padding: 0;
         }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        /* Sidebar */
-        .sidebar {
-            width: 260px;
-            min-height: 100vh;
-            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-            color: white;
-            position: fixed;
-            left: 0;
-            top: 0;
-            z-index: 40;
-            transition: transform 0.3s ease;
-        }
-        .sidebar-logo {
-            padding: 1.5rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .sidebar-logo-icon {
-            width: 42px;
-            height: 42px;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-        }
-        .sidebar-menu { padding: 0.75rem 0; }
-        .sidebar-section {
-            padding: 0.75rem 1.25rem 0.25rem;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #64748b;
-            font-weight: 700;
-        }
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.7rem 1.25rem;
-            color: #cbd5e1;
-            text-decoration: none;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-left: 3px solid transparent;
-            margin: 0 0.5rem;
-            border-radius: 0 8px 8px 0;
-        }
-        .sidebar-link:hover {
-            background: rgba(255,255,255,0.05);
-            color: white;
-        }
-        .sidebar-link.ativo {
-            background: rgba(37, 99, 235, 0.2);
-            color: #60a5fa;
-            border-left-color: #2563eb;
-            font-weight: 600;
-        }
-        .sidebar-link i { width: 20px; text-align: center; font-size: 1rem; }
-        
-        /* Main Content */
-        .main-content {
-            margin-left: 260px;
-            min-height: 100vh;
-            transition: margin-left 0.3s ease;
-        }
-        .topbar {
-            background: white;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 0.85rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 30;
-        }
-        .topbar-user {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .user-avatar {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #2563eb, #7c3aed);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 0.9rem;
-        }
-        
-        /* Pages */
-        .pagina { display: none; padding: 1.5rem; }
-        .pagina.ativa { display: block; }
-        
-        .page-header {
-            margin-bottom: 1.5rem;
-        }
-        .page-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin: 0;
-        }
-        .page-subtitle {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin-top: 0.25rem;
-        }
-        
-        /* Cards */
-        .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border: 1px solid #e2e8f0;
-        }
-        .card-header {
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .card-title {
-            font-weight: 600;
-            color: #0f172a;
-            font-size: 1rem;
-        }
-        .card-body { padding: 1.25rem; }
-        
-        /* Stats Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.25rem;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .stat-titulo {
-            font-size: 0.8rem;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
-        }
-        .stat-valor {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin-top: 0.5rem;
-        }
-        .stat-detalhe {
-            font-size: 0.8rem;
-            color: #94a3b8;
-            margin-top: 0.25rem;
-        }
-        .stat-icone {
-            float: right;
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-        }
-        
-        /* Tables */
-        .table-container { overflow-x: auto; }
-        table {
+
+        html {
+            font-size: 16px;
             width: 100%;
-            border-collapse: collapse;
+            overflow-x: hidden;
         }
-        th {
-            text-align: left;
-            padding: 0.75rem 1rem;
+
+        body {
+            width: 100vw;
+            max-width: 100%;
+            overflow-x: hidden;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
             background: #f8fafc;
-            border-bottom: 2px solid #e2e8f0;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #64748b;
-            font-weight: 700;
+            color: #0f172a;
         }
-        td {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 0.9rem;
-            color: #334155;
+
+        input, select, textarea, button {
+            max-width: 100% !important;
+            box-sizing: border-box !important;
         }
-        tr:hover td { background: #f8fafc; }
-        
-        /* Buttons */
-        .btn {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
+
+        /* ======================================================
+           📱 AJUSTE AUTOMÁTICO DE FONTE POR TELA
+           ====================================================== */
+        @media (max-width: 1400px) { html { font-size: 15px; } }
+        @media (max-width: 1024px) { html { font-size: 14px; } }
+        @media (max-width: 768px)  { html { font-size: 13px; } }
+        @media (max-width: 480px)  { html { font-size: 12px; } }
+
+        /* ======================================================
+           🎨 CORES E VARIÁVEIS
+           ====================================================== */
+        :root {
+            --primaria: #2563eb;
+            --primaria-escura: #1d4ed8;
+            --sucesso: #10b981;
+            --aviso: #f59e0b;
+            --perigo: #ef4444;
+            --fundo: #f8fafc;
+            --cartao: #ffffff;
+            --texto: #0f172a;
+            --texto-claro: #64748b;
+            --borda: #e2e8f0;
+            --sidebar: #0f172a;
+            --sidebar-texto: #cbd5e1;
         }
-        .btn-primario {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: white;
-        }
-        .btn-primario:hover { background: linear-gradient(135deg, #1d4ed8, #1e40af); transform: translateY(-1px); }
-        .btn-secundario {
-            background: #f1f5f9;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-        }
-        .btn-secundario:hover { background: #e2e8f0; }
-        .btn-sucesso { background: #10b981; color: white; }
-        .btn-sucesso:hover { background: #059669; }
-        .btn-perigo { background: #ef4444; color: white; }
-        .btn-perigo:hover { background: #dc2626; }
-        .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.75rem; }
-        
-        /* Badges */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.2rem 0.6rem;
-            border-radius: 999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .badge-success { background: #d1fae5; color: #065f46; }
-        .badge-warning { background: #fef3c7; color: #92400e; }
-        .badge-danger { background: #fee2e2; color: #991b1b; }
-        .badge-info { background: #dbeafe; color: #1e40af; }
-        .badge-secondary { background: #f1f5f9; color: #475569; }
-        
-        /* Forms */
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1rem;
-        }
-        .form-grupo { margin-bottom: 0; }
-        .form-grupo label {
-            display: block;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #475569;
-            margin-bottom: 0.35rem;
-        }
-        .form-grupo input,
-        .form-grupo select,
-        .form-grupo textarea {
-            width: 100%;
-            padding: 0.55rem 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            background: white;
-        }
-        .form-grupo input:focus,
-        .form-grupo select:focus,
-        .form-grupo textarea:focus {
-            outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-        .obrigatorio { color: #ef4444; }
-        
-        /* Login */
-        .login-container {
+
+        /* ======================================================
+           🏗️ LAYOUT PRINCIPAL - Auto-ajustável
+           ====================================================== */
+        .app-container {
+            display: flex;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
-            padding: 1rem;
-        }
-        .login-box {
-            background: white;
-            border-radius: 16px;
-            padding: 2.5rem;
             width: 100%;
-            max-width: 420px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
         }
-        .login-logo {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .login-logo-icon {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 1rem;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.75rem;
-            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
-        }
-        .login-titulo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #0f172a;
-        }
-        .login-subtitulo {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin-top: 0.25rem;
-        }
-        .login-erro {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 0.75rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
-            display: none;
-        }
-        
-        /* Modais */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            padding: 1rem;
-            display: none;
-        }
-        .modal-overlay.aberto { display: flex; }
-        .modal-container {
-            background: white;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 700px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-        }
-        .modal-cabecalho {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .modal-titulo {
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin: 0;
-        }
-        .modal-fechar {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #64748b;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-        .modal-fechar:hover { background: #f1f5f9; }
-        .modal-corpo { padding: 1.5rem; }
-        .modal-rodape {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-        }
-        
-        /* Filtros */
-        .filtros-bar {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
-        }
-        .filtros-bar input,
-        .filtros-bar select {
-            padding: 0.5rem 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            min-width: 160px;
-        }
-        
-        /* Alertas */
-        .alerta {
-            padding: 0.85rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            font-size: 0.9rem;
-        }
-        .alerta-perigo { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
-        .alerta-aviso { background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; }
-        .alerta-info { background: #dbeafe; color: #1e40af; border-left: 4px solid #3b82f6; }
-        .alerta-sucesso { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
-        
-        /* Gráficos */
-        .graficos-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .grafico-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.25rem;
-            border: 1px solid #e2e8f0;
-        }
-        .grafico-titulo {
-            font-weight: 600;
-            color: #0f172a;
-            font-size: 0.95rem;
-            margin-bottom: 0.25rem;
-        }
-        .grafico-subtitulo {
-            font-size: 0.8rem;
-            color: #64748b;
-            margin-bottom: 1rem;
-        }
-        .grafico-container { height: 300px; }
-        
-        /* Toast */
-        .toast-container {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .toast {
-            padding: 0.85rem 1.25rem;
-            border-radius: 10px;
-            color: white;
-            font-weight: 500;
-            font-size: 0.9rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            animation: toastEntrar 0.3s ease;
-            max-width: 350px;
-        }
-        @keyframes toastEntrar {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        .toast-sucesso { background: linear-gradient(90deg, #10b981, #059669); }
-        .toast-erro { background: linear-gradient(90deg, #ef4444, #dc2626); }
-        .toast-aviso { background: linear-gradient(90deg, #f59e0b, #d97706); }
-        .toast-info { background: linear-gradient(90deg, #3b82f6, #2563eb); }
-        
-        /* Mobile */
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.aberta { transform: translateX(0); }
-            .main-content { margin-left: 0; }
-            .graficos-grid { grid-template-columns: 1fr; }
-        }
-        
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 1.25rem;
-            cursor: pointer;
-            color: #475569;
-            padding: 0.5rem;
-        }
-        @media (max-width: 768px) {
-            .mobile-menu-btn { display: block; }
-        }
-        
-        .hidden { display: none !important; }
-        
-        /* Estado vazio */
-        .estado-vazio {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: #94a3b8;
-        }
-        .estado-vazio-icone {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-        
-        /* Cartões de Despesa de Viagem */
-        .cartao-despesa {
-            background: white;
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            border: 1px solid #e2e8f0;
-            transition: box-shadow 0.2s;
-        }
-        .cartao-despesa:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        .cartao-despesa.pendente { border-left: 4px solid #f59e0b; }
-        .cartao-despesa.aprovado { border-left: 4px solid #10b981; }
-        .cartao-despesa.rejeitado { border-left: 4px solid #ef4444; }
-        
-        .despesa-cabecalho {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 0.75rem;
-        }
-        .despesa-motorista {
-            font-weight: 600;
-            color: #0f172a;
-            font-size: 0.95rem;
-        }
-        .despesa-info {
-            font-size: 0.8rem;
-            color: #64748b;
-            margin-top: 0.2rem;
-        }
-        .despesa-valor-total {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #2563eb;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 999px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-top: 0.25rem;
-        }
-        .status-pendente { background: #fef3c7; color: #92400e; }
-        .status-aprovado { background: #d1fae5; color: #065f46; }
-        .status-rejeitado { background: #fee2e2; color: #991b1b; }
-        
-        .despesa-itens {
-            font-size: 0.8rem;
-            color: #64748b;
-            padding: 0.5rem 0;
-            border-top: 1px solid #f1f5f9;
-            border-bottom: 1px solid #f1f5f9;
-            margin: 0.5rem 0;
-        }
-        .despesa-acoes {
-            display: flex;
-            gap: 0.4rem;
-            flex-wrap: wrap;
-            margin-top: 0.75rem;
-        }
-        .btn-mini {
-            padding: 0.3rem 0.6rem;
-            font-size: 0.75rem;
-            border-radius: 6px;
-            border: 1px solid #e2e8f0;
-            background: #f8fafc;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-mini:hover { background: #e2e8f0; }
-        .btn-aprovar { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
-        .btn-aprovar:hover { background: #a7f3d0; }
-        .btn-rejeitar { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-        .btn-rejeitar:hover { background: #fecaca; }
-        .btn-comprovantes { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
-        .btn-comprovantes:hover { background: #bfdbfe; }
-        
-        .adiantamento-resumo {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.5rem;
-            padding: 0.75rem;
-            border-radius: 8px;
-            margin: 0.5rem 0;
-            font-size: 0.8rem;
-        }
-        .adiantamento-resumo.saldo-zerado { background: #f8fafc; }
-        .adiantamento-resumo.saldo-positivo { background: #d1fae5; }
-        .adiantamento-resumo.saldo-negativo { background: #fee2e2; }
-        .adiantamento-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.2rem;
-        }
-        .adiantamento-item .label { color: #64748b; font-size: 0.7rem; }
-        .adiantamento-item .valor { font-weight: 600; color: #0f172a; }
-        .saldo-destaque { font-size: 0.9rem; }
-        
-        /* Modal de Despesas */
-        .modal-fundo {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            padding: 1rem;
-        }
-        .modal-fundo.ativo {
-            display: flex;
-        }
-        .modal-conteudo {
-            background: white;
-            border-radius: 12px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        /* Itens dinâmicos */
-        .item-linha {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-            align-items: center;
-        }
-        .item-tipo {
-            flex: 1;
-            padding: 0.5rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            font-size: 0.875rem;
-        }
-        .item-valor {
-            width: 140px;
-            padding: 0.5rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            font-size: 0.875rem;
-        }
-        .btn-remover-item {
-            width: 36px;
-            height: 36px;
-            border: none;
-            background: #fee2e2;
-            color: #dc2626;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        }
-        .btn-remover-item:hover { background: #fecaca; }
-        
-        /* Upload */
-        #areaUpload.drag-over {
-            border-color: #2563eb !important;
-            background: #eff6ff !important;
-        }
-        .comprovante-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.4rem 0.75rem;
-            background: #f1f5f9;
-            border-radius: 6px;
-            margin: 0.25rem;
-            font-size: 0.8rem;
-        }
-        .comprovante-remover {
-            color: #dc2626;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        
-        /* Saldo */
-        .saldo-positivo { background: #d1fae5 !important; color: #065f46; }
-        .saldo-negativo { background: #fee2e2 !important; color: #991b1b; }
-        .saldo-zerado { background: #f8fafc !important; }
-        
-        /* Abas */
-        .aba-btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            font-weight: 600;
-            color: #64748b;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-            transition: all 0.2s;
-            font-size: 0.9rem;
-        }
-        .aba-btn:hover { color: #2563eb; }
-        .aba-btn.ativo {
-            color: #2563eb;
-            border-bottom-color: #2563eb;
-        }
-        
-        /* Cartão de Adiantamento */
-        .cartao-adiantamento {
-            background: white;
-            border-radius: 12px;
-            padding: 1.25rem;
-            margin-bottom: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-left: 4px solid #2563eb;
-            transition: box-shadow 0.2s;
-        }
-        .cartao-adiantamento:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .cartao-adiantamento.parcial { border-left-color: #f59e0b; }
-        .cartao-adiantamento.fechado { border-left-color: #10b981; opacity: 0.85; }
-        
-        .adiantamento-header {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
-        }
-        .adiantamento-motorista { font-weight: 700; font-size: 1.1rem; color: #0f172a; }
-        .adiantamento-info { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
-        .adiantamento-valor { font-size: 1.5rem; font-weight: 800; color: #2563eb; }
-        
-        .adiantamento-progresso {
-            margin: 1rem 0;
-        }
-        .progresso-barra {
-            height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;
-        }
-        .progresso-preenchido {
-            height: 100%; background: linear-gradient(90deg, #10b981, #2563eb);
-            transition: width 0.5s ease;
-        }
-        .progresso-texto {
-            display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;
-        }
-        
-        .adiantamento-saldos {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
-            padding: 0.75rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem;
-        }
-        .saldo-item { text-align: center; }
-        .saldo-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
-        .saldo-valor { font-weight: 700; font-size: 1rem; color: #0f172a; margin-top: 0.25rem; }
-        .saldo-valor.positivo { color: #10b981; }
-        .saldo-valor.negativo { color: #dc2626; }
-        
-        /* Cartão de Gasto */
-        .cartao-gasto {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0.75rem 1rem; background: #f8fafc; border-radius: 8px;
-            margin-bottom: 0.5rem; border-left: 3px solid #8b5cf6;
-        }
-        .gasto-info { flex: 1; }
-        .gasto-tipo { font-weight: 600; color: #0f172a; }
-        .gasto-detalhes { font-size: 0.8rem; color: #64748b; margin-top: 0.15rem; }
-        .gasto-valor { font-weight: 700; color: #dc2626; margin-right: 1rem; }
-        
-        .status-adiantamento {
-            display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px;
-            font-size: 0.75rem; font-weight: 600;
-        }
-        .status-liberado { background: #dbeafe; color: #1e40af; }
-        .status-parcial { background: #fef3c7; color: #92400e; }
-        .status-fechado { background: #d1fae5; color: #065f46; }
-        /* ==================================================
-           📱 RESPONSIVIDADE COMPLETA
-           ================================================== */
-        
+
+        /* Botão menu mobile */
         .btn-menu-mobile {
             display: none;
             background: transparent;
@@ -839,7 +85,107 @@
             color: #0f172a;
             padding: 0.5rem;
         }
-        
+
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            min-width: 240px;
+            background: var(--sidebar);
+            color: var(--sidebar-texto);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            z-index: 90;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.aberto { transform: translateX(0); }
+
+        .sidebar-logo {
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .sidebar-logo span {
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem 0.5rem;
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 0.875rem;
+            color: var(--sidebar-texto);
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            transition: all 0.15s;
+        }
+
+        .sidebar-nav a:hover {
+            background: #1e293b;
+            color: white;
+        }
+
+        .sidebar-nav a.ativo {
+            background: var(--primaria);
+            color: white;
+        }
+
+        .sidebar-nav .categoria {
+            padding: 0.5rem 0.875rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #475569;
+            margin-top: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid #1e293b;
+            font-size: 0.8rem;
+        }
+
+        .btn-sair {
+            width: 100%;
+            background: #450a0a;
+            color: #fca5a5;
+            border: none;
+            padding: 0.625rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Overlay do menu mobile */
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -848,1756 +194,710 @@
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.5);
-            z-index: 99;
+            z-index: 89;
         }
-        
-        .sidebar-overlay.visivel {
-            display: block;
-        }
-        
-        @media (max-width: 1024px) {
-            .sidebar { width: 220px; }
-            .main-content { margin-left: 220px; }
-            .page-title { font-size: 1.25rem; }
-            .stats-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-        }
-        
-        @media (max-width: 768px) {
-            .btn-menu-mobile { display: block; }
-            .sidebar { transform: translateX(-100%); width: 280px; z-index: 100; }
-            .sidebar.aberto { transform: translateX(0); }
-            .main-content { margin-left: 0; }
-            .topbar { padding: 0.75rem 1rem; }
-            .pagina { padding: 1rem; }
-            .page-header { flex-direction: column; gap: 0.75rem; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
-            .stat-valor { font-size: 1.4rem; }
-            .card-header { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
-            .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            table { min-width: 600px; font-size: 0.8rem; }
-            th, td { padding: 0.5rem 0.4rem; }
-            .modal-container { margin: 1rem; max-width: calc(100% - 2rem) !important; }
-        }
-        
-        @media (max-width: 480px) {
-            .stats-grid { grid-template-columns: 1fr; }
-            .pagina { padding: 0.75rem; }
-            .page-title { font-size: 1.1rem; }
-            .page-subtitle { font-size: 0.8rem; }
-            .topbar { padding: 0.5rem 0.75rem; }
-            .btn { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
-            .card-body { padding: 0.75rem; }
-            .card-header { padding: 0.75rem; }
-            table { min-width: 500px; font-size: 0.75rem; }
-            .sidebar { width: 100%; max-width: 300px; }
-        }
-        
-        @media (max-width: 360px) {
-            .user-avatar { width: 32px; height: 32px; font-size: 0.8rem; }
-            .btn-menu-mobile { font-size: 1.2rem; padding: 0.25rem; }
-            .topbar-user { gap: 0.4rem; }
-        }
-        
-        @media (min-width: 1025px) and (max-width: 1440px) {
-            .sidebar { width: 240px; }
-            .main-content { margin-left: 240px; }
-            .pagina { padding: 1.25rem; }
-            .page-title { font-size: 1.35rem; }
-        }
-        
-        @media (min-width: 1921px) {
-            .main-content { max-width: 1800px; }
-            .pagina { padding: 2rem; }
+        .sidebar-overlay.visivel { display: block; }
+
+        /* Conteúdo Principal */
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            width: calc(100% - 240px);
+            max-width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
+        /* Topbar */
+        .topbar {
+            background: white;
+            padding: 0.875rem 1.5rem;
+            border-bottom: 1px solid var(--borda);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 80;
+            width: 100%;
+        }
+
+        .topbar-esq { display: flex; align-items: center; gap: 0.75rem; }
+        .topbar-dir { display: flex; align-items: center; gap: 1rem; }
+        .user-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--primaria); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 0.9rem;
+        }
+
+        /* Área de Páginas */
+        .pagina {
+            padding: 1.5rem;
+            display: none;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            flex: 1;
+        }
+        .pagina.ativa { display: block; animation: aparecer 0.2s ease; }
+        @keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ======================================================
+           📊 COMPONENTES - Auto-ajustáveis
+           ====================================================== */
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;
+        }
+        .page-title { font-size: 1.35rem; font-weight: 700; }
+        .page-subtitle { color: var(--texto-claro); font-size: 0.9rem; margin-top: 0.25rem; }
+
+        .btn {
+            padding: 0.625rem 1rem; border-radius: 0.5rem; border: none;
+            font-weight: 500; cursor: pointer; font-size: 0.9rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.5rem; transition: all 0.15s; white-space: nowrap;
+        }
+        .btn-primario { background: var(--primaria); color: white; }
+        .btn-primario:hover { background: var(--primaria-escura); }
+        .btn-secundario { background: #f1f5f9; color: var(--texto); }
+        .btn-secundario:hover { background: #e2e8f0; }
+
+        .card {
+            background: white; border-radius: 0.75rem; border: 1px solid var(--borda);
+            overflow: hidden; width: 100%; max-width: 100%;
+        }
+        .card-header {
+            padding: 1rem 1.25rem; border-bottom: 1px solid var(--borda);
+            font-weight: 600; display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 0.5rem;
+        }
+        .card-body { padding: 1.25rem; width: 100%; max-width: 100%; }
+
+        .form-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem; width: 100%;
+        }
+        .form-grupo { display: flex; flex-direction: column; gap: 0.375rem; }
+        label { font-size: 0.85rem; font-weight: 500; color: #334155; }
+        input, select, textarea {
+            padding: 0.625rem 0.75rem; border: 1px solid var(--borda);
+            border-radius: 0.375rem; font-size: 0.9rem; width: 100%;
+            background: white;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primaria); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+        .table-container {
+            width: 100%; max-width: 100%;
+            overflow-x: auto; -webkit-overflow-scrolling: touch;
+            border: 1px solid var(--borda); border-radius: 0.5rem;
+        }
+        table { width: 100%; min-width: 600px; border-collapse: collapse; }
+        th, td { padding: 0.75rem 0.625rem; text-align: left; border-bottom: 1px solid var(--borda); font-size: 0.875rem; }
+        th { background: #f8fafc; font-weight: 600; white-space: nowrap; }
+        tr:hover { background: #f8fafc; }
+
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem; margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: white; border-radius: 0.75rem; padding: 1.25rem;
+            border: 1px solid var(--borda);
+        }
+        .stat-valor { font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+        .stat-label { font-size: 0.85rem; color: var(--texto-claro); margin-top: 0.25rem; }
+
+        /* ======================================================
+           ⚙️ PÁGINA CONFIGURAÇÕES - Layout Auto-ajustável
+           ====================================================== */
+        .config-cards-topo {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem; margin-bottom: 1.5rem;
+        }
+        .config-secao {
+            background: white; border-radius: 0.75rem; border: 1px solid var(--borda);
+            padding: 1.25rem; margin-bottom: 1.25rem;
+            width: 100%; max-width: 100%;
+        }
+        .config-secao h3 {
+            font-size: 1rem; font-weight: 600; margin-bottom: 1rem;
+            padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+        }
+        .config-lista-item {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.5rem 0.75rem; background: #f8fafc;
+            border-radius: 0.375rem; margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .config-lista-item button { margin-left: auto; }
+        .config-linha {
+            display: flex; gap: 0.75rem; align-items: flex-end;
+            flex-wrap: wrap; margin-top: 0.5rem;
+        }
+        .config-linha input { flex: 1; min-width: 180px; }
+        .config-2col {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem; width: 100%;
+        }
+        .config-3col {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem; width: 100%;
+        }
+        .config-botoes {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem; margin-top: 1rem;
+        }
+
+        /* ======================================================
+           📱 RESPONSIVIDADE - Auto-reorganiza
+           ====================================================== */
+        @media (max-width: 1024px) {
+            .config-cards-topo { grid-template-columns: repeat(2, 1fr); }
+            .sidebar { width: 220px; min-width: 220px; }
+            .main-content { margin-left: 220px; width: calc(100% - 220px); }
+        }
+
+        @media (max-width: 768px) {
+            .btn-menu-mobile { display: block; }
+            .sidebar { transform: translateX(-100%); width: 280px; min-width: 280px; }
+            .main-content { margin-left: 0; width: 100%; }
+            .topbar { padding: 0.75rem 1rem; }
+            .pagina { padding: 1rem; }
+            .config-cards-topo { grid-template-columns: repeat(2, 1fr); }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .config-2col, .config-3col { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .config-cards-topo { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .topbar-esq h2 { font-size: 1rem; }
+            .btn { padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+            .card-body, .config-secao { padding: 0.875rem; }
+        }
+
+        /* ======================================================
+           🪟 MODAIS
+           ====================================================== */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            display: none; align-items: center; justify-content: center;
+            z-index: 99999; padding: 1rem;
+        }
+        .modal-overlay.aberto { display: flex; }
+        .modal-container {
+            background: white; border-radius: 0.75rem; width: 100%;
+            max-width: 500px; max-height: 90vh; overflow-y: auto;
+        }
+        .modal-cabecalho {
+            padding: 1rem 1.25rem; border-bottom: 1px solid var(--borda);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-titulo { font-size: 1.1rem; font-weight: 600; }
+        .modal-fechar { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; }
+        .modal-corpo { padding: 1.25rem; }
+        .modal-rodape { padding: 1rem 1.25rem; border-top: 1px solid var(--borda); display: flex; justify-content: flex-end; gap: 0.75rem; }
+
+        .alerta { padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+        .alerta.sucesso { background: #d1fae5; color: #065f46; }
+        .alerta.erro { background: #fee2e2; color: #991b1b; }
+        .alerta.aviso { background: #fef3c7; color: #92400e; }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<!-- Container para Toasts -->
-<div class="toast-container" id="toastContainer"></div>
-
-<!-- Container para Modais -->
-
-        
-                        <section class="pagina" id="pagina-configuracoes">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">⚙️ Configurações do Sistema</h1>
-                    <p class="page-subtitle">Personalize todos os parâmetros do sistema</p>
-                </div>
-                <button class="btn btn-primario" onclick="salvarConfiguracoesSimples()">
-                    <i class="fa-solid fa-save"></i> 💾 Salvar Todas as Configurações
-                </button>
-            </div>
-
-            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
-                <div class="stat-card">
-                    <div class="stat-titulo">🌐 Conexão Supabase</div>
-                    <div class="stat-valor" id="cfgStatusSupabase" style="font-size: 1rem;">Verificando...</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-titulo">🚛 Veículos</div>
-                    <div class="stat-valor" id="cfgStatusVeiculos">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-titulo">💰 Gastos</div>
-                    <div class="stat-valor" id="cfgStatusGastos">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-titulo">👥 Usuários</div>
-                    <div class="stat-valor" id="cfgStatusUsuarios">0</div>
-                </div>
-            </div>
-
-            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">📋 Dados Gerais</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                <div class="card">
-                    <div class="card-header"><div class="card-title">📍 Locais / Obras</div></div>
-                    <div class="card-body">
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                            <input type="text" id="cfgNovoLocal" placeholder="Novo local..." style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;">
-                            <button class="btn btn-primario" onclick="cfgAdicionar('locais','cfgNovoLocal','cfgListaLocais','cfgRemoverLocal')" style="padding: 0.5rem 0.75rem;">+</button>
-                        </div>
-                        <div id="cfgListaLocais" style="display: grid; gap: 0.4rem; max-height: 180px; overflow-y: auto;"></div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header"><div class="card-title">🚛 Categorias de Veículos</div></div>
-                    <div class="card-body">
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                            <input type="text" id="cfgNovaCategoria" placeholder="Nova categoria..." style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;">
-                            <button class="btn btn-primario" onclick="cfgAdicionar('categoriasVeiculo','cfgNovaCategoria','cfgListaCategorias','cfgRemoverCategoria')" style="padding: 0.5rem 0.75rem;">+</button>
-                        </div>
-                        <div id="cfgListaCategorias" style="display: grid; gap: 0.4rem; max-height: 180px; overflow-y: auto;"></div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header"><div class="card-title">💰 Tipos de Gastos</div></div>
-                    <div class="card-body">
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                            <input type="text" id="cfgNovoTipoGasto" placeholder="Novo tipo..." style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;">
-                            <button class="btn btn-primario" onclick="cfgAdicionar('tiposGasto','cfgNovoTipoGasto','cfgListaTiposGasto','cfgRemoverTipoGasto')" style="padding: 0.5rem 0.75rem;">+</button>
-                        </div>
-                        <div id="cfgListaTiposGasto" style="display: grid; gap: 0.4rem; max-height: 180px; overflow-y: auto;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">⚙️ Sistema</h2>
-            <div class="card" style="margin-bottom: 2rem;">
-                <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Nome da Empresa</label><input type="text" id="cfgNomeEmpresa" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">CNPJ</label><input type="text" id="cfgCNPJ" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">E-mail</label><input type="email" id="cfgEmail" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Telefone</label><input type="text" id="cfgTelefone" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Moeda</label><select id="cfgMoeda" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; background:white; box-sizing:border-box;"><option value="BRL">R$ - Real</option><option value="USD">US$ - Dólar</option><option value="EUR">€ - Euro</option></select></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Formato de Data</label><select id="cfgFormatoData" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; background:white; box-sizing:border-box;"><option value="pt-BR">DD/MM/AAAA</option><option value="en-US">MM/DD/AAAA</option></select></div>
-                </div>
-            </div>
-
-            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">🔔 Notificações e Alertas</h2>
-            <div class="card" style="margin-bottom: 2rem;">
-                <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">KM para aviso de manutenção</label><input type="number" id="cfgKmAviso" value="500" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Dias para aviso de vencimento</label><input type="number" id="cfgDiasAviso" value="15" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Limite KM para alerta</label><input type="number" id="cfgLimiteKm" value="200000" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Dias parado para alertar</label><input type="number" id="cfgDiasParado" value="30" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">E-mail para alertas</label><input type="email" id="cfgEmailAlerta" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                </div>
-            </div>
-
-            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">📜 Regras de Negócio</h2>
-            <div class="card" style="margin-bottom: 2rem;">
-                <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">% mínima aprovação check-list</label><input type="number" id="cfgPctAprovacao" value="70" min="0" max="100" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Valor máx adiantamento (R$)</label><input type="number" id="cfgValorMaxAdiantamento" value="500" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Dias limite prestação contas</label><input type="number" id="cfgDiasPrestacao" value="7" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tempo sessão (minutos)</label><input type="number" id="cfgTempoSessao" value="240" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tamanho mín senha</label><input type="number" id="cfgTamanhoMinSenha" value="4" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tentativas login</label><input type="number" id="cfgTentativasLogin" value="5" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                </div>
-            </div>
-
-            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">🌐 Integrações e Backup</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-                <button class="btn btn-primario" onclick="sincronizarManualmente()" style="padding: 0.75rem;">🔄 Sincronizar com Supabase</button>
-                <button class="btn btn-secundario" onclick="enviarTodosDadosParaNuvem()" style="padding: 0.75rem;">☁️ Enviar para Nuvem</button>
-                <button class="btn btn-secundario" onclick="carregarDadosDaNuvem()" style="padding: 0.75rem;">⬇️ Baixar da Nuvem</button>
-                <button class="btn btn-secundario" onclick="exportarDadosJSON()" style="padding: 0.75rem;">📤 Exportar JSON</button>
-                <button class="btn" onclick="document.getElementById('cfgImportarArquivo').click()" style="padding: 0.75rem; background: #e0f2fe; color: #0369a1;">📥 Importar JSON</button>
-                <input type="file" id="cfgImportarArquivo" accept=".json" style="display:none;" onchange="importarDadosJSON(event)">
-                <button class="btn" onclick="recarregarDadosDemo()" style="padding: 0.75rem; background: #fef3c7; color: #92400e;">📦 Dados Demo</button>
-                <button class="btn" onclick="limparTodosDados()" style="padding: 0.75rem; background: #fee2e2; color: #991b1b;">🗑️ Limpar Dados</button>
-            </div>
-        </section>
-
-<div id="modais"></div>
-
-<!-- ============================================================
-     TELA DE LOGIN
-     ============================================================ -->
-<div id="telaLogin" class="login-container">
-    <div class="login-box">
-        <div class="login-logo">
-            <div class="login-logo-icon">
-                <i class="fa-solid fa-truck-fast"></i>
-            </div>
-            <h1 class="login-titulo">Gestão de Frotas</h1>
-            <p class="login-subtitulo">Sistema completo de gestão e manutenção</p>
-        </div>
-        
-        <div class="login-erro" id="erroLogin"></div>
-        
-        <form id="formLogin">
-            <div class="form-grupo" style="margin-bottom: 1rem;">
-                <label>Usuário</label>
-                <input type="text" id="loginUsuario" placeholder="Digite seu usuário" required autocomplete="username">
-            </div>
-            <div class="form-grupo" style="margin-bottom: 1.5rem;">
-                <label>Senha</label>
-                <input type="password" id="loginSenha" placeholder="Digite sua senha" required autocomplete="current-password">
-            </div>
-            <button type="submit" class="btn btn-primario" style="width: 100%; justify-content: center; padding: 0.75rem;">
-                <i class="fa-solid fa-right-to-bracket"></i>
-                Entrar no Sistema
-            </button>
-        </form>
-        
-        <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #e2e8f0; font-size: 0.8rem; color: #94a3b8; text-align: center;">
-            <p style="margin-bottom: 0.35rem;"><strong>Credenciais de demonstração:</strong></p>
-            <p>Admin: <code style="background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px;">admin</code> / <code style="background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px;">admin123</code></p>
-            <p>Operador: <code style="background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px;">operador</code> / <code style="background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px;">1234</code></p>
-        </div>
-    </div>
-</div>
-
-<!-- ============================================================
-     SISTEMA PRINCIPAL
-     ============================================================ -->
-<div id="sistemaPrincipal" class="hidden">
-    
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
+<div class="app-container">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
         <div class="sidebar-logo">
-            <div class="sidebar-logo-icon">
-                <i class="fa-solid fa-truck-fast"></i>
-            </div>
-            <div>
-                <div style="font-weight: 700; font-size: 1rem;">Gestão Frotas</div>
-                <div style="font-size: 0.7rem; color: #64748b;">Sistema Completo</div>
-            </div>
+            <span style="font-size:1.5rem;">🚛</span>
+            <span>Gestão de Frotas</span>
         </div>
-        
-        <nav class="sidebar-menu">
-            <div class="sidebar-section">Principal</div>
-            <div class="sidebar-link ativo" data-pagina="dashboard">
-                <i class="fa-solid fa-gauge-high"></i>
-                <span>Dashboard</span>
+        <div class="sidebar-nav">
+            <ul>
+                <li class="categoria">Principal</li>
+                <li><a href="#" data-pagina="dashboard" class="ativo"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+
+                <li class="categoria">Gestão</li>
+                <li><a href="#" data-pagina="veiculos"><i class="fas fa-truck"></i> Veículos</a></li>
+                <li><a href="#" data-pagina="manutencao"><i class="fas fa-tools"></i> Manutenção</a></li>
+                <li><a href="#" data-pagina="gastos"><i class="fas fa-file-invoice-dollar"></i> Gastos</a></li>
+                <li><a href="#" data-pagina="despesas-viagem"><i class="fas fa-route"></i> Despesas de Viagem</a></li>
+
+                <li class="categoria">Operacional</li>
+                <li><a href="#" data-pagina="checklist"><i class="fas fa-clipboard-check"></i> Check-list</a></li>
+                <li><a href="#" data-pagina="chamados"><i class="fas fa-exclamation-triangle"></i> Chamados</a></li>
+                <li><a href="#" data-pagina="alocacoes"><i class="fas fa-exchange-alt"></i> Alocações</a></li>
+
+                <li class="categoria">Sistema</li>
+                <li><a href="#" data-pagina="usuarios"><i class="fas fa-users"></i> Usuários</a></li>
+                <li><a href="#" data-pagina="solicitacoes"><i class="fas fa-paper-plane"></i> Solicitações</a></li>
+                <li><a href="#" data-pagina="relatorios"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
+                <li><a href="#" data-pagina="configuracoes"><i class="fas fa-cog"></i> Configurações</a></li>
+            </ul>
+        </div>
+        <div class="sidebar-footer">
+            <div id="usuarioLogado" style="font-size:0.8rem; opacity:0.7;">
+                Usuário conectado<br>
+                <strong>Administrador</strong>
             </div>
-            
-            <div class="sidebar-section">Gestão</div>
-            <div class="sidebar-link" data-pagina="veiculos">
-                <i class="fa-solid fa-truck"></i>
-                <span>Veículos</span>
-            </div>
-            <div class="sidebar-link" data-pagina="manutencao">
-                <i class="fa-solid fa-screwdriver-wrench"></i>
-                <span>Manutenção</span>
-            </div>
-            <div class="sidebar-link" data-pagina="gastos">
-                <i class="fa-solid fa-receipt"></i>
-                <span>Gastos</span>
-            </div>
-            <div class="sidebar-link" data-pagina="despesas-viagem">
-                <i class="fa-solid fa-money-bill-trip"></i>
-                <span>Despesas de Viagem</span>
-            </div>
-            
-            <div class="sidebar-section">Operacional</div>
-            <div class="sidebar-link" data-pagina="checklist">
-                <i class="fa-solid fa-list-check"></i>
-                <span>Check-list</span>
-            </div>
-            <div class="sidebar-link" data-pagina="chamados">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <span>Chamados</span>
-            </div>
-            <div class="sidebar-link" data-pagina="alocacoes">
-                <i class="fa-solid fa-route"></i>
-                <span>Alocações</span>
-            </div>
-            
-            <div class="sidebar-section">Sistema</div>
-            <div class="sidebar-link" data-pagina="usuarios">
-                <i class="fa-solid fa-users"></i>
-                <span>Usuários</span>
-            </div>
-            <div class="sidebar-link" data-pagina="solicitacoes">
-                <i class="fas fa-exchange-alt"></i>
-                <span>Solicitações</span>
-            </div>
-            <div class="sidebar-link" data-pagina="relatorios">
-                <i class="fas fa-chart-bar"></i>
-                <span>Relatórios</span>
-            </div>
-            <div class="sidebar-link" data-pagina="configuracoes">
-                <i class="fa-solid fa-gear"></i>
-                <span>Configurações</span>
-            </div>
-            <div class="sidebar-link" id="btnSairSidebar" style="color: #f87171;">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                <span>Sair</span>
-            </div>
-        </nav>
-    </aside>
-    
-    <!-- MAIN CONTENT -->
+            <button class="btn-sair" onclick="sairDoSistema()"><i class="fas fa-sign-out-alt"></i> Sair</button>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
     <main class="main-content">
-        
-        <!-- TOPBAR -->
-        <div class="topbar">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <button class="mobile-menu-btn" id="btnMobileMenu">
-                    <i class="fa-solid fa-bars"></i>
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="topbar-esq">
+                <button class="btn-menu-mobile" onclick="toggleSidebar()" title="Menu">
+                    <i class="fas fa-bars"></i>
                 </button>
                 <div>
-                    <button class="btn-menu-mobile" onclick="toggleSidebar()" title="Menu"><i class="fas fa-bars"></i></button>
-                    <h2 style="font-size: 1.05rem; font-weight: 600; color: #0f172a; margin: 0;" id="topbarTitulo">Dashboard</h2>
-                    <p style="font-size: 0.75rem; color: #64748b; margin: 0;" id="topbarData"></p>
+                    <h2 style="font-size:1.05rem; font-weight:600; margin:0;" id="topbarTitulo">Dashboard</h2>
+                    <p style="font-size:0.75rem; color:#64748b; margin:0;" id="topbarData"></p>
                 </div>
             </div>
-            <div class="topbar-user">
-                <div style="text-align: right;">
-                    <div style="font-weight: 600; color: #0f172a; font-size: 0.85rem;" id="nomeUsuario">Usuário</div>
-                    <div style="font-size: 0.7rem; color: #64748b;" id="perfilUsuario">Admin</div>
-                </div>
-                <div class="user-avatar" id="userAvatar">U</div>
-                <div id="sinoNotificacoes" style="position:relative;display:inline-flex;align-items:center;margin:0 12px;cursor:pointer;" onclick="mostrarPagina('solicitacoes')" title="Solicitações pendentes">
-                    <i class="fas fa-bell" style="font-size:1.1rem;color:#64748b;"></i>
-                    <span id="badgeNotificacoes" style="display:none;position:absolute;top:-6px;right:-8px;background:#dc2626;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;align-items:center;justify-content:center;min-width:18px;padding:0 4px;">0</span>
-                </div>
-                <button class="btn btn-secundario btn-sm" id="btnSair">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    Sair
-                </button>
+            <div class="topbar-dir">
+                <span id="sinoNotificacoes" style="position:relative; cursor:pointer; font-size:1.2rem;" title="Notificações">
+                    <i class="fas fa-bell"></i>
+                    <span id="contadorNotificacoes" style="position:absolute; top:-8px; right:-8px; background:red; color:white; font-size:10px; padding:1px 5px; border-radius:10px; display:none;">0</span>
+                </span>
+                <div class="user-avatar" title="Administrador">A</div>
+                <button class="btn btn-secundario" style="padding:0.4rem 0.7rem; font-size:0.85rem;" onclick="sairDoSistema()">Sair</button>
             </div>
-        </div>
-        
-        <!-- ============================================================
-             PÁGINA: DASHBOARD
-             ============================================================ -->
-        <section class="pagina ativa" id="pagina-dashboard">
-            <div class="page-header">
-                <h1 class="page-title">Painel de Controle</h1>
-                <p class="page-subtitle">Visão geral da sua frota em tempo real</p>
-            </div>
-            
-            <!-- Cards de Estatísticas -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icone" style="background: #dbeafe; color: #2563eb;">
-                        <i class="fa-solid fa-truck"></i>
-                    </div>
-                    <div class="stat-titulo">Total de Veículos</div>
-                    <div class="stat-valor" id="cardTotalVeiculos">0</div>
-                    <div class="stat-detalhe">cadastrados</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icone" style="background: #d1fae5; color: #059669;">
-                        <i class="fa-solid fa-check-circle"></i>
-                    </div>
-                    <div class="stat-titulo">Em Operação</div>
-                    <div class="stat-valor" id="cardEmOperacao">0</div>
-                    <div class="stat-detalhe" id="cardEmOperacaoPct">0% da frota</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icone" style="background: #fef3c7; color: #d97706;">
-                        <i class="fa-solid fa-screwdriver-wrench"></i>
-                    </div>
-                    <div class="stat-titulo">Em Manutenção</div>
-                    <div class="stat-valor" id="cardEmManutencao">0</div>
-                    <div class="stat-detalhe">precisam de atenção</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icone" style="background: #fee2e2; color: #dc2626;">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                    </div>
-                    <div class="stat-titulo">Chamados Abertos</div>
-                    <div class="stat-valor" id="cardChamados">0</div>
-                    <div class="stat-detalhe">pendentes</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icone" style="background: #ede9fe; color: #7c3aed;">
-                        <i class="fa-solid fa-receipt"></i>
-                    </div>
-                    <div class="stat-titulo">Gastos do Mês</div>
-                    <div class="stat-valor" id="cardGastosMes">R$ 0,00</div>
-                    <div class="stat-detalhe">todas as despesas</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icone" style="background: #fce7f3; color: #db2777;">
-                        <i class="fa-solid fa-road"></i>
-                    </div>
-                    <div class="stat-titulo">KM Rodados</div>
-                    <div class="stat-valor" id="cardKmRodados">0</div>
-                    <div class="stat-detalhe">total da frota</div>
-                </div>
-            </div>
-            
-            <!-- Gráficos Linha 1 -->
-            <div class="graficos-grid">
-                <div class="grafico-card">
-                    <div class="grafico-titulo">Distribuição por Categoria</div>
-                    <div class="grafico-subtitulo">Composição atual da frota</div>
-                    <div class="grafico-container" id="chartCategoria"></div>
-                </div>
-                <div class="grafico-card">
-                    <div class="grafico-titulo">Evolução de Gastos</div>
-                    <div class="grafico-subtitulo">Últimos 6 meses — Combustível · Manutenção · Outros</div>
-                    <div class="grafico-container" id="chartGastos"></div>
-                </div>
-            </div>
-            
-            <!-- Gráficos Linha 2 -->
-            <div class="graficos-grid">
-                <div class="grafico-card">
-                    <div class="grafico-titulo"><i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> Top 5 — Veículos com Mais Gastos</div>
-                    <div class="grafico-subtitulo">Ranking dos veículos que mais geraram custos</div>
-                    <div class="grafico-container" id="chartTopVeiculos"></div>
-                </div>
-                <div class="grafico-card">
-                    <div class="grafico-titulo"><i class="fa-solid fa-chart-pie" style="color: #2563eb;"></i> Gastos por Categoria</div>
-                    <div class="grafico-subtitulo">Onde o dinheiro está sendo gasto</div>
-                    <div class="grafico-container" id="chartGastosCategoria"></div>
-                </div>
-            </div>
-            
-            <!-- Painel de Alertas -->
-            <div class="card" style="margin-bottom: 1.5rem;">
-                <div class="card-header">
-                    <div class="card-title"><i class="fa-solid fa-bell" style="color: #ef4444; margin-right: 0.5rem;"></i>Alertas do Sistema</div>
-                </div>
-                <div class="card-body" id="painelAlertas">
-                    <div class="alerta alerta-info">
-                        <i class="fa-solid fa-clock"></i>
-                        <span>Verificando alertas...</span>
+        </header>
+
+        <!-- Área de Páginas -->
+        <div id="areaPaginas">
+
+            <!-- DASHBOARD -->
+            <section class="pagina ativa" id="pagina-dashboard">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Painel de Controle</h1>
+                        <p class="page-subtitle">Visão geral da frota</p>
                     </div>
                 </div>
-            </div>
-        </section>
-        
-        <!-- ============================================================
-             PÁGINA: VEÍCULOS
-             ============================================================ -->
-        <section class="pagina" id="pagina-veiculos">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">Gestão de Veículos</h1>
-                    <p class="page-subtitle">Cadastre e gerencie todos os veículos da frota</p>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-valor" id="qtdVeiculos">0</div><div class="stat-label">Veículos</div></div>
+                    <div class="stat-card"><div class="stat-valor" id="qtdManutencao">0</div><div class="stat-label">Em Manutenção</div></div>
+                    <div class="stat-card"><div class="stat-valor" id="qtdGastos">R$ 0,00</div><div class="stat-label">Gastos (Mês)</div></div>
+                    <div class="stat-card"><div class="stat-valor" id="qtdAlocacoes">0</div><div class="stat-label">Alocações Ativas</div></div>
                 </div>
-                <button class="btn btn-primario" onclick="abrirModalVeiculo()">
-                    <i class="fa-solid fa-plus"></i>
-                    Novo Veículo
-                </button>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">Lista de Veículos</div>
-                    <div class="filtros-bar" style="margin: 0;">
-                        <input type="text" id="buscaVeiculos" placeholder="🔍 Buscar placa, modelo, obra..." oninput="carregarTabelaVeiculos()">
+                <div class="card">
+                    <div class="card-header">Últimas Atividades</div>
+                    <div class="card-body" id="ultimasAtividades">
+                        <p style="color:#64748b;">Carregando dados...</p>
                     </div>
                 </div>
-                <div class="card-body" style="padding: 0;">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Placa</th>
-                                    <th>Categoria</th>
-                                    <th>Modelo</th>
-                                    <th>Ano</th>
-                                    <th>KM Atual</th>
-                                    <th>Obra / Local</th>
-                                    <th>Responsável</th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaVeiculos">
-                                <tr><td colspan="9" class="estado-vazio">Carregando...</td></tr>
-                            </tbody>
-                        </table>
+            </section>
+
+            <!-- CONFIGURAÇÕES -->
+            <section class="pagina" id="pagina-configuracoes">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Configurações</h1>
+                        <p class="page-subtitle">Parâmetros do sistema</p>
                     </div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- ============================================================
-             PÁGINA: MANUTENÇÃO
-             ============================================================ -->
-        <section class="pagina" id="pagina-manutencao">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">Controle de Manutenção</h1>
-                    <p class="page-subtitle">Preventiva e corretiva</p>
-                </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-primario" onclick="abrirModalManutencao('preventiva')">
-                        <i class="fa-solid fa-shield-halved"></i>
-                        Preventiva
-                    </button>
-                    <button class="btn btn-perigo" onclick="abrirModalManutencao('corretiva')">
-                        <i class="fa-solid fa-screwdriver-wrench"></i>
-                        Corretiva
+                    <button class="btn btn-primario" onclick="salvarConfiguracoesSimples()">
+                        <i class="fas fa-save"></i> Salvar Todas as Configurações
                     </button>
                 </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">Histórico de Manutenção</div>
-                    <div class="filtros-bar" style="margin: 0;">
-                        <select id="filtroVeiculoManutencao" onchange="carregarTabelaManutencao(this.value)">
-                            <option value="todos">Todos os veículos</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="card-body" style="padding: 0;">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Veículo</th>
-                                    <th>Tipo</th>
-                                    <th>Serviço</th>
-                                    <th>KM Previsto</th>
-                                    <th>Custo</th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaManutencao">
-                                <tr><td colspan="8" class="estado-vazio">Carregando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- ============================================================
-             PÁGINA: GASTOS
-             ============================================================ -->
-        <section class="pagina" id="pagina-gastos">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">Controle de Gastos</h1>
-                    <p class="page-subtitle">Todos os lançamentos de despesas da frota</p>
-                </div>
-                <button class="btn btn-sucesso" onclick="abrirModalGasto()">
-                    <i class="fa-solid fa-plus"></i>
-                    Lançar Gasto
-                </button>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">Lançamentos</div>
-                    <div class="filtros-bar" style="margin: 0;">
-                        <select id="filtroVeiculoGastos" onchange="carregarTabelaGastos(this.value)">
-                            <option value="todos">Todos os veículos</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="card-body" style="padding: 0;">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Veículo</th>
-                                    <th>Tipo</th>
-                                    <th>Obra / Local</th>
-                                    <th>Valor</th>
-                                    <th>Observação</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaGastos">
-                                <tr><td colspan="7" class="estado-vazio">Carregando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- ============================================================
-             PÁGINA: DESPESAS DE VIAGEM
-             ============================================================ -->
-        <section class="pagina" id="pagina-despesas-viagem">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title"><i class="fa-solid fa-money-bill-trip"></i> Despesas de Viagem</h1>
-                    <p class="page-subtitle">Adiantamentos e prestação de contas de viagens</p>
-                </div>
-                <button class="btn btn-sucesso" onclick="abrirModalAdiantamento()">
-                    <i class="fa-solid fa-hand-holding-dollar"></i>
-                    Liberar Adiantamento
-                </button>
-            </div>
-            
-            <!-- Cards Resumo -->
-            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="stat-card">
-                    <div class="stat-titulo"><i class="fa-solid fa-sack-dollar" style="color: #2563eb;"></i> Total Adiantado</div>
-                    <div class="stat-valor" id="resumoTotalAdiantado" style="font-size: 1.35rem;">R$ 0,00</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-titulo"><i class="fa-solid fa-receipt" style="color: #8b5cf6;"></i> Total Gasto</div>
-                    <div class="stat-valor" id="resumoTotalGasto" style="font-size: 1.35rem;">R$ 0,00</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-titulo"><i class="fa-solid fa-clock" style="color: #f59e0b;"></i> Em Aberto</div>
-                    <div class="stat-valor" id="resumoEmAberto" style="font-size: 1.35rem;">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-titulo"><i class="fa-solid fa-check-circle" style="color: #10b981;"></i> Fechados</div>
-                    <div class="stat-valor" id="resumoFechados" style="font-size: 1.35rem;">0</div>
-                </div>
-            </div>
-            
-            <!-- Abas -->
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0;">
-                <button class="aba-btn ativo" data-aba="adiantamentos" onclick="trocarAbaDespesas('adiantamentos')">
-                    <i class="fa-solid fa-sack-dollar"></i> Adiantamentos
-                </button>
-                <button class="aba-btn" data-aba="gastos" onclick="trocarAbaDespesas('gastos')">
-                    <i class="fa-solid fa-receipt"></i> Prestação de Contas
-                </button>
-            </div>
-            
-            <!-- Aba: Adiantamentos -->
-            <div id="aba-adiantamentos">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">Adiantamentos Liberados</div>
-                        <div class="filtros-bar" style="margin: 0;">
-                            <select id="filtroStatusAdiantamento" onchange="renderizarListaAdiantamentos()">
-                                <option value="todos">Todos os status</option>
-                                <option value="liberado">💰 Liberado</option>
-                                <option value="parcial">📝 Parcial</option>
-                                <option value="fechado">✅ Fechado</option>
-                            </select>
-                            <input type="text" id="buscaAdiantamento" placeholder="🔍 Buscar motorista, veículo..." style="flex: 1;" oninput="renderizarListaAdiantamentos()">
-                        </div>
-                    </div>
-                    <div class="card-body" style="padding: 1rem;">
-                        <div id="listaAdiantamentos"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Aba: Gastos/Prestação de Contas -->
-            <div id="aba-gastos" style="display: none;">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">Lançar Gastos</div>
-                        <div class="filtros-bar" style="margin: 0;">
-                            <select id="filtroAdiantamentoGasto" onchange="renderizarListaGastos()">
-                                <option value="">Selecione um adiantamento</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="card-body" style="padding: 1rem;">
-                        <div id="detalhesAdiantamento" style="display: none; margin-bottom: 1rem; padding: 1rem; background: #f8fafc; border-radius: 8px;"></div>
-                        <div style="margin-bottom: 1rem;">
-                            <button class="btn btn-primario" id="btnLancarGasto" style="display: none;" onclick="abrirModalGastoViagem()">
-                                <i class="fa-solid fa-plus"></i> Lançar Gasto
-                            </button>
-                        </div>
-                        <div id="listaGastos"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- ============================================================
-             PÁGINA: CHECK-LIST
-             ============================================================ -->
-        <section class="pagina" id="pagina-checklist">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">Check-list de Inspeção</h1>
-                    <p class="page-subtitle">Inspeções diárias dos veículos</p>
-                </div>
-                <button class="btn btn-primario" onclick="abrirModalChecklist()">
-                    <i class="fa-solid fa-list-check"></i>
-                    Novo Check-list
-                </button>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">Histórico de Inspeções</div>
-                </div>
-                <div class="card-body" style="padding: 0;">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Veículo</th>
-                                    <th>Motorista</th>
-                                    <th>KM</th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaChecklist">
-                                <tr><td colspan="6" class="estado-vazio">Carregando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- ============================================================
-             PÁGINA: CHAMADOS
-             ============================================================ -->
-        <section class="pagina" id="pagina-chamados">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">Chamados e Ocorrências</h1>
-                    <p class="page-subtitle">Problemas mecânicos, sinistros e ocorrências</p>
-                </div>
-                <button class="btn btn-perigo" onclick="abrirModalChamado()">
-                    <i class="fa-solid fa-plus"></i>
-                    Novo Chamado
-                </button>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">Lista de Chamados</div>
-                </div>
-                <div class="card-body" style="padding: 0;">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Veículo</th>
-                                    <th>Tipo</th>
-                                    <th>Obra / Local</th>
-                                    <th>KM</th>
-                                    <th>Status</th>
-                                    <th>Responsável</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaChamados">
-                                <tr><td colspan="8" class="estado-vazio">Carregando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- ============================================================
-             PÁGINA: ALOCAÇÕES
-             ============================================================ -->
-        <section class="pagina" id="pagina-alocacoes">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">Alocações de Veículos</h1>
-                    <p class="page-subtitle">Controle de entrada e saída de veículos</p>
-                </div>
-                <button class="btn btn-primario" onclick="abrirModalAlocacao()">
-                    <i class="fa-solid fa-plus"></i>
-                    Nova Alocação
-                </button>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">Movimentações</div>
-                </div>
-                <div class="card-body" style="padding: 0;">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Data Saída</th>
-                                    <th>Veículo</th>
-                                    <th>Motorista</th>
-                                    <th>Origem</th>
-                                    <th>Destino</th>
-                                    <th>KM Saída</th>
-                                    <th>Data Retorno</th>
-                                    <th>KM Retorno</th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaAlocacoes">
-                                <tr><td colspan="10" class="estado-vazio">Carregando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- ============================================================
-             PÁGINA: USUÁRIOS
-             ============================================================ -->
-        <section class="pagina" id="pagina-usuarios">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">Gestão de Usuários</h1>
-                    <p class="page-subtitle">Controle de acesso ao sistema</p>
-                </div>
-                <button class="btn btn-primario" onclick="abrirModalUsuario()">
-                    <i class="fa-solid fa-plus"></i>
-                    Novo Usuário
-                </button>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">Usuários Cadastrados</div>
-                </div>
-                <div class="card-body" style="padding: 0;">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Usuário</th>
-                                    <th>Perfil</th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaUsuarios">
-                                <tr><td colspan="5" class="estado-vazio">Carregando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- ============================================================
-        <!-- ============================================================
-             PÁGINA: TRANSFERÊNCIAS DE RESPONSABILIDADE
-             ============================================================ -->
-        <section class="pagina" id="pagina-solicitacoes">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">🔄 Transferências de Responsabilidade</h1>
-                    <p class="page-subtitle">Solicite, aprove e acompanhe transferências de veículos entre motoristas</p>
+                <!-- Cards de Status -->
+                <div class="config-cards-topo">
+                    <div class="stat-card">
+                        <div style="font-size:0.85rem; color:#64748b;">Conexão Supabase</div>
+                        <div style="font-weight:700; color:#10b981; margin-top:0.25rem;" id="cfgStatusSupabase">✅ Conectado</div>
+                    </div>
+                    <div class="stat-card">
+                        <div style="font-size:0.85rem; color:#64748b;">Veículos</div>
+                        <div style="font-weight:700; margin-top:0.25rem;" id="cfgQtdVeiculos">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div style="font-size:0.85rem; color:#64748b;">Gastos</div>
+                        <div style="font-weight:700; margin-top:0.25rem;" id="cfgQtdGastos">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div style="font-size:0.85rem; color:#64748b;">Usuários</div>
+                        <div style="font-weight:700; margin-top:0.25rem;" id="cfgQtdUsuarios">0</div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="card" style="margin-bottom: 24px;">
-                <div class="card-header" style="border-bottom: 1px solid #e5e7eb;">
-                    <div class="card-title">📤 Solicitar Nova Transferência</div>
-                </div>
-                <div class="card-body">
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: end;">
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Veículo *</label>
-                            <select id="transfVeiculo" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: white;">
-                                <option value="">Selecione o veículo...</option>
-                            </select>
-                        </div>
-                        <div id="infoRespAtual" style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Responsável Atual</label>
-                            <div style="padding: 10px 12px; background: #f3f4f6; border-radius: 8px; font-size: 14px; color: #6b7280;">Selecione um veículo</div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Novo Responsável *</label>
-                            <select id="transfNovoResp" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: white;">
-                                <option value="">Selecione o motorista...</option>
-                            </select>
+                <!-- DADOS GERAIS -->
+                <div class="config-secao">
+                    <h3>📋 Dados Gerais</h3>
+                    <div class="config-3col" style="margin-bottom:1rem;">
+                        <div>
+                            <label>Locais / Obras</label>
+                            <div id="listaLocais"></div>
+                            <div class="config-linha">
+                                <input type="text" id="novoLocal" placeholder="Nome do local">
+                                <button class="btn btn-primario" onclick="adicionarLocal()">+ Adicionar</button>
+                            </div>
                         </div>
                         <div>
-                            <button onclick="solicitarTransferenciaDireta()" style="width: 100%; padding: 10px 16px; border: none; background: #f59e0b; color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                📤 Solicitar
-                            </button>
+                            <label>Categorias de Veículos</label>
+                            <div id="listaCategorias"></div>
+                            <div class="config-linha">
+                                <input type="text" id="novaCategoria" placeholder="Nova categoria">
+                                <button class="btn btn-primario" onclick="adicionarCategoria()">+ Adicionar</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label>Tipos de Gastos</label>
+                            <div id="listaTiposGasto"></div>
+                            <div class="config-linha">
+                                <input type="text" id="novoTipoGasto" placeholder="Novo tipo">
+                                <button class="btn btn-primario" onclick="adicionarTipoGasto()">+ Adicionar</button>
+                            </div>
                         </div>
                     </div>
-                    <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 6px;">
-                        <label style="font-size: 13px; font-weight: 500; color: #374151;">Motivo/Observação</label>
-                        <textarea id="transfObsDireta" rows="2" placeholder="Informe o motivo..." style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
-                    </div>
                 </div>
-            </div>
 
-            <div id="cardsTransf" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;"></div>
-
-            <div class="card" style="margin-bottom: 24px; overflow-x: auto;">
-                <div class="card-header" style="border-bottom: 1px solid #e5e7eb;">
-                    <div class="card-title">⏳ Solicitações Pendentes</div>
-                </div>
-                <div class="card-body" style="padding: 0;">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Veículo</th>
-                                    <th>De</th>
-                                    <th>Para</th>
-                                    <th>Solicitado por</th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaPendentes">
-                                <tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Carregando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" style="overflow-x: auto;">
-                <div class="card-header" style="border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                    <div class="card-title">📜 Histórico de Transferências</div>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <input type="date" id="filtroHistDataIni" style="padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" onchange="carregarHistoricoTransferencias()">
-                        <span style="color: #6b7280; font-size: 13px;">até</span>
-                        <input type="date" id="filtroHistDataFim" style="padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" onchange="carregarHistoricoTransferencias()">
-                    </div>
-                </div>
-                <div class="card-body" style="padding: 0;">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Data Solicitação</th>
-                                    <th>Data Conclusão</th>
-                                    <th>Veículo</th>
-                                    <th>De</th>
-                                    <th>Para</th>
-                                    <th>Check-list</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaHistoricoTransf">
-                                <tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Carregando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="pagina" id="pagina-relatorios">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">📊 Relatórios</h1>
-                    <p class="page-subtitle">Relatórios gerenciais do sistema de frotas</p>
-                </div>
-            </div>
-
-            <!-- Abas de relatórios -->
-            <div style="margin-bottom: 24px; display: flex; gap: 8px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0;">
-                <button class="aba-rel-btn ativo" data-aba-rel="transferencias" onclick="trocarAbaRelatorio('transferencias')" style="padding: 10px 20px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 500; color: #2563eb; border-bottom: 3px solid #2563eb; margin-bottom: -2px;">
-                    🔄 Transferências
-                </button>
-            </div>
-
-            <!-- Relatório de Transferências -->
-            <div id="aba-rel-transferencias">
-                <div class="card" style="padding: 20px; margin-bottom: 24px;">
-                    <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #0f172a;">🔄 Relatório de Transferências por Período</h3>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: end;">
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Data Inicial</label>
-                            <input type="date" id="relDataInicio" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                <!-- SISTEMA -->
+                <div class="config-secao">
+                    <h3>⚙️ Dados da Empresa e Sistema</h3>
+                    <div class="config-2col">
+                        <div class="form-grupo">
+                            <label>Nome da Empresa</label>
+                            <input type="text" id="cfgEmpresa" placeholder="Nome da empresa">
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Data Final</label>
-                            <input type="date" id="relDataFim" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                        <div class="form-grupo">
+                            <label>CNPJ</label>
+                            <input type="text" id="cfgCnpj" placeholder="00.000.000/0000-00">
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Veículo</label>
-                            <select id="relVeiculo" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: white;">
-                                <option value="todos">Todos os veículos</option>
+                        <div class="form-grupo">
+                            <label>E-mail</label>
+                            <input type="email" id="cfgEmail" placeholder="contato@empresa.com.br">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Telefone</label>
+                            <input type="text" id="cfgTelefone" placeholder="(00) 00000-0000">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Moeda Padrão</label>
+                            <select id="cfgMoeda">
+                                <option value="BRL">R$ - Real</option>
+                                <option value="USD">US$ - Dólar</option>
+                                <option value="EUR">€ - Euro</option>
                             </select>
                         </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button onclick="gerarRelatorioTransferencias()" style="flex: 1; padding: 10px 16px; border: none; background: #2563eb; color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                🔍 Gerar
-                            </button>
-                            <button onclick="exportarRelatorioCSV()" style="padding: 10px 16px; border: 1px solid #2563eb; background: white; color: #2563eb; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                📥 CSV
-                            </button>
+                        <div class="form-grupo">
+                            <label>Formato de Data</label>
+                            <select id="cfgFormatoData">
+                                <option value="DD/MM/AAAA">DD/MM/AAAA</option>
+                                <option value="AAAA-MM-DD">AAAA-MM-DD</option>
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- Cards de resumo -->
-                <div id="relatorioResumo" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;"></div>
-
-                <!-- Tabela do relatório -->
-                <div class="card" style="overflow-x: auto;">
-                    <div class="card-header">
-                        <div class="card-title">Resultado do Relatório</div>
-                    </div>
-                    <div class="card-body" style="padding: 0;">
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Data</th>
-                                        <th>Veículo</th>
-                                        <th>Motorista Anterior</th>
-                                        <th>Novo Motorista</th>
-                                        <th>Tipo</th>
-                                        <th>Dias Anterior</th>
-                                        <th>Observação</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbodyRelatorioTransferencias">
-                                    <tr><td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">Selecione o período e clique em "Gerar"</td></tr>
-                                </tbody>
-                            </table>
+                <!-- NOTIFICAÇÕES -->
+                <div class="config-secao">
+                    <h3>🔔 Notificações e Alertas</h3>
+                    <div class="config-3col">
+                        <div class="form-grupo">
+                            <label>KM para aviso de manutenção preventiva</label>
+                            <input type="number" id="cfgKmAviso" value="5000">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Dias para aviso de vencimento</label>
+                            <input type="number" id="cfgDiasAviso" value="15">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Limite KM para alerta de uso intenso</label>
+                            <input type="number" id="cfgLimiteKm" value="200000">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Dias parado para alerta</label>
+                            <input type="number" id="cfgDiasParado" value="30">
+                        </div>
+                        <div class="form-grupo" style="grid-column:span 2;">
+                            <label>E-mail para receber alertas do sistema</label>
+                            <input type="email" id="cfgEmailAlerta" placeholder="alertas@empresa.com.br">
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+
+                <!-- REGRAS DE NEGÓCIO -->
+                <div class="config-secao">
+                    <h3>📜 Regras de Negócio e Segurança</h3>
+                    <div class="config-3col">
+                        <div class="form-grupo">
+                            <label>% Mínima de aprovação de transferência</label>
+                            <input type="number" id="cfgPctAprovacao" value="50">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Valor máx adiantamento sem aprovação (R$)</label>
+                            <input type="number" id="cfgValorMaxAdiantamento" value="1000">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Dias limite prestação de contas</label>
+                            <input type="number" id="cfgDiasPrestacaoContas" value="7">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Tempo de sessão (minutos)</label>
+                            <input type="number" id="cfgTempoSessao" value="60">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Tamanho mínimo de senha</label>
+                            <input type="number" id="cfgTamSenha" value="6">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Tentativas de login antes de bloquear</label>
+                            <input type="number" id="cfgTentativasLogin" value="5">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INTEGRAÇÕES E BACKUP -->
+                <div class="config-secao">
+                    <h3>🌐 Integrações e Backup</h3>
+                    <div class="config-botoes">
+                        <button class="btn btn-primario" onclick="window.sincronizarManualmente()">
+                            <i class="fas fa-sync"></i> Sincronizar com Supabase
+                        </button>
+                        <button class="btn btn-secundario" onclick="enviarTodosDadosParaNuvem()">
+                            <i class="fas fa-cloud-upload-alt"></i> Enviar dados para a Nuvem
+                        </button>
+                        <button class="btn btn-secundario" onclick="baixarDadosDaNuvem()">
+                            <i class="fas fa-cloud-download-alt"></i> Baixar dados da Nuvem
+                        </button>
+                        <button class="btn btn-secundario" onclick="window.exportarDadosJSON()">
+                            <i class="fas fa-file-export"></i> Exportar Backup (JSON)
+                        </button>
+                        <button class="btn btn-secundario" onclick="document.getElementById('importarArquivoConfig').click()">
+                            <i class="fas fa-file-import"></i> Restaurar Backup
+                        </button>
+                        <input type="file" id="importarArquivoConfig" accept=".json" style="display:none;" onchange="window.importarDadosJSON(event)">
+                        <button class="btn" style="background:#fef3c7; color:#92400e;" onclick="window.recarregarDadosDemo()">
+                            <i class="fas fa-database"></i> Restaurar Dados de Demonstração
+                        </button>
+                        <button class="btn" style="background:#fee2e2; color:#991b1b;" onclick="if(confirm('Limpar TODOS os dados?')) window.limparTodosDados()">
+                            <i class="fas fa-trash"></i> Limpar Todos os Dados
+                        </button>
+                    </div>
+                </div>
+
+                <div id="alertaConfig" class="alerta sucesso hidden" style="margin-top:1.5rem;">
+                    ✅ Configurações salvas com sucesso!
+                </div>
+            </section>
+
+            <!-- OUTRAS PÁGINAS (mantidas simples) -->
+            <section class="pagina" id="pagina-veiculos">
+                <div class="page-header">
+                    <div><h1 class="page-title">Veículos</h1><p class="page-subtitle">Cadastre e gerencie os veículos</p></div>
+                    <button class="btn btn-primario" onclick="abrirModalVeiculo()"><i class="fas fa-plus"></i> Novo Veículo</button>
+                </div>
+                <div class="table-container"><table><thead><tr><th>Placa</th><th>Modelo</th><th>Categoria</th><th>Ano</th><th>KM Atual</th><th>Status</th><th>Ações</th></tr></thead><tbody id="listaVeiculosCorpo"></tbody></table></div>
+            </section>
+
+            <section class="pagina" id="pagina-manutencao">
+                <div class="page-header"><div><h1 class="page-title">Manutenção</h1></div></div>
+                <p>Funcionalidade em desenvolvimento...</p>
+            </section>
+            <section class="pagina" id="pagina-gastos">
+                <div class="page-header"><div><h1 class="page-title">Gastos</h1></div></div>
+                <p>Funcionalidade em desenvolvimento...</p>
+            </section>
+            <section class="pagina" id="pagina-despesas-viagem">
+                <div class="page-header"><div><h1 class="page-title">Despesas de Viagem</h1></div></div>
+                <p>Funcionalidade em desenvolvimento...</p>
+            </section>
+            <section class="pagina" id="pagina-checklist">
+                <div class="page-header"><div><h1 class="page-title">Check-list</h1></div></div>
+                <p>Funcionalidade em desenvolvimento...</p>
+            </section>
+            <section class="pagina" id="pagina-chamados">
+                <div class="page-header"><div><h1 class="page-title">Chamados</h1></div></div>
+                <p>Funcionalidade em desenvolvimento...</p>
+            </section>
+            <section class="pagina" id="pagina-alocacoes">
+                <div class="page-header"><div><h1 class="page-title">Alocações</h1></div></div>
+                <p>Funcionalidade em desenvolvimento...</p>
+            </section>
+            <section class="pagina" id="pagina-usuarios">
+                <div class="page-header"><div><h1 class="page-title">Usuários</h1></div></div>
+                <p>Funcionalidade em desenvolvimento...</p>
+            </section>
+            <section class="pagina" id="pagina-solicitacoes">
+                <div class="page-header"><div><h1 class="page-title">Solicitações</h1></div></div>
+                <p>Funcionalidade em desenvolvimento...</p>
+            </section>
+            <section class="pagina" id="pagina-relatorios">
+                <div class="page-header"><div><h1 class="page-title">Relatórios</h1></div></div>
+                <p>Funcionalidade em desenvolvimento...</p>
+            </section>
+
+        </div>
     </main>
 </div>
 
-<!-- ============================================================
-     SCRIPTS - ORDEM CORRETA
-     ============================================================ -->
+<!-- Overlay do menu mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-<!-- 1. Inicialização do Supabase -->
+<!-- Área de Modais -->
+<div id="modais"></div>
+
 <script>
-    const SUPABASE_URL = 'https://ccacecyqkseniqmrvnap.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_aRQgU6fTTModcqdb4hSgHQ_bPKp2R3m';
-    let supabaseReal = null;
-    try {
-        supabaseReal = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-    // ============================================================
-    // TOGGLE SIDEBAR (MENU MOBILE)
-    // ============================================================
-    function toggleSidebar() {
-        var sidebar = document.querySelector('.sidebar');
-        var overlay = document.getElementById('sidebarOverlay');
-        if (sidebar) sidebar.classList.toggle('aberto');
-        if (overlay) overlay.classList.toggle('visivel');
-    }
-    window.toggleSidebar = toggleSidebar;
+// ============================================================
+// 🔧 BANCO DE DADOS LOCAL
+// ============================================================
+const BD = {
+    veiculos: JSON.parse(localStorage.getItem('veiculos') || '[]'),
+    manutencoes: JSON.parse(localStorage.getItem('manutencoes') || '[]'),
+    gastos: JSON.parse(localStorage.getItem('gastos') || '[]'),
+    usuarios: JSON.parse(localStorage.getItem('usuarios') || '[]'),
+    locais: JSON.parse(localStorage.getItem('locais') || '["Pátio Metalica","Pátio Usina Conc.","Obra"]'),
+    categorias: JSON.parse(localStorage.getItem('categorias') || '["Caminhão","Carro","Máquina","Ônibus","Utilitário"]'),
+    tiposGasto: JSON.parse(localStorage.getItem('tiposGasto') || '["Combustível","Peças","Serviço","Pedágio","Alimentação","Hospedagem","Outros"]'),
+    config: JSON.parse(localStorage.getItem('configuracoes') || '{}')
+};
 
-console.log('✅ Supabase inicializado');
-    } catch(e) {
-        console.warn('⚠️ Supabase não disponível, usando modo local:', e);
-    }
-    window.supabaseReal = supabaseReal;
-</script>
+function salvarBD() {
+    localStorage.setItem('veiculos', JSON.stringify(BD.veiculos));
+    localStorage.setItem('manutencoes', JSON.stringify(BD.manutencoes));
+    localStorage.setItem('gastos', JSON.stringify(BD.gastos));
+    localStorage.setItem('usuarios', JSON.stringify(BD.usuarios));
+    localStorage.setItem('locais', JSON.stringify(BD.locais));
+    localStorage.setItem('categorias', JSON.stringify(BD.categorias));
+    localStorage.setItem('tiposGasto', JSON.stringify(BD.tiposGasto));
+    localStorage.setItem('configuracoes', JSON.stringify(BD.config));
+}
 
-<!-- 2. Configurações e Utilitários -->
-<script src="js/config.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/validacoes.js"></script>
+// ============================================================
+// 📱 MENU RESPONSIVO
+// ============================================================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('aberto');
+    overlay.classList.toggle('visivel');
+}
+window.toggleSidebar = toggleSidebar;
 
-<!-- 3. Supabase Wrapper -->
-<script src="js/supabase.js"></script>
-<script src="js/supabase-sync.js"></script>
-
-<!-- 4. Banco de Dados (local + Supabase) -->
-<script src="js/banco-dados.js"></script>
-
-<!-- 5. Autenticação -->
-<script src="js/auth.js"></script>
-
-<!-- 6. Navegação -->
-<script src="js/navegacao.js"></script>
-
-<!-- 7. Módulos do Sistema -->
-<script src="js/veiculos.js"></script>
-<script src="js/manutencao.js"></script>
-<script src="js/gastos.js"></script>
-<script src="js/chamados.js"></script>
-<script src="js/checklist.js"></script>
-<script src="js/alocacoes.js"></script>
-<script src="js/transferencias.js"></script>
-<script src="js/relatorios.js"></script>
-<script src="js/usuarios.js"></script>
-
-<!-- 8. Dashboard (carrega DEPOIS dos módulos) -->
-<script src="js/melhorias-dashboard.js"></script>
-
-<!-- 9. Sync (ajustado para produção) -->
-<script src="js/sync.js"></script>
-
-<!-- 10. Despesas de Viagem -->
-<script src="js/despesas-viagem.js"></script>
-
-<!-- 11. Scripts de inicialização customizados (carrega POR ÚLTIMO) -->
-<script>
-    // Data de hoje no topbar
-    document.getElementById('topbarData').textContent = new Date().toLocaleDateString('pt-BR', { 
-        weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' 
+// ============================================================
+// 🧭 NAVEGAÇÃO
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-pagina]').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            const nomePagina = link.dataset.pagina;
+            navegarPara(nomePagina);
+            if (window.innerWidth <= 768) toggleSidebar();
+        });
     });
-    
-    // Menu mobile
-    document.getElementById('btnMobileMenu').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('aberta');
-    });
-    
-    // Atualizar título da página na navegação
-    const titulosPaginas = {
-        'dashboard': 'Painel de Controle',
-        'veiculos': 'Gestão de Veículos',
-        'manutencao': 'Controle de Manutenção',
-        'gastos': 'Controle de Gastos',
-        'despesas-viagem': 'Despesas de Viagem',
-        'checklist': 'Check-list de Inspeção',
-        'chamados': 'Chamados e Ocorrências',
-        'alocacoes': 'Alocações de Veículos',
-        'usuarios': 'Gestão de Usuários'
-    };
-    
-    // Sobrescrever mostrarPagina para atualizar título
-    const originalMostrarPagina = window.mostrarPagina;
-    window.mostrarPagina = function(pagina) {
-        if (originalMostrarPagina) originalMostrarPagina(pagina);
-        const titulo = titulosPaginas[pagina] || 'Sistema';
-        document.getElementById('topbarTitulo').textContent = titulo;
-        document.getElementById('sidebar').classList.remove('aberta');
-        
-        // Atualiza filtros de veículos nas páginas específicas
-        if (typeof atualizarListaVeiculosNosFiltros === 'function') {
-            if (pagina === 'manutencao' || pagina === 'gastos') {
-                atualizarListaVeiculosNosFiltros();
-            }
-        }
-    };
-    
-    // Botão sair
-    document.getElementById('btnSair').addEventListener('click', sairDoSistema);
-    document.getElementById('btnSairSidebar').addEventListener('click', (e) => {
-        e.preventDefault();
-        sairDoSistema();
-    });
-    
-    // ============================================================
-    // MODAL DE CONFIGURAÇÕES
-    // ============================================================
-    window.abrirModalConfiguracoes = function() {
-        try {
-            var modaisAntigos = document.querySelectorAll('.modal-config-ns');
-            for (var i = 0; i < modaisAntigos.length; i++) {
-                modaisAntigos[i].remove();
-            }
-            
-            var fundo = document.createElement('div');
-            fundo.className = 'modal-config-ns';
-            fundo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999999;padding:1rem;';
-            fundo.onclick = function(e) { 
-                if (e.target === fundo) fundo.remove(); 
-            };
-            
-            var modoSupabase = '⚠️ Apenas Local';
-            try {
-                if (window.supabase && window.supabase.temConexaoReal) {
-                    modoSupabase = '✅ Conectado';
-                }
-            } catch(e) {}
-            
-            var totalVeiculos = 0;
-            var totalGastos = 0;
-            var totalUsuarios = 0;
-            try {
-                if (window.BD) {
-                    totalVeiculos = window.BD.veiculos ? window.BD.veiculos.length : 0;
-                    totalGastos = window.BD.gastos ? window.BD.gastos.length : 0;
-                    totalUsuarios = window.BD.usuarios ? window.BD.usuarios.length : 0;
-                }
-            } catch(e) {}
-            
-            var container = document.createElement('div');
-            container.style.cssText = 'background:white;border-radius:16px;width:100%;max-width:550px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,0.25);';
-            
-            var cabecalho = document.createElement('div');
-            cabecalho.style.cssText = 'padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;';
-            var titulo = document.createElement('h3');
-            titulo.style.cssText = 'margin:0;font-size:1.15rem;font-weight:700;color:#0f172a;';
-            titulo.textContent = '⚙️ Configurações do Sistema';
-            var btnFechar = document.createElement('button');
-            btnFechar.style.cssText = 'background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;padding:0 0.5rem;';
-            btnFechar.innerHTML = '&times;';
-            btnFechar.onclick = function() { fundo.remove(); };
-            cabecalho.appendChild(titulo);
-            cabecalho.appendChild(btnFechar);
-            
-            var corpo = document.createElement('div');
-            corpo.style.cssText = 'padding:1.5rem;';
-            
-            var statusDiv = document.createElement('div');
-            statusDiv.style.cssText = 'padding:1rem;background:#f8fafc;border-radius:8px;margin-bottom:1rem;';
-            statusDiv.innerHTML = 
-                '<div style="font-weight:600;margin-bottom:0.5rem;">📊 Status do Sistema</div>' +
-                '<div style="font-size:0.875rem;color:#64748b;display:grid;gap:0.25rem;">' +
-                    '<div>Conexão Supabase: <strong>' + modoSupabase + '</strong></div>' +
-                    '<div>Veículos cadastrados: <strong>' + totalVeiculos + '</strong></div>' +
-                    '<div>Gastos registrados: <strong>' + totalGastos + '</strong></div>' +
-                    '<div>Usuários: <strong>' + totalUsuarios + '</strong></div>' +
-                '</div>';
-            corpo.appendChild(statusDiv);
-            
-            var botoesDiv = document.createElement('div');
-            botoesDiv.style.cssText = 'display:grid;gap:0.5rem;';
-            
-            function criarBotao(texto, bgColor, textColor, onclick) {
-                var btn = document.createElement('button');
-                btn.style.cssText = 'width:100%;padding:0.65rem 1rem;border:none;border-radius:8px;font-size:0.9rem;font-weight:500;cursor:pointer;transition:all 0.2s;background:' + bgColor + ';color:' + textColor + ';';
-                btn.onmouseover = function() { btn.style.opacity = '0.9'; };
-                btn.onmouseout = function() { btn.style.opacity = '1'; };
-                btn.textContent = texto;
-                btn.onclick = onclick;
-                return btn;
-            }
-            
-            var btnSync = criarBotao('🔄 Sincronizar com Supabase', '#2563eb', 'white', 
-                function() { if (window.sincronizarManualmente) window.sincronizarManualmente(); });
-            var btnExport = criarBotao('📤 Exportar Dados (JSON)', '#64748b', 'white',
-                function() { if (window.exportarDadosJSON) window.exportarDadosJSON(); });
-            var btnImport = criarBotao('📥 Importar Dados', '#64748b', 'white',
-                function() { 
-                    var input = document.getElementById('importarArquivoTemp');
-                    if (input) input.click(); 
-                });
-            var btnDemo = criarBotao('📦 Recarregar Dados de Demonstração', '#fef3c7', '#92400e',
-                function() { if (window.recarregarDadosDemo) window.recarregarDadosDemo(); });
-            var btnLimpar = criarBotao('🗑️ Limpar Todos os Dados Locais', '#fee2e2', '#991b1b',
-                function() { if (window.limparTodosDados) window.limparTodosDados(); });
-            
-            var inputImport = document.createElement('input');
-            inputImport.type = 'file';
-            inputImport.id = 'importarArquivoTemp';
-            inputImport.accept = '.json';
-            inputImport.style.display = 'none';
-            inputImport.onchange = function(e) { 
-                if (window.importarDadosJSON) window.importarDadosJSON(e); 
-            };
-            
-            botoesDiv.appendChild(btnSync);
-            botoesDiv.appendChild(btnExport);
-            botoesDiv.appendChild(btnImport);
-            botoesDiv.appendChild(inputImport);
-            botoesDiv.appendChild(btnDemo);
-            botoesDiv.appendChild(btnLimpar);
-            corpo.appendChild(botoesDiv);
-            
-            var rodape = document.createElement('div');
-            rodape.style.cssText = 'padding:1rem 1.5rem;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:0.5rem;';
-            var btnFecharRodape = document.createElement('button');
-            btnFecharRodape.style.cssText = 'padding:0.5rem 1rem;border:1px solid #e2e8f0;background:white;color:#475569;border-radius:8px;cursor:pointer;font-size:0.875rem;';
-            btnFecharRodape.textContent = 'Fechar';
-            btnFecharRodape.onclick = function() { fundo.remove(); };
-            rodape.appendChild(btnFecharRodape);
-            
-            container.appendChild(cabecalho);
-            container.appendChild(corpo);
-            container.appendChild(rodape);
-            fundo.appendChild(container);
-            
-            document.body.appendChild(fundo);
-            
-            console.log('✅ Modal de configurações aberto');
-            
-        } catch (e) {
-            console.error('❌ Erro ao abrir configurações:', e);
-            alert('Erro ao abrir configurações: ' + e.message);
-        }
-    };
+    document.getElementById('topbarData').textContent = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    carregarDashboard();
+});
 
-    // Funções de configuração
-    window.sincronizarManualmente = async function() {
-        if (typeof sincronizarBD === 'function') {
-            await sincronizarBD();
-            alert('✅ Sincronização concluída!');
-            if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-        } else {
-            alert('⚠️ Função de sincronização não disponível');
-        }
-    };
-    
-    window.exportarDadosJSON = function() {
-        const dados = {
-            veiculos: BD.veiculos || [],
-            gastos: BD.gastos || [],
-            manutencoes: BD.manutencoes || [],
-            chamados: BD.chamados || [],
-            checklists: BD.checklists || [],
-            alocacoes: BD.alocacoes || [],
-            usuarios: BD.usuarios || [],
-            locais: BD.locais || [],
-            adiantamentos: BD.adiantamentos || [],
-            gastosViagem: BD.gastosViagem || [],
-            exportadoEm: new Date().toISOString()
-        };
-        const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ns-frota-backup-${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        alert('✅ Dados exportados com sucesso!');
-    };
-    
-    window.importarDadosJSON = function(event) {
-        const arquivo = event.target.files[0];
-        if (!arquivo) return;
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const dados = JSON.parse(e.target.result);
-                if (dados.veiculos) BD.veiculos = dados.veiculos;
-                if (dados.gastos) BD.gastos = dados.gastos;
-                if (dados.manutencoes) BD.manutencoes = dados.manutencoes;
-                if (dados.chamados) BD.chamados = dados.chamados;
-                if (dados.checklists) BD.checklists = dados.checklists;
-                if (dados.alocacoes) BD.alocacoes = dados.alocacoes;
-                if (dados.usuarios) BD.usuarios = dados.usuarios;
-                if (dados.locais) BD.locais = dados.locais;
-                if (dados.adiantamentos) BD.adiantamentos = dados.adiantamentos;
-                if (dados.gastosViagem) BD.gastosViagem = dados.gastosViagem;
-                
-                if (typeof salvarDados === 'function') salvarDados();
-                alert('✅ Dados importados com sucesso! Recarregue a página.');
-                fecharModal();
-            } catch (erro) {
-                alert('❌ Erro ao importar: arquivo inválido');
-            }
-        };
-        reader.readAsText(arquivo);
-    };
-    
-    window.recarregarDadosDemo = function() {
-        if (!confirm('⚠️ Isso substituirá seus dados atuais pelos dados de demonstração. Continuar?')) return;
-        if (typeof carregarDadosDemonstracao === 'function') {
-            carregarDadosDemonstracao();
-            alert('✅ Dados de demonstração carregados!');
-            fecharModal();
-            location.reload();
-        } else {
-            alert('⚠️ Função não disponível');
-        }
-    };
-    
-    window.limparTodosDados = function() {
-        if (!confirm('⚠️ TEM CERTEZA? Isso apagará TODOS os dados locais e não pode ser desfeito!')) return;
-        if (!confirm('⚠️ Confirma novamente? Todos os veículos, gastos, manutenções serão apagados!')) return;
-        
-        localStorage.removeItem('bd_frotas');
-        localStorage.removeItem('sessaoUsuario');
-        alert('✅ Dados limpos! A página será recarregada.');
-        location.reload();
-    };
-    
-    // Função global para fechar modal (funciona com TODOS os tipos)
-    window.fecharModal = function() {
-        // Fecha modais no container geral
-        const container = document.getElementById('modais');
-        if (container) container.innerHTML = '';
-        
-        // Fecha modais específicos se existirem
-        const modalDespesa = document.getElementById('modalDespesa');
-        if (modalDespesa) modalDespesa.classList.remove('ativo', 'aberto');
-        
-        const modalComprovantes = document.getElementById('modalComprovantes');
-        if (modalComprovantes) modalComprovantes.classList.remove('ativo', 'aberto');
-    };
-    
-    // Função global para toast
-    window.mostrarToast = function(mensagem, tipo = 'sucesso') {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${tipo}`;
-        toast.innerHTML = `<i class="fa-solid ${
-            tipo === 'sucesso' ? 'fa-check-circle' :
-            tipo === 'erro' ? 'fa-times-circle' :
-            tipo === 'aviso' ? 'fa-exclamation-triangle' : 'fa-info-circle'
-        }" style="margin-right: 0.5rem;"></i>${mensagem}`;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.3s';
-            setTimeout(() => toast.remove(), 300);
-        }, 3500);
-    };
-    
-    // Sobrescrever alert para usar toast
-    const originalAlert = window.alert;
-    window.alert = function(msg) {
-        if (typeof msg === 'string') {
-            if (msg.includes('❌') || msg.includes('Erro') || msg.includes('erro')) {
-                mostrarToast(msg.replace('❌', '').trim(), 'erro');
-            } else if (msg.includes('⚠️')) {
-                mostrarToast(msg.replace('⚠️', '').trim(), 'aviso');
-            } else if (msg.includes('✅')) {
-                mostrarToast(msg.replace('✅', '').trim(), 'sucesso');
-            } else {
-                mostrarToast(msg, 'info');
-            }
-        } else {
-            originalAlert(msg);
-        }
-    };
-    
-    // ==================================================
-    // ✅ CORREÇÃO: Inicialização imediata
-    // verificarSessao() já é chamado no auth.js
-    // ==================================================
-    function inicializarSistemaInline() {
-        // Eventos dos filtros
-        const filtroManut = document.getElementById("filtroVeiculoManutencao");
-        if (filtroManut) {
-            filtroManut.addEventListener("change", () => {
-                if (typeof carregarTabelaManutencao === "function") {
-                    carregarTabelaManutencao(filtroManut.value);
-                }
-            });
-        }
-        
-        const filtroGastos = document.getElementById("filtroVeiculoGastos");
-        if (filtroGastos) {
-            filtroGastos.addEventListener("change", () => {
-                if (typeof carregarTabelaGastos === "function") {
-                    carregarTabelaGastos(filtroGastos.value);
-                }
-            });
-        }
-        
-        const buscaVeiculos = document.getElementById("buscaVeiculos");
-        if (buscaVeiculos) {
-            buscaVeiculos.addEventListener("input", () => {
-                if (typeof carregarTabelaVeiculos === "function") {
-                    carregarTabelaVeiculos();
-                }
-            });
-        }
-    }
-    
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", inicializarSistemaInline);
-    } else if (document.body) {
-        inicializarSistemaInline();
+function navegarPara(nomePagina) {
+    document.querySelectorAll('.pagina').forEach(p => p.classList.remove('ativa'));
+    const pagina = document.getElementById('pagina-' + nomePagina);
+    if (pagina) {
+        pagina.classList.add('ativa');
+        document.getElementById('topbarTitulo').textContent = linkTitulo(nomePagina);
+        document.querySelectorAll('[data-pagina]').forEach(l => l.classList.remove('ativo'));
+        document.querySelector(`[data-pagina="${nomePagina}"]`)?.classList.add('ativo');
+        if (nomePagina === 'configuracoes') carregarPaginaConfiguracoes();
     } else {
-        setTimeout(inicializarSistemaInline, 50);
-    }
-</script>
-
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-
-<script>
-function trocarAbaConfig(nomeAba) {
-    try {
-        var abas = document.querySelectorAll('.aba-config-conteudo');
-        for (var i = 0; i < abas.length; i++) { abas[i].style.display = 'none'; }
-        var sel = document.getElementById('aba-config-' + nomeAba);
-        if (sel) sel.style.display = 'block';
-        var botoes = document.querySelectorAll('.aba-config-btn');
-        for (var j = 0; j < botoes.length; j++) {
-            var btn = botoes[j];
-            if (btn.getAttribute('data-aba') === nomeAba) {
-                btn.style.color = '#2563eb'; btn.style.borderBottomColor = '#2563eb'; btn.style.fontWeight = '600';
-            } else {
-                btn.style.color = '#64748b'; btn.style.borderBottomColor = 'transparent'; btn.style.fontWeight = '500';
-            }
-        }
-        if (nomeAba === 'dados-gerais') carregarListasDadosGerais();
-        if (nomeAba === 'integracoes') atualizarStatusSupabase();
-    } catch (e) { console.error('Erro trocar aba:', e); }
-}
-window.trocarAbaConfig = trocarAbaConfig;
-
-function sv(id,v){var e=document.getElementById(id);if(e)e.value=v;}
-function sc(id,v){var e=document.getElementById(id);if(e)e.checked=v;}
-function gv(id){var e=document.getElementById(id);return e?e.value:'';}
-function gc(id){var e=document.getElementById(id);return e?e.checked:false;}
-
-function carregarConfiguracoes() {
-    try {
-        if(!window.BD||!window.BD.config)return;var c=window.BD.config;
-        sv('cfgNomeEmpresa',c.nomeEmpresa||'');sv('cfgCNPJ',c.cnpj||'');sv('cfgEmail',c.email||'');sv('cfgTelefone',c.telefone||'');sv('cfgLogo',c.logo||'');
-        sv('cfgMoeda',c.moeda||'BRL');sv('cfgDistancia',c.distancia||'km');sv('cfgFormatoData',c.formatoData||'pt-BR');sv('cfgFusoHorario',c.fusoHorario||'America/Sao_Paulo');
-        sv('cfgKmAviso',c.kmAviso||500);sv('cfgDiasAviso',c.diasAviso||15);sc('cfgAvisoManutencao',c.avisoManutencao!==false);
-        sc('cfgAlertaKm',c.alertaKm!==false);sv('cfgLimiteKm',c.limiteKm||200000);sc('cfgAlertaStatus',c.alertaStatus!==false);
-        sv('cfgDiasParado',c.diasParado||30);sv('cfgEmailAlerta',c.emailAlerta||'');
-        sc('cfgExigirChecklist',c.exigirChecklist!==false);sv('cfgPctAprovacao',c.pctAprovacao||70);
-        sc('cfgPermitirMotoristaAceitar',c.permitirMotoristaAceitar!==false);sc('cfgAtualizarResponsavelAuto',c.atualizarResponsavelAuto!==false);
-        sv('cfgValorMaxAdiantamento',c.valorMaxAdiantamento||500);sc('cfgExigirPrestacaoContas',c.exigirPrestacaoContas!==false);
-        sv('cfgDiasPrestacao',c.diasPrestacao||7);sc('cfgExigirChecklistAlocacao',c.exigirChecklistAlocacao||false);
-        sc('cfgBloquearVeiculoAlocado',c.bloquearVeiculoAlocado!==false);sc('cfgRegistrarHistorico',c.registrarHistorico!==false);
-        sv('cfgTempoSessao',c.tempoSessao||240);sc('cfgManterSessao',c.manterSessao!==false);
-        sv('cfgTentativasLogin',c.tentativasLogin||5);sv('cfgTamanhoMinSenha',c.tamanhoMinSenha||4);
-        sc('cfgSenhaNumero',c.senhaNumero||false);sc('cfgSenhaMaiuscula',c.senhaMaiuscula||false);
-        sc('cfgLogAcoes',c.logAcoes!==false);sc('cfgLogLogin',c.logLogin!==false);
-        var es=document.getElementById('cfgUltimoSalvamento');if(es)es.textContent=c.ultimaAtualizacao||'--';
-        var et=document.getElementById('cfgTamanhoDados');if(et&&window.BD)et.textContent=Math.round(JSON.stringify(window.BD).length/1024)+' KB';
-    } catch(e){console.error('Erro carregar cfg:',e);}
-}
-window.carregarConfiguracoes=carregarConfiguracoes;
-
-function salvarTodasConfiguracoes() {
-    try {
-        if(!window.BD)window.BD={};if(!window.BD.config)window.BD.config={};var c=window.BD.config;
-        c.nomeEmpresa=gv('cfgNomeEmpresa');c.cnpj=gv('cfgCNPJ');c.email=gv('cfgEmail');c.telefone=gv('cfgTelefone');c.logo=gv('cfgLogo');
-        c.moeda=gv('cfgMoeda');c.distancia=gv('cfgDistancia');c.formatoData=gv('cfgFormatoData');c.fusoHorario=gv('cfgFusoHorario');
-        c.kmAviso=Number(gv('cfgKmAviso'));c.diasAviso=Number(gv('cfgDiasAviso'));c.avisoManutencao=gc('cfgAvisoManutencao');
-        c.alertaKm=gc('cfgAlertaKm');c.limiteKm=Number(gv('cfgLimiteKm'));c.alertaStatus=gc('cfgAlertaStatus');
-        c.diasParado=Number(gv('cfgDiasParado'));c.emailAlerta=gv('cfgEmailAlerta');
-        c.exigirChecklist=gc('cfgExigirChecklist');c.pctAprovacao=Number(gv('cfgPctAprovacao'));
-        c.permitirMotoristaAceitar=gc('cfgPermitirMotoristaAceitar');c.atualizarResponsavelAuto=gc('cfgAtualizarResponsavelAuto');
-        c.valorMaxAdiantamento=Number(gv('cfgValorMaxAdiantamento'));c.exigirPrestacaoContas=gc('cfgExigirPrestacaoContas');
-        c.diasPrestacao=Number(gv('cfgDiasPrestacao'));c.exigirChecklistAlocacao=gc('cfgExigirChecklistAlocacao');
-        c.bloquearVeiculoAlocado=gc('cfgBloquearVeiculoAlocado');c.registrarHistorico=gc('cfgRegistrarHistorico');
-        c.tempoSessao=Number(gv('cfgTempoSessao'));c.manterSessao=gc('cfgManterSessao');
-        c.tentativasLogin=Number(gv('cfgTentativasLogin'));c.tamanhoMinSenha=Number(gv('cfgTamanhoMinSenha'));
-        c.senhaNumero=gc('cfgSenhaNumero');c.senhaMaiuscula=gc('cfgSenhaMaiuscula');
-        c.logAcoes=gc('cfgLogAcoes');c.logLogin=gc('cfgLogLogin');
-        c.ultimaAtualizacao=new Date().toLocaleString('pt-BR');
-        if(typeof salvarDados==='function')salvarDados();
-        if(c.nomeEmpresa){var el=document.querySelector('.sidebar-logo-text strong');if(el)el.textContent=c.nomeEmpresa;}
-        if(typeof mostrarToast==='function')mostrarToast('Configurações salvas!','sucesso');else alert('Salvo!');
-    } catch(e){console.error('Erro salvar:',e);alert('Erro: '+e.message);}
-}
-window.salvarTodasConfiguracoes=salvarTodasConfiguracoes;
-
-function carregarListaSimples(chave,containerId,funcRemover) {
-    try{
-        if(!window.BD.config)window.BD.config={};var lista=window.BD.config[chave]||[];
-        var padroes={'locais':['Patio Metalica','Patio Usina Conc.','Obra'],'categoriasVeiculo':['Caminhão','Carro Passeio','Utilitário','Máquina','Van','Ônibus','Moto'],'tiposGasto':['Combustível','Manutenção','Peças','Pneus','Seguro','IPVA','Pedágio','Multas','Serviços','Outros'],'origensDestinos':['Patio Metalica','Patio Usina Conc.','Obra']};
-        if(lista.length===0&&padroes[chave]){lista=padroes[chave];window.BD.config[chave]=lista;}
-        var c=document.getElementById(containerId);if(!c)return;c.innerHTML='';
-        for(var i=0;i<lista.length;i++){
-            var d=document.createElement('div');d.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.75rem;background:#f8fafc;border-radius:8px;font-size:0.875rem;';
-            d.innerHTML='<span style="color:#374151;">'+lista[i]+'</span><button onclick="'+funcRemover+'('+i+')" style="background:none;border:none;color:#dc2626;cursor:pointer;padding:4px 8px;border-radius:4px;"><i class="fa-solid fa-trash-can"></i></button>';
-            c.appendChild(d);
-        }
-        if(lista.length===0)c.innerHTML='<div style="text-align:center;padding:1rem;color:#94a3b8;font-size:0.875rem;">Nenhum item</div>';
-    }catch(e){console.error(e);}
-}
-
-function adicionarItemLista(chave,inputId,containerId,funcRemover){
-    try{
-        var inp=document.getElementById(inputId);if(!inp||!inp.value.trim())return;
-        if(!window.BD.config)window.BD.config={};if(!window.BD.config[chave])window.BD.config[chave]=[];
-        if(window.BD.config[chave].includes(inp.value.trim())){if(typeof mostrarToast==='function')mostrarToast('Já existe!','aviso');return;}
-        window.BD.config[chave].push(inp.value.trim());inp.value='';
-        if(typeof salvarDados==='function')salvarDados();carregarListaSimples(chave,containerId,funcRemover);
-        if(typeof mostrarToast==='function')mostrarToast('Adicionado!','sucesso');
-    }catch(e){console.error(e);}
-}
-
-function removerItemLista(chave,i,containerId,funcRemover){
-    try{if(!confirm('Remover?'))return;window.BD.config[chave].splice(i,1);if(typeof salvarDados==='function')salvarDados();carregarListaSimples(chave,containerId,funcRemover);}catch(e){console.error(e);}
-}
-
-function adicionarLocal(){adicionarItemLista('locais','novoLocal','listaLocais','removerLocal');}
-function removerLocal(i){removerItemLista('locais',i,'listaLocais','removerLocal');}
-function adicionarCategoria(){adicionarItemLista('categoriasVeiculo','novaCategoria','listaCategorias','removerCategoria');}
-function removerCategoria(i){removerItemLista('categoriasVeiculo',i,'listaCategorias','removerCategoria');}
-function adicionarTipoGasto(){adicionarItemLista('tiposGasto','novoTipoGasto','listaTiposGasto','removerTipoGasto');}
-function removerTipoGasto(i){removerItemLista('tiposGasto',i,'listaTiposGasto','removerTipoGasto');}
-function adicionarOrigemDestino(){adicionarItemLista('origensDestinos','novaOrigemDestino','listaOrigensDestinos','removerOrigemDestino');}
-function removerOrigemDestino(i){removerItemLista('origensDestinos',i,'listaOrigensDestinos','removerOrigemDestino');}
-window.adicionarLocal=adicionarLocal;window.removerLocal=removerLocal;
-window.adicionarCategoria=adicionarCategoria;window.removerCategoria=removerCategoria;
-window.adicionarTipoGasto=adicionarTipoGasto;window.removerTipoGasto=removerTipoGasto;
-window.adicionarOrigemDestino=adicionarOrigemDestino;window.removerOrigemDestino=removerOrigemDestino;
-
-function carregarListasDadosGerais(){
-    carregarListaSimples('locais','listaLocais','removerLocal');
-    carregarListaSimples('categoriasVeiculo','listaCategorias','removerCategoria');
-    carregarListaSimples('tiposGasto','listaTiposGasto','removerTipoGasto');
-    carregarListaSimples('origensDestinos','listaOrigensDestinos','removerOrigemDestino');
-}
-window.carregarListasDadosGerais=carregarListasDadosGerais;
-
-function atualizarStatusSupabase(){
-    try{var el=document.getElementById('statusConexaoSupabase');if(!el)return;
-    var ok=window.supabase&&window.supabase.temConexaoReal;
-    el.textContent=ok?'Conectado':'Apenas Local';el.style.color=ok?'#10b981':'#f59e0b';}catch(e){}
-}
-window.atualizarStatusSupabase=atualizarStatusSupabase;
-
-async function testarConexaoSupabase(){
-    try{if(!window.supabaseReal){alert('Não inicializado');return;}
-    var t=await window.supabaseReal.from('locais').select('count',{count:'exact',head:true});
-    alert(t.error?'Erro: '+t.error.message:'Conexão OK!');atualizarStatusSupabase();}catch(e){alert('Erro: '+e.message);}
-}
-window.testarConexaoSupabase=testarConexaoSupabase;
-
-function inicializarPaginaConfig(){
-    carregarConfiguracoes();carregarListasDadosGerais();atualizarStatusSupabase();
-    var b=document.querySelector('.aba-config-btn');
-    if(b){b.style.color='#2563eb';b.style.borderBottomColor='#2563eb';b.style.fontWeight='600';}
-}
-window.inicializarPaginaConfig=inicializarPaginaConfig;
-
-// Auto-inicializar se a página já estiver aberta
-document.addEventListener('DOMContentLoaded',function(){
-    if(document.getElementById('pagina-configuracoes')&&document.getElementById('pagina-configuracoes').classList.contains('ativa')){
-        setTimeout(inicializarPaginaConfig,200);
-    }
-});
-</script>
-
-
-<script>
-function cfgValor(id) { var e = document.getElementById(id); return e ? e.value : ''; }
-function cfgSetValor(id, v) { var e = document.getElementById(id); if (e) e.value = v || ''; }
-
-function cfgCarregarLista(chave, containerId, funcRemover) {
-    try {
-        if (!window.BD) return;
-        if (!window.BD.config) window.BD.config = {};
-        var lista = window.BD.config[chave] || [];
-        var padroes = {
-            'locais': ['Patio Metalica','Patio Usina Conc.','Obra'],
-            'categoriasVeiculo': ['Caminhão','Carro Passeio','Utilitário','Máquina','Van','Ônibus','Moto'],
-            'tiposGasto': ['Combustível','Manutenção','Peças','Pneus','Seguro','IPVA','Pedágio','Multas','Serviços','Outros']
-        };
-        if (lista.length === 0 && padroes[chave]) { lista = padroes[chave]; window.BD.config[chave] = lista; }
-        var container = document.getElementById(containerId);
-        if (!container) return;
-        container.innerHTML = '';
-        for (var i = 0; i < lista.length; i++) {
-            var d = document.createElement('div');
-            d.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.6rem;background:#f8fafc;border-radius:6px;font-size:0.85rem;';
-            d.innerHTML = '<span style="color:#374151;">' + lista[i] + '</span><button onclick="' + funcRemover + '(' + i + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;padding:2px 6px;border-radius:4px;font-size:0.8rem;">✕</button>';
-            container.appendChild(d);
-        }
-    } catch(e) { console.error(e); }
-}
-
-function cfgAdicionar(chave, inputId, containerId, funcRemover) {
-    try {
-        var inp = document.getElementById(inputId);
-        if (!inp || !inp.value.trim()) return;
-        if (!window.BD.config) window.BD.config = {};
-        if (!window.BD.config[chave]) window.BD.config[chave] = [];
-        if (window.BD.config[chave].includes(inp.value.trim())) return;
-        window.BD.config[chave].push(inp.value.trim());
-        inp.value = '';
-        if (typeof salvarDados === 'function') salvarDados();
-        cfgCarregarLista(chave, containerId, funcRemover);
-    } catch(e) { console.error(e); }
-}
-
-function cfgRemoverLocal(i) { window.BD.config.locais.splice(i,1); if(typeof salvarDados==='function')salvarDados(); cfgCarregarLista('locais','cfgListaLocais','cfgRemoverLocal'); }
-function cfgRemoverCategoria(i) { window.BD.config.categoriasVeiculo.splice(i,1); if(typeof salvarDados==='function')salvarDados(); cfgCarregarLista('categoriasVeiculo','cfgListaCategorias','cfgRemoverCategoria'); }
-function cfgRemoverTipoGasto(i) { window.BD.config.tiposGasto.splice(i,1); if(typeof salvarDados==='function')salvarDados(); cfgCarregarLista('tiposGasto','cfgListaTiposGasto','cfgRemoverTipoGasto'); }
-
-function cfgCarregarTudo() {
-    try {
-        if (!window.BD || !window.BD.config) return;
-        var c = window.BD.config;
-        cfgSetValor('cfgNomeEmpresa', c.nomeEmpresa);
-        cfgSetValor('cfgCNPJ', c.cnpj);
-        cfgSetValor('cfgEmail', c.email);
-        cfgSetValor('cfgTelefone', c.telefone);
-        cfgSetValor('cfgMoeda', c.moeda || 'BRL');
-        cfgSetValor('cfgFormatoData', c.formatoData || 'pt-BR');
-        cfgSetValor('cfgKmAviso', c.kmAviso || 500);
-        cfgSetValor('cfgDiasAviso', c.diasAviso || 15);
-        cfgSetValor('cfgLimiteKm', c.limiteKm || 200000);
-        cfgSetValor('cfgDiasParado', c.diasParado || 30);
-        cfgSetValor('cfgEmailAlerta', c.emailAlerta);
-        cfgSetValor('cfgPctAprovacao', c.pctAprovacao || 70);
-        cfgSetValor('cfgValorMaxAdiantamento', c.valorMaxAdiantamento || 500);
-        cfgSetValor('cfgDiasPrestacao', c.diasPrestacao || 7);
-        cfgSetValor('cfgTempoSessao', c.tempoSessao || 240);
-        cfgSetValor('cfgTamanhoMinSenha', c.tamanhoMinSenha || 4);
-        cfgSetValor('cfgTentativasLogin', c.tentativasLogin || 5);
-        cfgCarregarLista('locais', 'cfgListaLocais', 'cfgRemoverLocal');
-        cfgCarregarLista('categoriasVeiculo', 'cfgListaCategorias', 'cfgRemoverCategoria');
-        cfgCarregarLista('tiposGasto', 'cfgListaTiposGasto', 'cfgRemoverTipoGasto');
-        var el = document.getElementById('cfgStatusSupabase');
-        if (el) {
-            var ok = window.supabase && window.supabase.temConexaoReal;
-            el.textContent = ok ? '✅ Conectado' : '⚠️ Apenas Local';
-            el.style.color = ok ? '#10b981' : '#f59e0b';
-        }
-        if (document.getElementById('cfgStatusVeiculos') && window.BD.veiculos)
-            document.getElementById('cfgStatusVeiculos').textContent = window.BD.veiculos.length;
-        if (document.getElementById('cfgStatusGastos') && window.BD.gastos)
-            document.getElementById('cfgStatusGastos').textContent = window.BD.gastos.length;
-        if (document.getElementById('cfgStatusUsuarios') && window.BD.usuarios)
-            document.getElementById('cfgStatusUsuarios').textContent = window.BD.usuarios.length;
-    } catch(e) { console.error('Erro carregar cfg:', e); }
-}
-
-function salvarConfiguracoesSimples() {
-    try {
-        if (!window.BD) window.BD = {};
-        if (!window.BD.config) window.BD.config = {};
-        var c = window.BD.config;
-        c.nomeEmpresa = cfgValor('cfgNomeEmpresa');
-        c.cnpj = cfgValor('cfgCNPJ');
-        c.email = cfgValor('cfgEmail');
-        c.telefone = cfgValor('cfgTelefone');
-        c.moeda = cfgValor('cfgMoeda');
-        c.formatoData = cfgValor('cfgFormatoData');
-        c.kmAviso = Number(cfgValor('cfgKmAviso'));
-        c.diasAviso = Number(cfgValor('cfgDiasAviso'));
-        c.limiteKm = Number(cfgValor('cfgLimiteKm'));
-        c.diasParado = Number(cfgValor('cfgDiasParado'));
-        c.emailAlerta = cfgValor('cfgEmailAlerta');
-        c.pctAprovacao = Number(cfgValor('cfgPctAprovacao'));
-        c.valorMaxAdiantamento = Number(cfgValor('cfgValorMaxAdiantamento'));
-        c.diasPrestacao = Number(cfgValor('cfgDiasPrestacao'));
-        c.tempoSessao = Number(cfgValor('cfgTempoSessao'));
-        c.tamanhoMinSenha = Number(cfgValor('cfgTamanhoMinSenha'));
-        c.tentativasLogin = Number(cfgValor('cfgTentativasLogin'));
-        c.ultimaAtualizacao = new Date().toLocaleString('pt-BR');
-        if (typeof salvarDados === 'function') salvarDados();
-        if (c.nomeEmpresa) {
-            var el = document.querySelector('.sidebar-logo-text strong');
-            if (el) el.textContent = c.nomeEmpresa;
-        }
-        if (typeof mostrarToast === 'function') {
-            mostrarToast('✅ Configurações salvas!', 'sucesso');
-        } else {
-            alert('✅ Configurações salvas!');
-        }
-    } catch(e) {
-        console.error(e);
-        alert('❌ Erro: ' + e.message);
+        console.warn('Página não encontrada:', nomePagina);
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        var pg = document.getElementById('pagina-configuracoes');
-        if (pg && pg.classList.contains('ativa')) {
-            cfgCarregarTudo();
-        }
-    }, 300);
-});
-</script>
+function linkTitulo(pag) {
+    const nomes = {
+        dashboard:'Dashboard', veiculos:'Veículos', manutencao:'Manutenção', gastos:'Gastos',
+        'despesas-viagem':'Despesas de Viagem', checklist:'Check-list', chamados:'Chamados',
+        alocacoes:'Alocações', usuarios:'Usuários', solicitacoes:'Solicitações',
+        relatorios:'Relatórios', configuracoes:'Configurações'
+    };
+    return nomes[pag] || pag;
+}
 
-</body>
-</html>
+function sairDoSistema() { if(confirm('Sair do sistema?')) location.reload(); }
+
+// ============================================================
+// 📊 DASHBOARD
+// ============================================================
+function carregarDashboard() {
+    document.getElementById('qtdVeiculos').textContent = BD.veiculos.length;
+    document.getElementById('qtdManutencao').textContent = BD.veiculos.filter(v => v.status==='Manutenção').length;
+    const mes = new Date().getMonth(), ano = new Date().getFullYear();
+    const total = BD.gastos.filter(g => { const d = new Date(g.data); return d.getMonth()===mes && d.getFullYear()===ano; }).reduce((s,g)=>s+Number(g.valor||0),0);
+    document.getElementById('qtdGastos').textContent = 'R$ ' + total.toFixed(2);
+    document.getElementById('qtdAlocacoes').textContent = 0;
+}
+
+// ============================================================
+// ⚙️ PÁGINA CONFIGURAÇÕES
+// ============================================================
+function carregarPaginaConfiguracoes() {
+    // Cards
+    document.getElementById('cfgQtdVeiculos').textContent = BD.veiculos.length;
+    document.getElementById('cfgQtdGastos').textContent = BD.gastos.length;
+    document.getElementById('cfgQtdUsuarios').textContent = BD.usuarios.length;
+
+    // Listas
+    renderizarListaLocais();
+    renderizarListaCategorias();
+    renderizarListaTiposGasto();
+
+    // Campos com valores salvos ou padrão
+    const cfg = BD.config;
+    document.getElementById('cfgEmpresa').value = cfg.empresa || '';
+    document.getElementById('cfgCnpj').value = cfg.cnpj || '';
+    document.getElementById('cfgEmail').value = cfg.email || '';
+    document.getElementById('cfgTelefone').value = cfg.telefone || '';
+    document.getElementById('cfgMoeda').value = cfg.moeda || 'BRL';
+    document.getElementById('cfgFormatoData').value = cfg.formatoData || 'DD/MM/AAAA';
+    document.getElementById('cfgKmAviso').value = cfg.kmAviso || 5000;
+    document.getElementById('cfgDiasAviso').value = cfg.diasAviso || 15;
+    document.getElementById('cfgLimiteKm').value = cfg.limiteKm || 200000;
+    document.getElementById('cfgDiasParado').value = cfg.diasParado || 30;
+    document.getElementById('cfgEmailAlerta').value = cfg.emailAlerta || '';
+    document.getElementById('cfgPctAprovacao').value = cfg.pctAprovacao || 50;
+    document.getElementById('cfgValorMaxAdiantamento').value = cfg.valorMaxAdiantamento || 1000;
+    document.getElementById('cfgDiasPrestacaoContas').value = cfg.diasPrestacaoContas || 7;
+    document.getElementById('cfgTempoSessao').value = cfg.tempoSessao || 60;
+    document.getElementById('cfgTamSenha').value = cfg.tamSenha || 6;
+    document.getElementById('cfgTentativasLogin').value = cfg.tentativasLogin || 5;
+}
+
+// Renderizar listas
+function renderizarListaLocais() {
+    document.getElementById('listaLocais').innerHTML = BD.locais.map((n,i) => `
+        <div class="config-lista-item">${n}
+            <button class="btn" style="padding:0.2rem 0.4rem; font-size:0.75rem; background:#fee2e2; color:#991b1b;" onclick="removerLocal(${i})">✕</button>
+        </div>`).join('');
+}
+function renderizarListaCategorias() {
+    document.getElementById('listaCategorias').innerHTML = BD.categorias.map((n,i) => `
+        <div class="config-lista-item">${n}
+            <button class="btn" style="padding:0.2rem 0.4rem; font-size:0.75rem; background:#fee2e2; color:#991b1b;" onclick="removerCategoria(${i})">✕</button>
+        </div>`).join('');
+}
+function renderizarListaTiposGasto() {
+    document.getElementById('listaTiposGasto').innerHTML = BD.tiposGasto.map((n,i) => `
+        <div class="config-lista-item">${n}
+            <button class="btn" style="padding:0.2rem 0.4rem; font-size:0.75rem; background:#fee2e2; color:#991b1b;" onclick="removerTipoGasto(${i})">✕</button>
+        </div>`).join('');
+}
+
+// Adicionar/Remover
+function adicionarLocal() { const v = document.getElementById('novoLocal').value.trim(); if(v){BD.locais.push(v);salvarBD();renderizarListaLocais();document.getElementById('novoLocal').value='';} }
+function removerLocal(i) { if(confirm('Remover?')){BD.locais.splice(i,1);salvarBD();renderizarListaLocais();} }
+function adicionarCategoria() { const v = document.getElementById(' novaCategoria').value.trim(); if(v){BD.categorias.push(v);salvarBD();renderizarListaCategorias();document.getElementById('novaCategoria').value='';} }
+function removerCategoria(i) { if(confirm('Remover?')){BD.categorias.splice(i,1);salvarBD();renderizarListaCategorias();} }
+function adicionarTipoGasto() { const v = document.getElementById('novoTipoGasto').value.trim(); if(v){BD.tiposGasto.push(v);salvarBD();renderizarListaTiposGasto();document.getElementById('novoTipoGasto').value='';} }
+function removerTipoGasto(i) { if(confirm('Remover?')){BD.tiposGasto.splice(i,1);salvarBD();renderizarListaTiposGasto();} }
