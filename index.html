@@ -22,111 +22,7 @@
     <link rel="stylesheet" href="css/estilos-aprimorados.css">
     
     <style>
-        /* ======================================================
-   🔒 AJUSTE AUTOMÁTICO + BARRA DE ROLAGEM DISCRETA
-   ====================================================== */
 
-/* Reset geral */
-html, body {
-    width: 100%;
-    overflow-x: hidden;
-    margin: 0;
-    padding: 0;
-}
-
-* {
-    box-sizing: border-box;
-}
-
-/* ======================================================
-   📋 SIDEBAR — Barra de rolagem DISCRETA
-   ====================================================== */
-.sidebar {
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    scrollbar-width: thin; /* Firefox */
-    scrollbar-color: #475569 transparent;
-}
-
-/* Barra de rolagem para Chrome, Edge, Safari */
-.sidebar::-webkit-scrollbar {
-    width: 6px; /* Bem fininha */
-}
-
-.sidebar::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-    background-color: #475569; /* Cor discreta */
-    border-radius: 3px;
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover {
-    background-color: #64748b;
-}
-
-/* ======================================================
-   📐 CONTEÚDO PRINCIPAL — Não estoura a tela
-   ====================================================== */
-.main-content {
-    margin-left: 240px;
-    width: calc(100% - 240px);
-    max-width: calc(100% - 240px);
-    overflow-x: hidden;
-}
-
-.pagina {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto; /* Rolagem suave se necessário */
-}
-
-/* ======================================================
-   ⚙️ PÁGINA DE CONFIGURAÇÕES — Cabe tudo na tela
-   ====================================================== */
-.config-secao,
-.config-cards-topo,
-.form-grid,
-.config-2col,
-.config-3col,
-.config-botoes {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-/* Inputs e selects nunca ultrapassam a borda */
-input, select, textarea {
-    max-width: 100%;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* ======================================================
-   📱 RESPONSIVIDADE — Ajusta sozinho
-   ====================================================== */
-@media (max-width: 1024px) {
-    .main-content {
-        margin-left: 0;
-        width: 100%;
-        max-width: 100%;
-    }
-}
-
-/* Ajuste de fonte automático */
-@media (max-width: 1400px) { html { font-size: 15px; } }
-@media (max-width: 1024px) { html { font-size: 14px; } }
-@media (max-width: 768px)  { html { font-size: 13px; } }
-@media (max-width: 480px)  { html { font-size: 12px; } }
-
-/* ✅ EXCEÇÃO: Botões e ícones mantêm tamanho original */
-button, .btn, .acao-btn, .status-badge, .user-avatar,
-.botao-acao, .btn-editar, .btn-excluir, .btn-historico, .btn-transferir {
-    width: auto !important;
-    max-width: none !important;
-    flex-shrink: 0;
-}
 
         /* CSS Customizado */
         * { box-sizing: border-box; }
@@ -1016,7 +912,86 @@ button, .btn, .acao-btn, .status-badge, .user-avatar,
             .main-content { max-width: 1800px; }
             .pagina { padding: 2rem; }
         }
+                /* ======================================================
+        📋 MENU LATERAL — BARRA DE ROLAGEM DISCRETA
+        ====================================================== */
+        .sidebar {
+            height: 100vh !important;
+            overflow-y: auto !important;    /* Rola quando não couber tudo */
+            overflow-x: hidden !important;
+        }
 
+        /* Barra de rolagem — Chrome, Edge, Safari */
+        .sidebar::-webkit-scrollbar {
+            width: 4px;  /* Muito fininha */
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;  /* Sem fundo invisível */
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: rgba(71, 85, 105, 0.4);  /* Bem transparente / discreta */
+            border-radius: 2px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(71, 85, 105, 0.6);  /* Um pouco mais visível só ao passar o mouse */
+        }
+
+        /* Barra de rolagem — Firefox */
+        .sidebar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(71, 85, 105, 0.4) transparent;
+        }
+
+        /* ======================================================
+        📐 CONTEÚDO PRINCIPAL — Não estoura a tela
+        ====================================================== */
+        .main-content {
+            margin-left: 240px;
+            width: calc(100% - 240px);
+            max-width: calc(100% - 240px);
+            overflow-x: hidden;
+        }
+
+        .pagina {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        input, select, textarea,
+        .config-secao, .config-cards-topo,
+        .config-2col, .config-3col {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* ======================================================
+        📱 RESPONSIVIDADE
+        ====================================================== */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 1400px) { html { font-size: 15px; } }
+        @media (max-width: 1024px) { html { font-size: 14px; } }
+        @media (max-width: 768px)  { html { font-size: 13px; } }
+        @media (max-width: 480px)  { html { font-size: 12px; } }
+
+        /* ✅ Botões mantêm tamanho normal */
+        button, .btn, .acao-btn, .status-badge, .user-avatar,
+        .botao-acao, .btn-editar, .btn-excluir, .btn-historico, .btn-transferir {
+            width: auto !important;
+            max-width: none !important;
+            flex-shrink: 0;
+        }
+               
     </style>
 </head>
 <body>
