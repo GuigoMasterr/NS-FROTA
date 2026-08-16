@@ -1,246 +1,299 @@
 // ==================================================
-// 📍 ALOCAÇÕES DE VEÍCULOS - VERSÃO CORRIGIDA
+// 📍 ALOCAÇÕES - VERSÃO CORRIGIDA
+// ✅ Modal funcionando
 // ==================================================
 
 function carregarTabelaAlocacoes() {
     try {
-        console.log('📍 Carregando alocações...');
-        
         const tabela = document.getElementById('tabelaAlocacoes');
         if (!tabela) return;
         
+        const filtroVeiculo = document.getElementById('filtroVeiculoAlocacao')?.value || 'todos';
+        const filtroStatus = document.getElementById('filtroStatusAlocacao')?.value || 'todos';
+        
         let alocacoes = (typeof BD !== 'undefined' && BD.alocacoes) ? [...BD.alocacoes] : [];
         
-        alocacoes.sort((a, b) => new Date(b.dataSaida || b.dataInicio || 0) - new Date(a.dataSaida || a.dataInicio || 0));
+        if (filtroVeiculo !== 'todos') {
+            alocacoes = alocacoes.filter(a => String(a.veiculoId) === String(filtroVeiculo));
+        }
+        if (filtroStatus !== 'todos') {
+            alocacoes = alocacoes.filter(a => a.status === filtroStatus);
+        }
         
         if (alocacoes.length === 0) {
-            tabela.innerHTML = '<tr><td colspan="6" class="estado-vazio">Nenhuma alocação registrada</td></tr>';
+            tabela.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#64748b;">Nenhuma alocação registrada</td></tr>';
             return;
         }
         
-        const veiculos = (typeof BD !== 'undefined' && BD.veiculos) ? BD.veiculos : [];
-        const getPlaca = (id) => {
-            const v = veiculos.find(v => String(v.id) === String(id));
-            return v ? v.placa : '-';
-        };
+        const statusCor = { 'Ativa': '#3b82f6', 'Encerrada': '#6b7280' };
         
-        tabela.innerHTML = alocacoes.map(a => `
-            <tr>
-                <td><strong>${getPlaca(a.veiculoId)}</strong></td>
-                <td>${a.origem || '-'}</td>
-                <td>${a.destino || '-'}</td>
-                <td>${a.dataInicio || '-'}</td>
-                <td>${a.dataFim || a.dataSaida || '<span class="badge badge-info">Em andamento</span>'}</td>
-                <td>
-                    ${!a.dataFim && !a.dataSaida ? `
-                    <button class="btn-mini" onclick="encerrarAlocacao(${a.id})" title="Encerrar" style="color:#10b981;">
-                        <i class="fa-solid fa-flag-checkered"></i>
-                    </button>
-                    ` : ''}
-                    <button class="btn-mini" onclick="excluirAlocacao(${a.id})" title="Excluir" style="color:#dc2626;">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        tabela.innerHTML = alocacoes.map(a => {
+            const veiculo = BD.veiculos?.find(v => String(v.id) === String(a.veiculoId));
+            return '<tr>' +
+                '<td>' + (a.dataSaida || '-') + '</td>' +
+                '<td><strong>' + (veiculo?.placa || '-') + '</strong></td>' +
+                '<td>' + (a.motorista || '-') + '</td>' +
+                '<td>' + (a.origem || '-') + '</td>' +
+                '<td>' + (a.destino || '-') + '</td>' +
+                '<td>' + (a.kmSaida || '-') + '</td>' +
+                '<td><span style="display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;color:white;background:' + (statusCor[a.status] || '#6b7280') + '">' + (a.status || '-') + '</span></td>' +
+                '<td>' +
+                    (a.status === 'Ativa' 
+                        ? '<button onclick="encerrarAlocacao(' + a.id + ')" style="padding:6px 10px;border:none;background:#10b981;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">✅ Encerrar</button>' 
+                        : '') +
+                    '<button onclick="excluirAlocacao(' + a.id + ')" style="padding:6px 10px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;font-size:12px;">🗑️</button>' +
+                '</td>' +
+                '</tr>';
+        }).join('');
         
-        console.log(`✅ ${alocacoes.length} alocação(ões) carregada(s)`);
-        
-    } catch (e) {
-        console.error('❌ Erro ao carregar alocações:', e);
-    }
+    } catch (e) { console.error('❌ Erro carregar alocacoes:', e); }
 }
 
 function abrirModalAlocacao() {
-    try {
-        const veiculos = (typeof BD !== 'undefined' && BD.veiculos) 
-            ? BD.veiculos.filter(v => v.status !== 'manutencao' && v.status !== 'inativo') 
-            : [];
-        
-        if (veiculos.length === 0) {
-            alert('⚠️ Nenhum veículo disponível para alocação!');
-            return;
-        }
-        
-        const locais = (typeof BD !== 'undefined' && BD.locais) ? BD.locais : [];
-        const opcoesLocais = locais.length > 0 
-            ? locais.map(l => `<option value="${l.nome}">${l.nome}</option>`).join('')
-            : '<option value="Pátio Metálica">Pátio Metálica</option><option value="Obra">Obra</option>';
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay aberto';
-        modal.id = 'modal-alocacao';
-        
-        modal.innerHTML = `
-            <div class="modal-container" style="max-width: 500px;">
-                <div class="modal-cabecalho">
-                    <h3 class="modal-titulo">📍 Nova Alocação</h3>
-                    <button type="button" class="modal-fechar" onclick="fecharModal('modal-alocacao')">&times;</button>
-                </div>
-                <div class="modal-corpo">
-                    <form id="formAlocacao" class="form-grid">
-                        <div class="form-grupo" style="grid-column: span 2;">
-                            <label>Veículo <span class="obrigatorio">*</span></label>
-                            <select id="alVeiculo" required>
-                                <option value="">Selecione...</option>
-                                ${veiculos.map(v => `<option value="${v.id}">${v.placa} - ${v.modelo || ''} (${v.status || 'disponivel'})</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="form-grupo">
-                            <label>Origem <span class="obrigatorio">*</span></label>
-                            <select id="alOrigem" required>
-                                <option value="">Selecione...</option>
-                                ${opcoesLocais}
-                            </select>
-                        </div>
-                        <div class="form-grupo">
-                            <label>Destino <span class="obrigatorio">*</span></label>
-                            <select id="alDestino" required>
-                                <option value="">Selecione...</option>
-                                ${opcoesLocais}
-                            </select>
-                        </div>
-                        <div class="form-grupo">
-                            <label>Data Início <span class="obrigatorio">*</span></label>
-                            <input type="date" id="alDataInicio" required value="${new Date().toISOString().split('T')[0]}">
-                        </div>
-                        <div class="form-grupo">
-                            <label>KM Inicial</label>
-                            <input type="number" id="alKm" min="0" placeholder="Quilometragem de saída">
-                        </div>
-                        <div class="form-grupo" style="grid-column: span 2;">
-                            <label>Motorista / Responsável</label>
-                            <input type="text" id="alMotorista" placeholder="Quem está utilizando?">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-rodape">
-                    <button type="button" class="btn btn-secundario" onclick="fecharModal('modal-alocacao')">Cancelar</button>
-                    <button type="button" class="btn btn-primario" id="btnSalvarAlocacao">📍 Alocar</button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        document.getElementById('btnSalvarAlocacao').addEventListener('click', salvarAlocacaoForm);
-        document.getElementById('formAlocacao').addEventListener('submit', (e) => {
-            e.preventDefault();
-            salvarAlocacaoForm();
-        });
-        
-    } catch (e) {
-        console.error('❌ Erro ao abrir modal de alocação:', e);
+    console.log('📝 abrirModalAlocacao chamado');
+    
+    if (typeof BD === 'undefined' || !BD.veiculos || BD.veiculos.length === 0) {
+        alert('⚠️ Cadastre um veículo primeiro!');
+        return;
     }
+    
+    const veiculosDisponiveis = BD.veiculos.filter(v => v.status === 'disponivel');
+    if (veiculosDisponiveis.length === 0) {
+        alert('⚠️ Nenhum veículo disponível para alocação!');
+        return;
+    }
+    
+    const antigo = document.getElementById('modal-alocacao-final');
+    if (antigo) antigo.remove();
+    
+    const fundo = document.createElement('div');
+    fundo.id = 'modal-alocacao-final';
+    fundo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    fundo.addEventListener('click', function(e) { if (e.target === fundo) fundo.remove(); });
+    
+    const caixa = document.createElement('div');
+    caixa.style.cssText = 'background:white;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.4);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;font-family:Arial,sans-serif;';
+    
+    const cabecalho = document.createElement('div');
+    cabecalho.style.cssText = 'padding:16px 24px;background:#2563eb;color:white;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0;';
+    cabecalho.innerHTML = '<h3 style="margin:0;font-size:18px;">📍 Nova Alocação</h3>';
+    const btnFechar = document.createElement('button');
+    btnFechar.textContent = '×';
+    btnFechar.style.cssText = 'background:transparent;border:none;color:white;font-size:28px;cursor:pointer;line-height:1;padding:0 8px;';
+    btnFechar.onclick = function() { fundo.remove(); };
+    cabecalho.appendChild(btnFechar);
+    
+    const corpo = document.createElement('div');
+    corpo.style.cssText = 'padding:24px;';
+    
+    const form = document.createElement('form');
+    form.style.cssText = 'display:flex;flex-direction:column;gap:14px;';
+    form.onsubmit = function(e) { e.preventDefault(); salvarAlocacaoForm(); };
+    
+    function addCampo(label, tipo, id, obrigatorio, opcoes) {
+        const grupo = document.createElement('div');
+        grupo.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+        const lbl = document.createElement('label');
+        lbl.style.cssText = 'font-size:14px;font-weight:500;color:#374151;';
+        lbl.innerHTML = label + (obrigatorio ? ' <span style="color:#dc2626;">*</span>' : '');
+        grupo.appendChild(lbl);
+        let input;
+        if (opcoes) {
+            input = document.createElement('select');
+            input.innerHTML = '<option value="">Selecione...</option>' + opcoes.map(o => '<option value="' + o.valor + '">' + o.texto + '</option>').join('');
+        } else {
+            input = document.createElement('input');
+            input.type = tipo;
+        }
+        input.id = id;
+        if (obrigatorio) input.required = true;
+        input.style.cssText = 'padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;background:white;';
+        grupo.appendChild(input);
+        return grupo;
+    }
+    
+    const veiculosOpts = veiculosDisponiveis.map(v => ({ valor: v.id, texto: v.placa + ' - ' + (v.modelo || '') + ' (KM: ' + (v.km_atual || 0) + ')' }));
+    const locais = BD.origens || BD.locais?.map(l => l.nome) || ['Pátio Principal'];
+    
+    form.appendChild(addCampo('Veículo', 'text', 'alVeiculo', true, veiculosOpts));
+    form.appendChild(addCampo('Motorista', 'text', 'alMotorista', true));
+    form.appendChild(addCampo('Origem', 'text', 'alOrigem', true, locais.map(l => ({ valor: l, texto: l }))));
+    form.appendChild(addCampo('Destino', 'text', 'alDestino', true, locais.map(l => ({ valor: l, texto: l }))));
+    form.appendChild(addCampo('Data Saída', 'date', 'alDataSaida', true));
+    form.appendChild(addCampo('KM Saída', 'number', 'alKmSaida', true));
+    
+    const grupoObs = document.createElement('div');
+    grupoObs.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+    const lblObs = document.createElement('label');
+    lblObs.style.cssText = 'font-size:14px;font-weight:500;color:#374151;';
+    lblObs.textContent = 'Observação';
+    grupoObs.appendChild(lblObs);
+    const txtObs = document.createElement('textarea');
+    txtObs.id = 'alObservacao';
+    txtObs.rows = 2;
+    txtObs.style.cssText = 'padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;resize:vertical;';
+    grupoObs.appendChild(txtObs);
+    form.appendChild(grupoObs);
+    
+    const rodape = document.createElement('div');
+    rodape.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;margin-top:10px;';
+    const btnCancelar = document.createElement('button');
+    btnCancelar.type = 'button';
+    btnCancelar.textContent = 'Cancelar';
+    btnCancelar.style.cssText = 'padding:10px 20px;border:1px solid #d1d5db;background:white;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;';
+    btnCancelar.onclick = function() { fundo.remove(); };
+    const btnSalvar = document.createElement('button');
+    btnSalvar.type = 'submit';
+    btnSalvar.textContent = '💾 Alocar';
+    btnSalvar.style.cssText = 'padding:10px 20px;border:none;background:#2563eb;color:white;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;';
+    rodape.appendChild(btnCancelar);
+    rodape.appendChild(btnSalvar);
+    form.appendChild(rodape);
+    
+    corpo.appendChild(form);
+    caixa.appendChild(cabecalho);
+    caixa.appendChild(corpo);
+    fundo.appendChild(caixa);
+    document.body.appendChild(fundo);
+    
+    document.getElementById('alDataSaida').value = new Date().toISOString().split('T')[0];
+    
+    // Preenche KM saída automaticamente com o KM atual do veículo
+    document.getElementById('alVeiculo').addEventListener('change', function() {
+        const v = BD.veiculos.find(x => String(x.id) === String(this.value));
+        if (v) document.getElementById('alKmSaida').value = v.km_atual || 0;
+    });
+    
+    console.log('✅ Modal alocação aberto!');
 }
 
 function salvarAlocacaoForm() {
     try {
         const veiculoId = document.getElementById('alVeiculo')?.value;
+        const motorista = document.getElementById('alMotorista')?.value.trim();
         const origem = document.getElementById('alOrigem')?.value;
         const destino = document.getElementById('alDestino')?.value;
-        const dataInicio = document.getElementById('alDataInicio')?.value;
+        const kmSaida = parseFloat(document.getElementById('alKmSaida')?.value);
         
-        if (!veiculoId || !origem || !destino || !dataInicio) {
+        if (!veiculoId || !motorista || !origem || !destino || !kmSaida) {
             alert('⚠️ Preencha os campos obrigatórios!');
             return;
         }
         
         const dados = {
-            veiculoId: parseInt(veiculoId),
+            id: Date.now(),
+            veiculoId: Number(veiculoId),
+            motorista: motorista,
             origem: origem,
             destino: destino,
-            dataInicio: dataInicio,
-            kmInicial: parseFloat(document.getElementById('alKm')?.value) || 0,
-            motorista: document.getElementById('alMotorista')?.value.trim() || '',
+            dataSaida: document.getElementById('alDataSaida')?.value || new Date().toISOString().split('T')[0],
+            kmSaida: kmSaida,
+            observacao: document.getElementById('alObservacao')?.value.trim() || '',
+            status: 'Ativa',
             criadoPor: window.usuarioAtual?.nome || 'Sistema'
         };
         
-        if (typeof salvarAlocacao === 'function') {
-            salvarAlocacao(dados);
-        } else if (typeof BD !== 'undefined') {
-            if (!BD.alocacoes) BD.alocacoes = [];
-            dados.id = BD.alocacoes.length > 0 ? Math.max(...BD.alocacoes.map(a => a.id || 0)) + 1 : 1;
-            BD.alocacoes.push(dados);
-            
-            // Atualiza status do veículo para 'alocado'
-            if (BD.veiculos) {
-                const v = BD.veiculos.find(v => v.id === dados.veiculoId);
-                if (v && v.status === 'disponivel') {
-                    v.status = 'alocado';
-                    v.obra_atual = destino;
-                }
-            }
-            
-            if (typeof salvarDados === 'function') salvarDados();
-            window.BD = BD;
+        if (typeof BD === 'undefined') BD = { alocacoes: [], veiculos: [] };
+        if (!BD.alocacoes) BD.alocacoes = [];
+        BD.alocacoes.unshift(dados);
+        
+        // Atualiza status do veículo
+        if (BD.veiculos) {
+            const v = BD.veiculos.find(x => String(x.id) === String(veiculoId));
+            if (v) v.status = 'alocado';
         }
         
-        fecharModal('modal-alocacao');
-        carregarTabelaAlocacoes();
+        if (typeof salvarDados === 'function') salvarDados();
+        window.BD = BD;
         
-        if (typeof mostrarToast === 'function') mostrarToast('Veículo alocado!', 'sucesso');
-        else alert('✅ Veículo alocado com sucesso!');
+        document.getElementById('modal-alocacao-final')?.remove();
+        carregarTabelaAlocacoes();
+        if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
+        if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
+        if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+        
+        if (typeof mostrarToast === 'function') mostrarToast('Veículo alocado com sucesso!', 'sucesso');
+        else alert('✅ Veículo alocado!');
         
     } catch (e) {
-        console.error('❌ Erro ao salvar alocação:', e);
+        console.error('❌ Erro:', e);
+        alert('❌ Erro ao salvar');
     }
 }
 
 function encerrarAlocacao(id) {
     try {
-        if (!confirm('Deseja encerrar esta alocação?')) return;
+        const kmRetorno = prompt('Informe o KM de retorno:');
+        if (kmRetorno === null) return;
         
-        if (typeof BD !== 'undefined' && BD.alocacoes) {
-            const a = BD.alocacoes.find(a => a.id === id);
-            if (a) {
-                a.dataFim = new Date().toISOString().split('T')[0];
-                
-                // Atualiza status do veículo de volta para 'disponivel'
-                if (BD.veiculos) {
-                    const v = BD.veiculos.find(v => v.id === a.veiculoId);
-                    if (v && v.status === 'alocado') {
-                        v.status = 'disponivel';
-                    }
-                }
-                
-                if (typeof salvarDados === 'function') salvarDados();
-                window.BD = BD;
-            }
+        const km = parseFloat(kmRetorno);
+        if (isNaN(km) || km <= 0) {
+            alert('⚠️ Informe um KM válido!');
+            return;
         }
         
-        carregarTabelaAlocacoes();
-        if (typeof mostrarToast === 'function') mostrarToast('Alocação encerrada!', 'sucesso');
-        
-    } catch (e) {
-        console.error('❌ Erro ao encerrar alocação:', e);
-    }
-}
-
-function excluirAlocacao(id) {
-    try {
-        if (!confirm('Tem certeza que deseja excluir?')) return;
-        
-        if (typeof excluirAlocacaoBD === 'function') {
-            excluirAlocacaoBD(id);
-        } else if (typeof BD !== 'undefined' && BD.alocacoes) {
-            BD.alocacoes = BD.alocacoes.filter(a => a.id !== id);
+        if (typeof BD !== 'undefined' && BD.alocacoes) {
+            const a = BD.alocacoes.find(x => x.id === id);
+            if (a) {
+                a.status = 'Encerrada';
+                a.kmRetorno = km;
+                a.dataRetorno = new Date().toISOString().split('T')[0];
+                a.kmRodado = km - (a.kmSaida || 0);
+                
+                // Atualiza status do veículo e KM
+                if (BD.veiculos) {
+                    const v = BD.veiculos.find(x => String(x.id) === String(a.veiculoId));
+                    if (v) {
+                        v.status = 'disponivel';
+                        v.km_atual = km;
+                    }
+                }
+            }
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
         }
         
         carregarTabelaAlocacoes();
-        if (typeof mostrarToast === 'function') mostrarToast('Excluído!', 'sucesso');
+        if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
+        if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
+        if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
         
-    } catch (e) {
-        console.error('❌ Erro ao excluir alocação:', e);
-    }
+        if (typeof mostrarToast === 'function') mostrarToast('Alocação encerrada!', 'sucesso');
+        else alert('✅ Alocação encerrada!');
+        
+    } catch (e) { console.error(e); }
 }
 
-// Expõe funções
+function excluirAlocacao(id) {
+    try {
+        if (!confirm('Excluir esta alocação?')) return;
+        if (typeof BD !== 'undefined' && BD.alocacoes) {
+            const a = BD.alocacoes.find(x => x.id === id);
+            if (a && a.status === 'Ativa' && BD.veiculos) {
+                const v = BD.veiculos.find(x => String(x.id) === String(a.veiculoId));
+                if (v) v.status = 'disponivel';
+            }
+            BD.alocacoes = BD.alocacoes.filter(x => x.id !== id);
+            if (typeof salvarDados === 'function') salvarDados();
+            window.BD = BD;
+        }
+        carregarTabelaAlocacoes();
+        if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
+        if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
+    } catch (e) { console.error(e); }
+}
+
+window.carregarTabelaAlocacoes = carregarTabelaAlocacoes;
 window.abrirModalAlocacao = abrirModalAlocacao;
 window.encerrarAlocacao = encerrarAlocacao;
 window.excluirAlocacao = excluirAlocacao;
-window.carregarTabelaAlocacoes = carregarTabelaAlocacoes;
 
-console.log('✅ js/alocacoes.js inicializado');
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        const filtV = document.getElementById('filtroVeiculoAlocacao');
+        const filtS = document.getElementById('filtroStatusAlocacao');
+        if (filtV) filtV.addEventListener('change', carregarTabelaAlocacoes);
+        if (filtS) filtS.addEventListener('change', carregarTabelaAlocacoes);
+        console.log('✅ alocacoes.js inicializado');
+    });
+}

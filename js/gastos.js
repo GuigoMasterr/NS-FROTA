@@ -1,56 +1,54 @@
 // ==================================================
-// ⛽ CONTROLE DE GASTOS - VERSÃO CORRIGIDA
+// ⛽ GASTOS - VERSÃO CORRIGIDA
+// ✅ Modal funcionando + sem erro de sintaxe
 // ==================================================
 
 function carregarTabelaGastos() {
     try {
-        console.log('💸 Carregando tabela de gastos...');
-        
         const tabela = document.getElementById('tabelaGastos');
         if (!tabela) return;
         
         const filtroVeiculo = document.getElementById('filtroGastosVeiculo')?.value || 'todos';
+        const filtroTipo = document.getElementById('filtroGastosTipo')?.value || 'todos';
         
         let gastos = (typeof BD !== 'undefined' && BD.gastos) ? [...BD.gastos] : [];
         
         if (filtroVeiculo !== 'todos') {
             gastos = gastos.filter(g => String(g.veiculoId) === String(filtroVeiculo));
         }
-        
-        // Ordena por data (mais recentes primeiro)
-        gastos.sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
+        if (filtroTipo !== 'todos') {
+            gastos = gastos.filter(g => g.tipo === filtroTipo);
+        }
         
         if (gastos.length === 0) {
-            tabela.innerHTML = '<tr><td colspan="6" class="estado-vazio">Nenhum gasto registrado</td></tr>';
+            tabela.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#64748b;">Nenhum gasto registrado</td></tr>';
             return;
         }
         
-        const veiculos = (typeof BD !== 'undefined' && BD.veiculos) ? BD.veiculos : [];
-        const getPlaca = (id) => {
-            const v = veiculos.find(v => String(v.id) === String(id));
-            return v ? v.placa : '-';
-        };
+        const total = gastos.reduce((s, g) => s + Number(g.valor || 0), 0);
         
-        tabela.innerHTML = gastos.map(g => `
-            <tr>
-                <td>${g.data || '-'}</td>
-                <td><strong>${getPlaca(g.veiculoId)}</strong></td>
-                <td>${g.tipo || '-'}</td>
-                <td>${g.observacao || '-'}</td>
-                <td><strong style="color:#dc2626;">R$ ${Number(g.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></td>
-                <td>
-                    <button class="btn-mini" onclick="excluirGasto(${g.id})" title="Excluir" style="color:#dc2626;">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        let html = '';
+        html += gastos.map(g => {
+            const veiculo = BD.veiculos?.find(v => String(v.id) === String(g.veiculoId));
+            return '<tr>' +
+                '<td>' + (g.data || '-') + '</td>' +
+                '<td><strong>' + (veiculo?.placa || '-') + '</strong></td>' +
+                '<td>' + (g.tipo || '-') + '</td>' +
+                '<td>' + (g.obra || '-') + '</td>' +
+                '<td style="font-weight:600;color:#dc2626;">' + (typeof g.valor === 'number' ? Utils.formatarMoeda(g.valor) : '-') + '</td>' +
+                '<td><button onclick="excluirGasto(' + g.id + ')" style="padding:6px 10px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;font-size:12px;">🗑️</button></td>' +
+                '</tr>';
+        }).join('');
         
-        console.log(`✅ ${gastos.length} gasto(s) carregado(s)`);
+        html += '<tr style="background:#fef2f2;font-weight:600;">' +
+            '<td colspan="4" style="text-align:right;">TOTAL:</td>' +
+            '<td style="color:#dc2626;">' + Utils.formatarMoeda(total) + '</td>' +
+            '<td></td>' +
+            '</tr>';
         
-    } catch (e) {
-        console.error('❌ Erro ao carregar gastos:', e);
-    }
+        tabela.innerHTML = html;
+        
+    } catch (e) { console.error('❌ Erro carregar gastos:', e); }
 }
 
 function abrirModalGasto() {
@@ -70,7 +68,7 @@ function abrirModalGasto() {
     fundo.addEventListener('click', function(e) { if (e.target === fundo) fundo.remove(); });
     
     const caixa = document.createElement('div');
-    caixa.style.cssText = 'background:white;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.4);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;font-family:Arial,sans-serif;';
+    caixa.style.cssText = 'background:white;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.4);width:100%;max-width:480px;max-height:90vh;overflow-y:auto;font-family:Arial,sans-serif;';
     
     const cabecalho = document.createElement('div');
     cabecalho.style.cssText = 'padding:16px 24px;background:#ef4444;color:white;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0;';
@@ -98,7 +96,7 @@ function abrirModalGasto() {
         let input;
         if (opcoes) {
             input = document.createElement('select');
-            input.innerHTML = '<option value="">Selecione...</option>' + opcoes.map(o => `<option value="${o.valor}">${o.texto}</option>`).join('');
+            input.innerHTML = '<option value="">Selecione...</option>' + opcoes.map(o => '<option value="' + o.valor + '">' + o.texto + '</option>').join('');
         } else {
             input = document.createElement('input');
             input.type = tipo;
@@ -111,16 +109,15 @@ function abrirModalGasto() {
     }
     
     const tiposGasto = ['Combustível', 'Manutenção', 'Peças', 'Serviços', 'IPVA', 'Seguro', 'Licenciamento', 'Multas', 'Pedágio', 'Outros'];
-    const veiculosOpts = BD.veiculos.map(v => ({ valor: v.id, texto: `${v.placa} - ${v.modelo || ''}` }));
-    const obrasOpts = (BD.obras || BD.locais?.map(l => l.nome) || ['Pátio Principal']).map(o => ({ valor: o, texto: o }));
+    const veiculosOpts = BD.veiculos.map(v => ({ valor: v.id, texto: v.placa + ' - ' + (v.modelo || '') }));
+    const obras = BD.obras || (BD.locais ? BD.locais.map(l => l.nome) : ['Pátio Principal']);
     
     form.appendChild(addCampo('Veículo', 'text', 'gVeiculo', true, veiculosOpts));
     form.appendChild(addCampo('Tipo de Gasto', 'text', 'gTipo', true, tiposGasto.map(t => ({ valor: t, texto: t }))));
     form.appendChild(addCampo('Data', 'date', 'gData', true));
     form.appendChild(addCampo('Valor (R$)', 'number', 'gValor', true));
-    form.appendChild(addCampo('Obra/Local', 'text', 'gObra', false, obrasOpts));
+    form.appendChild(addCampo('Obra/Local', 'text', 'gObra', false, obras.map(o => ({ valor: o, texto: o }))));
     
-    // Observação
     const grupoObs = document.createElement('div');
     grupoObs.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
     const lblObs = document.createElement('label');
@@ -156,79 +153,74 @@ function abrirModalGasto() {
     document.body.appendChild(fundo);
     
     document.getElementById('gData').value = new Date().toISOString().split('T')[0];
-    console.log('✅ Modal de gasto aberto!');
+    console.log('✅ Modal gasto aberto!');
 }
 
 function salvarGastoForm() {
     try {
-        const data = document.getElementById('gData')?.value;
         const veiculoId = document.getElementById('gVeiculo')?.value;
         const tipo = document.getElementById('gTipo')?.value;
         const valor = parseFloat(document.getElementById('gValor')?.value);
         
-        if (!data || !veiculoId || !tipo || isNaN(valor)) {
-            alert('⚠️ Preencha todos os campos obrigatórios!');
+        if (!veiculoId || !tipo || !valor) {
+            alert('⚠️ Preencha os campos obrigatórios!');
             return;
         }
         
         const dados = {
-            data: data,
-            veiculoId: parseInt(veiculoId),
+            id: Date.now(),
+            veiculoId: Number(veiculoId),
             tipo: tipo,
+            data: document.getElementById('gData')?.value || new Date().toISOString().split('T')[0],
             valor: valor,
-            observacao: document.getElementById('gObs')?.value.trim() || '',
+            obra: document.getElementById('gObra')?.value || '',
+            observacao: document.getElementById('gObservacao')?.value.trim() || '',
             lancadoPor: window.usuarioAtual?.nome || 'Sistema'
         };
         
-        if (typeof salvarGasto === 'function') {
-            salvarGasto(dados);
-        } else if (typeof BD !== 'undefined') {
-            if (!BD.gastos) BD.gastos = [];
-            dados.id = BD.gastos.length > 0 ? Math.max(...BD.gastos.map(g => g.id || 0)) + 1 : 1;
-            BD.gastos.push(dados);
-            if (typeof salvarDados === 'function') salvarDados();
-            window.BD = BD;
-        }
+        if (typeof BD === 'undefined') BD = { gastos: [] };
+        if (!BD.gastos) BD.gastos = [];
+        BD.gastos.unshift(dados);
         
-        fecharModal('modal-gasto');
+        if (typeof salvarDados === 'function') salvarDados();
+        window.BD = BD;
+        
+        document.getElementById('modal-gasto-final')?.remove();
         carregarTabelaGastos();
+        if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
         
         if (typeof mostrarToast === 'function') mostrarToast('Gasto registrado!', 'sucesso');
         else alert('✅ Gasto registrado!');
         
     } catch (e) {
-        console.error('❌ Erro ao salvar gasto:', e);
+        console.error('❌ Erro:', e);
+        alert('❌ Erro ao salvar');
     }
 }
 
 function excluirGasto(id) {
     try {
-        if (!confirm('Tem certeza que deseja excluir este gasto?')) return;
-        
-        if (typeof excluirGastoBD === 'function') {
-            excluirGastoBD(id);
-        } else if (typeof BD !== 'undefined' && BD.gastos) {
+        if (!confirm('Excluir este gasto?')) return;
+        if (typeof BD !== 'undefined' && BD.gastos) {
             BD.gastos = BD.gastos.filter(g => g.id !== id);
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
         }
-        
         carregarTabelaGastos();
-        if (typeof mostrarToast === 'function') mostrarToast('Gasto excluído!', 'sucesso');
-        
-    } catch (e) {
-        console.error('❌ Erro ao excluir gasto:', e);
-    }
+        if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+    } catch (e) { console.error(e); }
 }
 
-// Expõe funções
+window.carregarTabelaGastos = carregarTabelaGastos;
 window.abrirModalGasto = abrirModalGasto;
 window.excluirGasto = excluirGasto;
-window.carregarTabelaGastos = carregarTabelaGastos;
 
-// Inicialização
-document.addEventListener('DOMContentLoaded', function() {
-    const filtro = document.getElementById('filtroGastosVeiculo');
-    if (filtro) filtro.addEventListener('change', carregarTabelaGastos);
-    console.log('✅ js/gastos.js inicializado');
-});
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        const filtV = document.getElementById('filtroGastosVeiculo');
+        const filtT = document.getElementById('filtroGastosTipo');
+        if (filtV) filtV.addEventListener('change', carregarTabelaGastos);
+        if (filtT) filtT.addEventListener('change', carregarTabelaGastos);
+        console.log('✅ gastos.js inicializado');
+    });
+}

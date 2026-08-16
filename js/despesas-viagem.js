@@ -1,295 +1,279 @@
 // ==================================================
 // 💸 DESPESAS DE VIAGEM - VERSÃO CORRIGIDA
+// ✅ Modal funcionando
 // ==================================================
 
-function carregarListaDespesas() {
+function carregarTabelaDespesasViagem() {
     try {
-        console.log('💸 Carregando despesas de viagem...');
-        
         const container = document.getElementById('listaDespesasViagem');
         if (!container) return;
         
         let despesas = (typeof BD !== 'undefined' && BD.despesasViagem) ? [...BD.despesasViagem] : [];
         
-        despesas.sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
-        
         if (despesas.length === 0) {
-            container.innerHTML = '<div class="estado-vazio" style="padding: 2rem; text-align: center;">Nenhuma despesa de viagem registrada</div>';
+            container.innerHTML = '<div style="text-align:center;padding:60px;color:#64748b;">Nenhuma despesa de viagem registrada</div>';
             return;
         }
         
-        const veiculos = (typeof BD !== 'undefined' && BD.veiculos) ? BD.veiculos : [];
-        const getPlaca = (id) => {
-            const v = veiculos.find(v => String(v.id) === String(id));
-            return v ? v.placa : '-';
-        };
+        const statusCor = { 'Pendente': '#f59e0b', 'Aprovada': '#10b981', 'Rejeitada': '#dc2626' };
         
-        const statusClass = {
-            'pendente': 'pendente',
-            'aprovado': 'aprovado',
-            'rejeitado': 'rejeitado'
-        };
+        container.innerHTML = despesas.map(d => {
+            const veiculo = BD.veiculos?.find(v => String(v.id) === String(d.veiculoId));
+            const total = (d.itens || []).reduce((s, i) => s + Number(i.valor || 0), 0);
+            return '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:16px;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.05);">' +
+                '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px;">' +
+                    '<div>' +
+                        '<h4 style="margin:0 0 8px 0;font-size:16px;color:#0f172a;">🚗 Viagem - ' + (veiculo?.placa || 'Veículo não encontrado') + '</h4>' +
+                        '<p style="margin:4px 0;font-size:13px;color:#64748b;"><strong>Motorista:</strong> ' + (d.motorista || '-') + '</p>' +
+                        '<p style="margin:4px 0;font-size:13px;color:#64748b;"><strong>Data:</strong> ' + (d.data || '-') + '</p>' +
+                        '<p style="margin:4px 0;font-size:13px;color:#64748b;"><strong>Destino:</strong> ' + (d.destino || '-') + '</p>' +
+                    '</div>' +
+                    '<div style="text-align:right;">' +
+                        '<div style="font-size:22px;font-weight:700;color:#dc2626;margin-bottom:8px;">' + Utils.formatarMoeda(total) + '</div>' +
+                        '<span style="display:inline-block;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;color:white;background:' + (statusCor[d.status] || '#6b7280') + ';">' + (d.status || 'Pendente') + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="border-top:1px solid #f3f4f6;padding-top:12px;">' +
+                    '<h5 style="margin:0 0 10px 0;font-size:13px;color:#374151;">Itens da despesa:</h5>' +
+                    '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;font-size:13px;">' +
+                        (d.itens || []).map(i => 
+                            '<div style="padding:6px 0;border-bottom:1px solid #f9fafb;">' + (i.descricao || '-') + '</div>' +
+                            '<div style="padding:6px 0;border-bottom:1px solid #f9fafb;">' + (i.quantidade || 1) + '</div>' +
+                            '<div style="padding:6px 0;border-bottom:1px solid #f9fafb;text-align:right;font-weight:500;">' + Utils.formatarMoeda(i.valor || 0) + '</div>'
+                        ).join('') +
+                    '</div>' +
+                '</div>' +
+                (d.status === 'Pendente' ? 
+                    '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:16px;border-top:1px solid #f3f4f6;">' +
+                        '<button onclick="rejeitarDespesaViagem(' + d.id + ')" style="padding:8px 16px;border:none;background:#dc2626;color:white;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;">❌ Rejeitar</button>' +
+                        '<button onclick="aprovarDespesaViagem(' + d.id + ')" style="padding:8px 16px;border:none;background:#10b981;color:white;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;">✅ Aprovar</button>' +
+                    '</div>' : '') +
+            '</div>';
+        }).join('');
         
-        container.innerHTML = despesas.map(d => `
-            <div class="cartao-despesa ${statusClass[d.status] || 'pendente'}">
-                <div class="despesa-cabecalho">
-                    <div>
-                        <div class="despesa-motorista">${d.motorista || 'Motorista não informado'}</div>
-                        <div class="despesa-info">
-                            ${getPlaca(d.veiculoId)} • ${d.data || '-'}
-                        </div>
-                    </div>
-                    <div class="despesa-valor-total">
-                        R$ ${Number(d.valorTotal || d.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                    </div>
-                </div>
-                ${d.itens && d.itens.length > 0 ? `
-                <div class="despesa-itens">
-                    ${d.itens.map((item, i) => `
-                        <div class="item-linha" style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem;">
-                            <span class="item-tipo" style="color:#475569;">${item.tipo || 'Item ' + (i+1)}</span>
-                            <span class="item-valor" style="font-weight: 500;">R$ ${Number(item.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                        </div>
-                    `).join('')}
-                </div>
-                ` : ''}
-                <div class="despesa-acoes">
-                    ${d.status === 'pendente' ? `
-                    <button class="btn-mini btn-aprovar" onclick="aprovarDespesa(${d.id})">
-                        <i class="fa-solid fa-check"></i> Aprovar
-                    </button>
-                    <button class="btn-mini btn-rejeitar" onclick="rejeitarDespesa(${d.id})">
-                        <i class="fa-solid fa-times"></i> Rejeitar
-                    </button>
-                    ` : `
-                    <span class="status-badge status-${d.status || 'pendente'}">
-                        ${d.status === 'aprovado' ? '✅ Aprovado' : d.status === 'rejeitado' ? '❌ Rejeitado' : '⏳ Pendente'}
-                    </span>
-                    `}
-                    <button class="btn-mini" onclick="excluirDespesaViagem(${d.id})" title="Excluir" style="color:#dc2626; margin-left: auto;">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `).join('');
-        
-        console.log(`✅ ${despesas.length} despesa(s) carregada(s)`);
-        
-    } catch (e) {
-        console.error('❌ Erro ao carregar despesas:', e);
-    }
+    } catch (e) { console.error('❌ Erro carregar despesas viagem:', e); }
 }
 
-function abrirModalDespesa() {
-    try {
-        const veiculos = (typeof BD !== 'undefined' && BD.veiculos) ? BD.veiculos : [];
-        
-        if (veiculos.length === 0) {
-            alert('⚠️ Cadastre um veículo primeiro!');
-            return;
+function abrirModalDespesaViagem() {
+    console.log('📝 abrirModalDespesaViagem chamado');
+    
+    if (typeof BD === 'undefined' || !BD.veiculos || BD.veiculos.length === 0) {
+        alert('⚠️ Cadastre um veículo primeiro!');
+        return;
+    }
+    
+    const antigo = document.getElementById('modal-despesa-final');
+    if (antigo) antigo.remove();
+    
+    const fundo = document.createElement('div');
+    fundo.id = 'modal-despesa-final';
+    fundo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    fundo.addEventListener('click', function(e) { if (e.target === fundo) fundo.remove(); });
+    
+    const caixa = document.createElement('div');
+    caixa.style.cssText = 'background:white;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.4);width:100%;max-width:550px;max-height:90vh;overflow-y:auto;font-family:Arial,sans-serif;';
+    
+    const cabecalho = document.createElement('div');
+    cabecalho.style.cssText = 'padding:16px 24px;background:#0891b2;color:white;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0;';
+    cabecalho.innerHTML = '<h3 style="margin:0;font-size:18px;">💸 Nova Despesa de Viagem</h3>';
+    const btnFechar = document.createElement('button');
+    btnFechar.textContent = '×';
+    btnFechar.style.cssText = 'background:transparent;border:none;color:white;font-size:28px;cursor:pointer;line-height:1;padding:0 8px;';
+    btnFechar.onclick = function() { fundo.remove(); };
+    cabecalho.appendChild(btnFechar);
+    
+    const corpo = document.createElement('div');
+    corpo.style.cssText = 'padding:24px;';
+    
+    const form = document.createElement('form');
+    form.style.cssText = 'display:flex;flex-direction:column;gap:14px;';
+    form.onsubmit = function(e) { e.preventDefault(); salvarDespesaViagemForm(); };
+    
+    function addCampo(label, tipo, id, obrigatorio, opcoes) {
+        const grupo = document.createElement('div');
+        grupo.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+        const lbl = document.createElement('label');
+        lbl.style.cssText = 'font-size:14px;font-weight:500;color:#374151;';
+        lbl.innerHTML = label + (obrigatorio ? ' <span style="color:#dc2626;">*</span>' : '');
+        grupo.appendChild(lbl);
+        let input;
+        if (opcoes) {
+            input = document.createElement('select');
+            input.innerHTML = '<option value="">Selecione...</option>' + opcoes.map(o => '<option value="' + o.valor + '">' + o.texto + '</option>').join('');
+        } else {
+            input = document.createElement('input');
+            input.type = tipo;
         }
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay aberto';
-        modal.id = 'modal-despesa';
-        
-        modal.innerHTML = `
-            <div class="modal-container" style="max-width: 550px; max-height: 85vh;">
-                <div class="modal-cabecalho">
-                    <h3 class="modal-titulo">💸 Nova Despesa de Viagem</h3>
-                    <button type="button" class="modal-fechar" onclick="fecharModal('modal-despesa')">&times;</button>
-                </div>
-                <div class="modal-corpo" style="overflow-y: auto;">
-                    <form id="formDespesa" class="form-grid">
-                        <div class="form-grupo">
-                            <label>Veículo <span class="obrigatorio">*</span></label>
-                            <select id="dvVeiculo" required>
-                                <option value="">Selecione...</option>
-                                ${veiculos.map(v => `<option value="${v.id}">${v.placa} - ${v.modelo || ''}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="form-grupo">
-                            <label>Data <span class="obrigatorio">*</span></label>
-                            <input type="date" id="dvData" required value="${new Date().toISOString().split('T')[0]}">
-                        </div>
-                        <div class="form-grupo" style="grid-column: span 2;">
-                            <label>Motorista <span class="obrigatorio">*</span></label>
-                            <input type="text" id="dvMotorista" required placeholder="Nome do motorista">
-                        </div>
-                    </form>
-                    
-                    <div style="margin-top: 1.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                            <strong style="color:#0f172a;">📋 Itens da Despesa</strong>
-                            <button type="button" class="btn btn-secundario btn-sm" id="btnAddItem" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
-                                <i class="fa-solid fa-plus"></i> Adicionar Item
-                            </button>
-                        </div>
-                        <div id="itensDespesa" style="display: grid; gap: 0.5rem; margin-bottom: 1rem;">
-                            <!-- Itens serão adicionados aqui -->
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-rodape">
-                    <button type="button" class="btn btn-secundario" onclick="fecharModal('modal-despesa')">Cancelar</button>
-                    <button type="button" class="btn btn-primario" id="btnSalvarDespesa">💾 Registrar</button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // Adiciona primeiro item automaticamente
-        adicionarItemDespesa();
-        
-        document.getElementById('btnAddItem').addEventListener('click', adicionarItemDespesa);
-        document.getElementById('btnSalvarDespesa').addEventListener('click', salvarDespesaForm);
-        
-    } catch (e) {
-        console.error('❌ Erro ao abrir modal de despesa:', e);
+        input.id = id;
+        if (obrigatorio) input.required = true;
+        input.style.cssText = 'padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;background:white;';
+        grupo.appendChild(input);
+        return grupo;
     }
+    
+    const veiculosOpts = BD.veiculos.map(v => ({ valor: v.id, texto: v.placa + ' - ' + (v.modelo || '') }));
+    
+    form.appendChild(addCampo('Veículo', 'text', 'dvVeiculo', true, veiculosOpts));
+    form.appendChild(addCampo('Motorista', 'text', 'dvMotorista', true));
+    form.appendChild(addCampo('Destino', 'text', 'dvDestino', true));
+    form.appendChild(addCampo('Data', 'date', 'dvData', true));
+    
+    // Itens dinâmicos
+    const divItensLabel = document.createElement('label');
+    divItensLabel.style.cssText = 'font-size:14px;font-weight:500;color:#374151;margin-bottom:-6px;';
+    divItensLabel.textContent = 'Itens da Despesa:';
+    form.appendChild(divItensLabel);
+    
+    const containerItens = document.createElement('div');
+    containerItens.id = 'dvItensContainer';
+    containerItens.style.cssText = 'border:1px solid #e5e7eb;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px;';
+    
+    function adicionarItem() {
+        const itemDiv = document.createElement('div');
+        itemDiv.style.cssText = 'display:grid;grid-template-columns:2fr 80px 1fr auto;gap:8px;align-items:center;';
+        itemDiv.innerHTML = 
+            '<input type="text" placeholder="Descrição" class="dv-item-desc" style="padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+            '<input type="number" placeholder="Qtd" value="1" min="1" class="dv-item-qtd" style="padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+            '<input type="number" placeholder="Valor R$" step="0.01" min="0" class="dv-item-valor" style="padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+            '<button type="button" class="dv-item-remover" style="padding:8px 12px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;font-size:13px;">×</button>';
+        itemDiv.querySelector('.dv-item-remover').onclick = function() { itemDiv.remove(); };
+        containerItens.appendChild(itemDiv);
+    }
+    
+    adicionarItem(); // Adiciona primeiro item
+    form.appendChild(containerItens);
+    
+    const btnAddItem = document.createElement('button');
+    btnAddItem.type = 'button';
+    btnAddItem.textContent = '+ Adicionar Item';
+    btnAddItem.style.cssText = 'padding:8px 16px;border:1px dashed #0891b2;background:#ecfeff;color:#0891b2;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;';
+    btnAddItem.onclick = adicionarItem;
+    form.appendChild(btnAddItem);
+    
+    const rodape = document.createElement('div');
+    rodape.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;margin-top:10px;';
+    const btnCancelar = document.createElement('button');
+    btnCancelar.type = 'button';
+    btnCancelar.textContent = 'Cancelar';
+    btnCancelar.style.cssText = 'padding:10px 20px;border:1px solid #d1d5db;background:white;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;';
+    btnCancelar.onclick = function() { fundo.remove(); };
+    const btnSalvar = document.createElement('button');
+    btnSalvar.type = 'submit';
+    btnSalvar.textContent = '💾 Salvar';
+    btnSalvar.style.cssText = 'padding:10px 20px;border:none;background:#0891b2;color:white;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;';
+    rodape.appendChild(btnCancelar);
+    rodape.appendChild(btnSalvar);
+    form.appendChild(rodape);
+    
+    corpo.appendChild(form);
+    caixa.appendChild(cabecalho);
+    caixa.appendChild(corpo);
+    fundo.appendChild(caixa);
+    document.body.appendChild(fundo);
+    
+    document.getElementById('dvData').value = new Date().toISOString().split('T')[0];
+    console.log('✅ Modal despesa viagem aberto!');
 }
 
-function adicionarItemDespesa() {
-    try {
-        const container = document.getElementById('itensDespesa');
-        if (!container) return;
-        
-        const tiposItens = ['Alimentação', 'Hospedagem', 'Combustível', 'Pedágio', 'Manutenção', 'Outros'];
-        
-        const div = document.createElement('div');
-        div.className = 'item-linha';
-        div.style.cssText = 'display: flex; gap: 0.5rem; align-items: center;';
-        div.innerHTML = `
-            <select class="item-tipo-select" style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px;">
-                ${tiposItens.map(t => `<option value="${t}">${t}</option>`).join('')}
-            </select>
-            <input type="number" class="item-valor-input" placeholder="R$ 0,00" min="0" step="0.01" style="width: 140px; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px;">
-            <button type="button" class="btn-remover-item" onclick="this.parentElement.remove()" style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;width:36px;height:36px;cursor:pointer;font-weight:bold;">×</button>
-        `;
-        
-        container.appendChild(div);
-        
-    } catch (e) {
-        console.error('❌ Erro ao adicionar item:', e);
-    }
-}
-
-function salvarDespesaForm() {
+function salvarDespesaViagemForm() {
     try {
         const veiculoId = document.getElementById('dvVeiculo')?.value;
-        const data = document.getElementById('dvData')?.value;
         const motorista = document.getElementById('dvMotorista')?.value.trim();
+        const destino = document.getElementById('dvDestino')?.value.trim();
         
-        if (!veiculoId || !data || !motorista) {
+        if (!veiculoId || !motorista || !destino) {
             alert('⚠️ Preencha os campos obrigatórios!');
             return;
         }
         
-        // Coleta os itens
         const itens = [];
-        let valorTotal = 0;
-        
-        document.querySelectorAll('#itensDespesa .item-linha').forEach(linha => {
-            const tipo = linha.querySelector('.item-tipo-select')?.value;
-            const valor = parseFloat(linha.querySelector('.item-valor-input')?.value) || 0;
-            if (valor > 0) {
-                itens.push({ tipo, valor });
-                valorTotal += valor;
+        document.querySelectorAll('#dvItensContainer > div').forEach(function(div) {
+            const desc = div.querySelector('.dv-item-desc')?.value.trim();
+            const qtd = parseFloat(div.querySelector('.dv-item-qtd')?.value) || 1;
+            const valor = parseFloat(div.querySelector('.dv-item-valor')?.value) || 0;
+            if (desc && valor > 0) {
+                itens.push({ descricao: desc, quantidade: qtd, valor: valor });
             }
         });
         
         if (itens.length === 0) {
-            alert('⚠️ Adicione pelo menos um item com valor!');
+            alert('⚠️ Adicione pelo menos um item de despesa!');
             return;
         }
         
         const dados = {
-            veiculoId: parseInt(veiculoId),
-            data: data,
+            id: Date.now(),
+            veiculoId: Number(veiculoId),
             motorista: motorista,
+            destino: destino,
+            data: document.getElementById('dvData')?.value || new Date().toISOString().split('T')[0],
             itens: itens,
-            valorTotal: valorTotal,
-            status: 'pendente',
+            status: 'Pendente',
             criadoPor: window.usuarioAtual?.nome || 'Sistema'
         };
         
-        if (typeof BD !== 'undefined') {
-            if (!BD.despesasViagem) BD.despesasViagem = [];
-            dados.id = BD.despesasViagem.length > 0 ? Math.max(...BD.despesasViagem.map(d => d.id || 0)) + 1 : 1;
-            BD.despesasViagem.push(dados);
-            if (typeof salvarDados === 'function') salvarDados();
-            window.BD = BD;
-        }
+        if (typeof BD === 'undefined') BD = { despesasViagem: [] };
+        if (!BD.despesasViagem) BD.despesasViagem = [];
+        BD.despesasViagem.unshift(dados);
         
-        fecharModal('modal-despesa');
-        carregarListaDespesas();
+        if (typeof salvarDados === 'function') salvarDados();
+        window.BD = BD;
+        
+        document.getElementById('modal-despesa-final')?.remove();
+        carregarTabelaDespesasViagem();
         
         if (typeof mostrarToast === 'function') mostrarToast('Despesa registrada!', 'sucesso');
         else alert('✅ Despesa registrada!');
         
     } catch (e) {
-        console.error('❌ Erro ao salvar despesa:', e);
+        console.error('❌ Erro:', e);
+        alert('❌ Erro ao salvar');
     }
 }
 
-function aprovarDespesa(id) {
+function aprovarDespesaViagem(id) {
     try {
+        if (!confirm('Aprovar esta despesa?')) return;
         if (typeof BD !== 'undefined' && BD.despesasViagem) {
-            const d = BD.despesasViagem.find(d => d.id === id);
+            const d = BD.despesasViagem.find(x => x.id === id);
             if (d) {
-                d.status = 'aprovado';
-                if (typeof salvarDados === 'function') salvarDados();
-                window.BD = BD;
+                d.status = 'Aprovada';
+                d.aprovadoPor = window.usuarioAtual?.nome || 'Sistema';
+                d.dataAprovacao = new Date().toISOString().split('T')[0];
             }
-        }
-        carregarListaDespesas();
-        if (typeof mostrarToast === 'function') mostrarToast('Despesa aprovada!', 'sucesso');
-    } catch (e) {
-        console.error('❌ Erro ao aprovar:', e);
-    }
-}
-
-function rejeitarDespesa(id) {
-    try {
-        if (typeof BD !== 'undefined' && BD.despesasViagem) {
-            const d = BD.despesasViagem.find(d => d.id === id);
-            if (d) {
-                d.status = 'rejeitado';
-                if (typeof salvarDados === 'function') salvarDados();
-                window.BD = BD;
-            }
-        }
-        carregarListaDespesas();
-        if (typeof mostrarToast === 'function') mostrarToast('Despesa rejeitada', 'aviso');
-    } catch (e) {
-        console.error('❌ Erro ao rejeitar:', e);
-    }
-}
-
-function excluirDespesaViagem(id) {
-    try {
-        if (!confirm('Tem certeza que deseja excluir?')) return;
-        
-        if (typeof BD !== 'undefined' && BD.despesasViagem) {
-            BD.despesasViagem = BD.despesasViagem.filter(d => d.id !== id);
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
         }
-        
-        carregarListaDespesas();
-        if (typeof mostrarToast === 'function') mostrarToast('Excluído!', 'sucesso');
-    } catch (e) {
-        console.error('❌ Erro ao excluir:', e);
-    }
+        carregarTabelaDespesasViagem();
+        if (typeof mostrarToast === 'function') mostrarToast('Despesa aprovada!', 'sucesso');
+    } catch (e) { console.error(e); }
 }
 
-// Expõe funções
-window.abrirModalDespesa = abrirModalDespesa;
-window.adicionarItemDespesa = adicionarItemDespesa;
-window.aprovarDespesa = aprovarDespesa;
-window.rejeitarDespesa = rejeitarDespesa;
-window.excluirDespesaViagem = excluirDespesaViagem;
-window.carregarListaDespesas = carregarListaDespesas;
+function rejeitarDespesaViagem(id) {
+    try {
+        if (!confirm('Rejeitar esta despesa?')) return;
+        if (typeof BD !== 'undefined' && BD.despesasViagem) {
+            const d = BD.despesasViagem.find(x => x.id === id);
+            if (d) {
+                d.status = 'Rejeitada';
+                d.rejeitadoPor = window.usuarioAtual?.nome || 'Sistema';
+                d.dataRejeicao = new Date().toISOString().split('T')[0];
+            }
+            if (typeof salvarDados === 'function') salvarDados();
+            window.BD = BD;
+        }
+        carregarTabelaDespesasViagem();
+        if (typeof mostrarToast === 'function') mostrarToast('Despesa rejeitada!', 'aviso');
+    } catch (e) { console.error(e); }
+}
 
-console.log('✅ js/despesas-viagem.js inicializado');
+window.carregarTabelaDespesasViagem = carregarTabelaDespesasViagem;
+window.abrirModalDespesaViagem = abrirModalDespesaViagem;
+window.aprovarDespesaViagem = aprovarDespesaViagem;
+window.rejeitarDespesaViagem = rejeitarDespesaViagem;
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('✅ despesas-viagem.js inicializado');
+    });
+}
