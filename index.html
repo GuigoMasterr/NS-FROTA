@@ -1889,34 +1889,53 @@ console.log('✅ Supabase inicializado');
     // ============================================================
     window.abrirModalConfiguracoes = function() {
         try {
-            var fundo = document.createElement('div');
-            fundo.className = 'modal-overlay aberto';
-            fundo.onclick = function(e) { if (e.target === fundo) fecharModal(); };
+            var modaisAntigos = document.querySelectorAll('.modal-config-ns');
+            for (var i = 0; i < modaisAntigos.length; i++) {
+                modaisAntigos[i].remove();
+            }
             
-            var modoSupabase = window.supabase && window.supabase.temConexaoReal ? '✅ Conectado' : '⚠️ Apenas Local';
-            var totalVeiculos = BD.veiculos ? BD.veiculos.length : 0;
-            var totalGastos = BD.gastos ? BD.gastos.length : 0;
-            var totalUsuarios = BD.usuarios ? BD.usuarios.length : 0;
+            var fundo = document.createElement('div');
+            fundo.className = 'modal-config-ns';
+            fundo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999999;padding:1rem;';
+            fundo.onclick = function(e) { 
+                if (e.target === fundo) fundo.remove(); 
+            };
+            
+            var modoSupabase = '⚠️ Apenas Local';
+            try {
+                if (window.supabase && window.supabase.temConexaoReal) {
+                    modoSupabase = '✅ Conectado';
+                }
+            } catch(e) {}
+            
+            var totalVeiculos = 0;
+            var totalGastos = 0;
+            var totalUsuarios = 0;
+            try {
+                if (window.BD) {
+                    totalVeiculos = window.BD.veiculos ? window.BD.veiculos.length : 0;
+                    totalGastos = window.BD.gastos ? window.BD.gastos.length : 0;
+                    totalUsuarios = window.BD.usuarios ? window.BD.usuarios.length : 0;
+                }
+            } catch(e) {}
             
             var container = document.createElement('div');
-            container.className = 'modal-container';
-            container.style.maxWidth = '550px';
+            container.style.cssText = 'background:white;border-radius:16px;width:100%;max-width:550px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,0.25);';
             
             var cabecalho = document.createElement('div');
-            cabecalho.className = 'modal-cabecalho';
+            cabecalho.style.cssText = 'padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;';
             var titulo = document.createElement('h3');
-            titulo.className = 'modal-titulo';
+            titulo.style.cssText = 'margin:0;font-size:1.15rem;font-weight:700;color:#0f172a;';
             titulo.textContent = '⚙️ Configurações do Sistema';
             var btnFechar = document.createElement('button');
-            btnFechar.type = 'button';
-            btnFechar.className = 'modal-fechar';
+            btnFechar.style.cssText = 'background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;padding:0 0.5rem;';
             btnFechar.innerHTML = '&times;';
-            btnFechar.onclick = function() { fecharModal(); };
+            btnFechar.onclick = function() { fundo.remove(); };
             cabecalho.appendChild(titulo);
             cabecalho.appendChild(btnFechar);
             
             var corpo = document.createElement('div');
-            corpo.className = 'modal-corpo';
+            corpo.style.cssText = 'padding:1.5rem;';
             
             var statusDiv = document.createElement('div');
             statusDiv.style.cssText = 'padding:1rem;background:#f8fafc;border-radius:8px;margin-bottom:1rem;';
@@ -1933,35 +1952,38 @@ console.log('✅ Supabase inicializado');
             var botoesDiv = document.createElement('div');
             botoesDiv.style.cssText = 'display:grid;gap:0.5rem;';
             
-            function criarBotao(texto, classe, onclick, icone) {
+            function criarBotao(texto, bgColor, textColor, onclick) {
                 var btn = document.createElement('button');
-                btn.className = classe;
-                btn.style.width = '100%';
-                btn.innerHTML = icone + ' ' + texto;
+                btn.style.cssText = 'width:100%;padding:0.65rem 1rem;border:none;border-radius:8px;font-size:0.9rem;font-weight:500;cursor:pointer;transition:all 0.2s;background:' + bgColor + ';color:' + textColor + ';';
+                btn.onmouseover = function() { btn.style.opacity = '0.9'; };
+                btn.onmouseout = function() { btn.style.opacity = '1'; };
+                btn.textContent = texto;
                 btn.onclick = onclick;
                 return btn;
             }
             
-            var btnSync = criarBotao('🔄 Sincronizar com Supabase', 'btn btn-primario', 
-                function() { window.sincronizarManualmente(); }, '<i class="fa-solid fa-sync"></i>');
-            var btnExport = criarBotao('📤 Exportar Dados (JSON)', 'btn btn-secundario',
-                function() { window.exportarDadosJSON(); }, '<i class="fa-solid fa-download"></i>');
-            var btnImport = criarBotao('📥 Importar Dados', 'btn btn-secundario',
-                function() { document.getElementById('importarArquivo').click(); }, '<i class="fa-solid fa-upload"></i>');
+            var btnSync = criarBotao('🔄 Sincronizar com Supabase', '#2563eb', 'white', 
+                function() { if (window.sincronizarManualmente) window.sincronizarManualmente(); });
+            var btnExport = criarBotao('📤 Exportar Dados (JSON)', '#64748b', 'white',
+                function() { if (window.exportarDadosJSON) window.exportarDadosJSON(); });
+            var btnImport = criarBotao('📥 Importar Dados', '#64748b', 'white',
+                function() { 
+                    var input = document.getElementById('importarArquivoTemp');
+                    if (input) input.click(); 
+                });
+            var btnDemo = criarBotao('📦 Recarregar Dados de Demonstração', '#fef3c7', '#92400e',
+                function() { if (window.recarregarDadosDemo) window.recarregarDadosDemo(); });
+            var btnLimpar = criarBotao('🗑️ Limpar Todos os Dados Locais', '#fee2e2', '#991b1b',
+                function() { if (window.limparTodosDados) window.limparTodosDados(); });
+            
             var inputImport = document.createElement('input');
             inputImport.type = 'file';
-            inputImport.id = 'importarArquivo';
+            inputImport.id = 'importarArquivoTemp';
             inputImport.accept = '.json';
             inputImport.style.display = 'none';
-            inputImport.onchange = function(e) { window.importarDadosJSON(e); };
-            var btnDemo = criarBotao('📦 Recarregar Dados de Demonstração', 'btn',
-                function() { window.recarregarDadosDemo(); }, '<i class="fa-solid fa-database"></i>');
-            btnDemo.style.background = '#fef3c7';
-            btnDemo.style.color = '#92400e';
-            var btnLimpar = criarBotao('🗑️ Limpar Todos os Dados Locais', 'btn',
-                function() { window.limparTodosDados(); }, '<i class="fa-solid fa-trash"></i>');
-            btnLimpar.style.background = '#fee2e2';
-            btnLimpar.style.color = '#991b1b';
+            inputImport.onchange = function(e) { 
+                if (window.importarDadosJSON) window.importarDadosJSON(e); 
+            };
             
             botoesDiv.appendChild(btnSync);
             botoesDiv.appendChild(btnExport);
@@ -1972,12 +1994,11 @@ console.log('✅ Supabase inicializado');
             corpo.appendChild(botoesDiv);
             
             var rodape = document.createElement('div');
-            rodape.className = 'modal-rodape';
+            rodape.style.cssText = 'padding:1rem 1.5rem;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:0.5rem;';
             var btnFecharRodape = document.createElement('button');
-            btnFecharRodape.type = 'button';
-            btnFecharRodape.className = 'btn btn-secundario';
+            btnFecharRodape.style.cssText = 'padding:0.5rem 1rem;border:1px solid #e2e8f0;background:white;color:#475569;border-radius:8px;cursor:pointer;font-size:0.875rem;';
             btnFecharRodape.textContent = 'Fechar';
-            btnFecharRodape.onclick = function() { fecharModal(); };
+            btnFecharRodape.onclick = function() { fundo.remove(); };
             rodape.appendChild(btnFecharRodape);
             
             container.appendChild(cabecalho);
@@ -1985,14 +2006,16 @@ console.log('✅ Supabase inicializado');
             container.appendChild(rodape);
             fundo.appendChild(container);
             
-            document.getElementById('modais').appendChild(fundo);
+            document.body.appendChild(fundo);
+            
+            console.log('✅ Modal de configurações aberto');
             
         } catch (e) {
-            console.error('Erro ao abrir configurações:', e);
-            alert('Erro ao abrir configurações');
+            console.error('❌ Erro ao abrir configurações:', e);
+            alert('Erro ao abrir configurações: ' + e.message);
         }
     };
-    
+
     // Funções de configuração
     window.sincronizarManualmente = async function() {
         if (typeof sincronizarBD === 'function') {
