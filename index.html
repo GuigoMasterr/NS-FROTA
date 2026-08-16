@@ -936,6 +936,10 @@
                 <i class="fa-solid fa-users"></i>
                 <span>Usuários</span>
             </div>
+            <div class="sidebar-link" data-pagina="relatorios">
+                <i class="fas fa-chart-bar"></i>
+                <span>Relatórios</span>
+            </div>
             <div class="sidebar-link" onclick="abrirModalConfiguracoes()" style="cursor: pointer;">
                 <i class="fa-solid fa-gear"></i>
                 <span>Configurações</span>
@@ -1484,6 +1488,87 @@
             </div>
         </section>
         
+
+        <!-- ============================================================
+             PÁGINA: RELATÓRIOS
+             ============================================================ -->
+        <section class="pagina" id="pagina-relatorios">
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 class="page-title">📊 Relatórios</h1>
+                    <p class="page-subtitle">Relatórios gerenciais do sistema de frotas</p>
+                </div>
+            </div>
+
+            <!-- Abas de relatórios -->
+            <div style="margin-bottom: 24px; display: flex; gap: 8px; border-bottom: 2px solid #e5e7eb; padding-bottom: 0;">
+                <button class="aba-rel-btn ativo" data-aba-rel="transferencias" onclick="trocarAbaRelatorio('transferencias')" style="padding: 10px 20px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 500; color: #2563eb; border-bottom: 3px solid #2563eb; margin-bottom: -2px;">
+                    🔄 Transferências
+                </button>
+            </div>
+
+            <!-- Relatório de Transferências -->
+            <div id="aba-rel-transferencias">
+                <div class="card" style="padding: 20px; margin-bottom: 24px;">
+                    <h3 style="margin: 0 0 16px 0; font-size: 16px; color: #0f172a;">🔄 Relatório de Transferências por Período</h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: end;">
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Data Inicial</label>
+                            <input type="date" id="relDataInicio" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Data Final</label>
+                            <input type="date" id="relDataFim" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Veículo</label>
+                            <select id="relVeiculo" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: white;">
+                                <option value="todos">Todos os veículos</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="gerarRelatorioTransferencias()" style="flex: 1; padding: 10px 16px; border: none; background: #2563eb; color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                🔍 Gerar
+                            </button>
+                            <button onclick="exportarRelatorioCSV()" style="padding: 10px 16px; border: 1px solid #2563eb; background: white; color: #2563eb; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                📥 CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cards de resumo -->
+                <div id="relatorioResumo" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;"></div>
+
+                <!-- Tabela do relatório -->
+                <div class="card" style="overflow-x: auto;">
+                    <div class="card-header">
+                        <div class="card-title">Resultado do Relatório</div>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Veículo</th>
+                                        <th>Motorista Anterior</th>
+                                        <th>Novo Motorista</th>
+                                        <th>Tipo</th>
+                                        <th>Dias Anterior</th>
+                                        <th>Observação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyRelatorioTransferencias">
+                                    <tr><td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">Selecione o período e clique em "Gerar"</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 </div>
 
@@ -1529,6 +1614,7 @@
 <script src="js/chamados.js"></script>
 <script src="js/checklist.js"></script>
 <script src="js/alocacoes.js"></script>
+<script src="js/relatorios.js"></script>
 <script src="js/usuarios.js"></script>
 
 <!-- 8. Dashboard (carrega DEPOIS dos módulos) -->
