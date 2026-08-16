@@ -826,6 +826,90 @@
         .status-liberado { background: #dbeafe; color: #1e40af; }
         .status-parcial { background: #fef3c7; color: #92400e; }
         .status-fechado { background: #d1fae5; color: #065f46; }
+        /* ==================================================
+           📱 RESPONSIVIDADE COMPLETA
+           ================================================== */
+        
+        .btn-menu-mobile {
+            display: none;
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #0f172a;
+            padding: 0.5rem;
+        }
+        
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+        
+        .sidebar-overlay.visivel {
+            display: block;
+        }
+        
+        @media (max-width: 1024px) {
+            .sidebar { width: 220px; }
+            .main-content { margin-left: 220px; }
+            .page-title { font-size: 1.25rem; }
+            .stats-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+        }
+        
+        @media (max-width: 768px) {
+            .btn-menu-mobile { display: block; }
+            .sidebar { transform: translateX(-100%); width: 280px; z-index: 100; }
+            .sidebar.aberto { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .topbar { padding: 0.75rem 1rem; }
+            .pagina { padding: 1rem; }
+            .page-header { flex-direction: column; gap: 0.75rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+            .stat-valor { font-size: 1.4rem; }
+            .card-header { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+            .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            table { min-width: 600px; font-size: 0.8rem; }
+            th, td { padding: 0.5rem 0.4rem; }
+            .modal-container { margin: 1rem; max-width: calc(100% - 2rem) !important; }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .pagina { padding: 0.75rem; }
+            .page-title { font-size: 1.1rem; }
+            .page-subtitle { font-size: 0.8rem; }
+            .topbar { padding: 0.5rem 0.75rem; }
+            .btn { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
+            .card-body { padding: 0.75rem; }
+            .card-header { padding: 0.75rem; }
+            table { min-width: 500px; font-size: 0.75rem; }
+            .sidebar { width: 100%; max-width: 300px; }
+        }
+        
+        @media (max-width: 360px) {
+            .user-avatar { width: 32px; height: 32px; font-size: 0.8rem; }
+            .btn-menu-mobile { font-size: 1.2rem; padding: 0.25rem; }
+            .topbar-user { gap: 0.4rem; }
+        }
+        
+        @media (min-width: 1025px) and (max-width: 1440px) {
+            .sidebar { width: 240px; }
+            .main-content { margin-left: 240px; }
+            .pagina { padding: 1.25rem; }
+            .page-title { font-size: 1.35rem; }
+        }
+        
+        @media (min-width: 1921px) {
+            .main-content { max-width: 1800px; }
+            .pagina { padding: 2rem; }
+        }
+
     </style>
 </head>
 <body>
@@ -965,6 +1049,7 @@
                     <i class="fa-solid fa-bars"></i>
                 </button>
                 <div>
+                    <button class="btn-menu-mobile" onclick="toggleSidebar()" title="Menu"><i class="fas fa-bars"></i></button>
                     <h2 style="font-size: 1.05rem; font-weight: 600; color: #0f172a; margin: 0;" id="topbarTitulo">Dashboard</h2>
                     <p style="font-size: 0.75rem; color: #64748b; margin: 0;" id="topbarData"></p>
                 </div>
@@ -1694,7 +1779,19 @@
     let supabaseReal = null;
     try {
         supabaseReal = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ Supabase inicializado');
+        
+    // ============================================================
+    // TOGGLE SIDEBAR (MENU MOBILE)
+    // ============================================================
+    function toggleSidebar() {
+        var sidebar = document.querySelector('.sidebar');
+        var overlay = document.getElementById('sidebarOverlay');
+        if (sidebar) sidebar.classList.toggle('aberto');
+        if (overlay) overlay.classList.toggle('visivel');
+    }
+    window.toggleSidebar = toggleSidebar;
+
+console.log('✅ Supabase inicializado');
     } catch(e) {
         console.warn('⚠️ Supabase não disponível, usando modo local:', e);
     }
@@ -1791,57 +1888,109 @@
     // MODAL DE CONFIGURAÇÕES
     // ============================================================
     window.abrirModalConfiguracoes = function() {
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay aberto';
-        modal.onclick = (e) => { if (e.target === modal) fecharModal(); };
-        
-        const modoSupabase = window.supabase?.temConexaoReal ? '✅ Conectado' : '⚠️ Apenas Local';
-        const totalVeiculos = BD.veiculos?.length || 0;
-        const totalGastos = BD.gastos?.length || 0;
-        const totalUsuarios = BD.usuarios?.length || 0;
-        
-        modal.innerHTML = `
-            <div class="modal-container" style="max-width: 550px;">
-                <div class="modal-cabecalho">
-                    <h3 class="modal-titulo">⚙️ Configurações do Sistema</h3>
-                    <button type="button" class="modal-fechar" onclick="fecharModal()">&times;</button>
-                </div>
-                <div class="modal-corpo">
-                    <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem;">
-                        <div style="font-weight: 600; margin-bottom: 0.5rem;">📊 Status do Sistema</div>
-                        <div style="font-size: 0.875rem; color: #64748b; display: grid; gap: 0.25rem;">
-                            <div>Conexão Supabase: <strong>${modoSupabase}</strong></div>
-                            <div>Veículos cadastrados: <strong>${totalVeiculos}</strong></div>
-                            <div>Gastos registrados: <strong>${totalGastos}</strong></div>
-                            <div>Usuários: <strong>${totalUsuarios}</strong></div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; gap: 0.5rem;">
-                        <button class="btn btn-primario" onclick="sincronizarManualmente()" style="width: 100%;">
-                            <i class="fa-solid fa-sync"></i> 🔄 Sincronizar com Supabase
-                        </button>
-                        <button class="btn btn-secundario" onclick="exportarDadosJSON()" style="width: 100%;">
-                            <i class="fa-solid fa-download"></i> 📤 Exportar Dados (JSON)
-                        </button>
-                        <button class="btn btn-secundario" onclick="document.getElementById('importarArquivo').click()" style="width: 100%;">
-                            <i class="fa-solid fa-upload"></i> 📥 Importar Dados
-                        </button>
-                        <input type="file" id="importarArquivo" accept=".json" style="display: none;" onchange="importarDadosJSON(event)">
-                        <button class="btn" style="width: 100%; background: #fef3c7; color: #92400e;" onclick="recarregarDadosDemo()">
-                            <i class="fa-solid fa-database"></i> 📦 Recarregar Dados de Demonstração
-                        </button>
-                        <button class="btn" style="width: 100%; background: #fee2e2; color: #991b1b;" onclick="limparTodosDados()">
-                            <i class="fa-solid fa-trash"></i> 🗑️ Limpar Todos os Dados Locais
-                        </button>
-                    </div>
-                </div>
-                <div class="modal-rodape">
-                    <button type="button" class="btn btn-secundario" onclick="fecharModal()">Fechar</button>
-                </div>
-            </div>
-        `;
-        document.getElementById('modais').appendChild(modal);
+        try {
+            var fundo = document.createElement('div');
+            fundo.className = 'modal-overlay aberto';
+            fundo.onclick = function(e) { if (e.target === fundo) fecharModal(); };
+            
+            var modoSupabase = window.supabase && window.supabase.temConexaoReal ? '✅ Conectado' : '⚠️ Apenas Local';
+            var totalVeiculos = BD.veiculos ? BD.veiculos.length : 0;
+            var totalGastos = BD.gastos ? BD.gastos.length : 0;
+            var totalUsuarios = BD.usuarios ? BD.usuarios.length : 0;
+            
+            var container = document.createElement('div');
+            container.className = 'modal-container';
+            container.style.maxWidth = '550px';
+            
+            var cabecalho = document.createElement('div');
+            cabecalho.className = 'modal-cabecalho';
+            var titulo = document.createElement('h3');
+            titulo.className = 'modal-titulo';
+            titulo.textContent = '⚙️ Configurações do Sistema';
+            var btnFechar = document.createElement('button');
+            btnFechar.type = 'button';
+            btnFechar.className = 'modal-fechar';
+            btnFechar.innerHTML = '&times;';
+            btnFechar.onclick = function() { fecharModal(); };
+            cabecalho.appendChild(titulo);
+            cabecalho.appendChild(btnFechar);
+            
+            var corpo = document.createElement('div');
+            corpo.className = 'modal-corpo';
+            
+            var statusDiv = document.createElement('div');
+            statusDiv.style.cssText = 'padding:1rem;background:#f8fafc;border-radius:8px;margin-bottom:1rem;';
+            statusDiv.innerHTML = 
+                '<div style="font-weight:600;margin-bottom:0.5rem;">📊 Status do Sistema</div>' +
+                '<div style="font-size:0.875rem;color:#64748b;display:grid;gap:0.25rem;">' +
+                    '<div>Conexão Supabase: <strong>' + modoSupabase + '</strong></div>' +
+                    '<div>Veículos cadastrados: <strong>' + totalVeiculos + '</strong></div>' +
+                    '<div>Gastos registrados: <strong>' + totalGastos + '</strong></div>' +
+                    '<div>Usuários: <strong>' + totalUsuarios + '</strong></div>' +
+                '</div>';
+            corpo.appendChild(statusDiv);
+            
+            var botoesDiv = document.createElement('div');
+            botoesDiv.style.cssText = 'display:grid;gap:0.5rem;';
+            
+            function criarBotao(texto, classe, onclick, icone) {
+                var btn = document.createElement('button');
+                btn.className = classe;
+                btn.style.width = '100%';
+                btn.innerHTML = icone + ' ' + texto;
+                btn.onclick = onclick;
+                return btn;
+            }
+            
+            var btnSync = criarBotao('🔄 Sincronizar com Supabase', 'btn btn-primario', 
+                function() { window.sincronizarManualmente(); }, '<i class="fa-solid fa-sync"></i>');
+            var btnExport = criarBotao('📤 Exportar Dados (JSON)', 'btn btn-secundario',
+                function() { window.exportarDadosJSON(); }, '<i class="fa-solid fa-download"></i>');
+            var btnImport = criarBotao('📥 Importar Dados', 'btn btn-secundario',
+                function() { document.getElementById('importarArquivo').click(); }, '<i class="fa-solid fa-upload"></i>');
+            var inputImport = document.createElement('input');
+            inputImport.type = 'file';
+            inputImport.id = 'importarArquivo';
+            inputImport.accept = '.json';
+            inputImport.style.display = 'none';
+            inputImport.onchange = function(e) { window.importarDadosJSON(e); };
+            var btnDemo = criarBotao('📦 Recarregar Dados de Demonstração', 'btn',
+                function() { window.recarregarDadosDemo(); }, '<i class="fa-solid fa-database"></i>');
+            btnDemo.style.background = '#fef3c7';
+            btnDemo.style.color = '#92400e';
+            var btnLimpar = criarBotao('🗑️ Limpar Todos os Dados Locais', 'btn',
+                function() { window.limparTodosDados(); }, '<i class="fa-solid fa-trash"></i>');
+            btnLimpar.style.background = '#fee2e2';
+            btnLimpar.style.color = '#991b1b';
+            
+            botoesDiv.appendChild(btnSync);
+            botoesDiv.appendChild(btnExport);
+            botoesDiv.appendChild(btnImport);
+            botoesDiv.appendChild(inputImport);
+            botoesDiv.appendChild(btnDemo);
+            botoesDiv.appendChild(btnLimpar);
+            corpo.appendChild(botoesDiv);
+            
+            var rodape = document.createElement('div');
+            rodape.className = 'modal-rodape';
+            var btnFecharRodape = document.createElement('button');
+            btnFecharRodape.type = 'button';
+            btnFecharRodape.className = 'btn btn-secundario';
+            btnFecharRodape.textContent = 'Fechar';
+            btnFecharRodape.onclick = function() { fecharModal(); };
+            rodape.appendChild(btnFecharRodape);
+            
+            container.appendChild(cabecalho);
+            container.appendChild(corpo);
+            container.appendChild(rodape);
+            fundo.appendChild(container);
+            
+            document.getElementById('modais').appendChild(fundo);
+            
+        } catch (e) {
+            console.error('Erro ao abrir configurações:', e);
+            alert('Erro ao abrir configurações');
+        }
     };
     
     // Funções de configuração
@@ -2023,5 +2172,6 @@
     }
 </script>
 
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 </body>
 </html>
