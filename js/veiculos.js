@@ -79,116 +79,168 @@ function carregarTabelaVeiculos() {
 }
 
 function abrirModalVeiculo(id) {
-    try {
-        console.log('📝 Abrindo modal de veículo:', id || 'novo');
-        
-        if (typeof ehAdmin === 'function' && !ehAdmin()) {
-            if (typeof mostrarToast === 'function') mostrarToast('Você não tem permissão!', 'erro');
-            else alert('Você não tem permissão!');
-            return;
-        }
-        
-        const veiculo = id && typeof BD !== 'undefined' && BD.veiculos 
-            ? BD.veiculos.find(v => v.id === id) 
-            : null;
-        
-        const categorias = (typeof CONFIG !== 'undefined' && CONFIG.CATEGORIAS_VEICULOS) 
-            ? CONFIG.CATEGORIAS_VEICULOS 
-            : ['Caminhão', 'Carro Passeio', 'Utilitário', 'Máquina', 'Van', 'Ônibus', 'Moto', 'Outro'];
-        
-        const statusOptions = (typeof BD !== 'undefined' && BD.config && BD.config.statusVeiculos)
-            ? BD.config.statusVeiculos
-            : { disponivel: 'Disponível', alocado: 'Alocado', manutencao: 'Manutenção', inativo: 'Inativo' };
-        
-        const locais = (typeof BD !== 'undefined' && BD.locais) ? BD.locais : [];
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay aberto';
-        modal.id = 'modal-veiculo';
-        
-        const isEdit = !!veiculo;
-        
-        modal.innerHTML = `
-            <div class="modal-container" style="max-width: 650px;">
-                <div class="modal-cabecalho">
-                    <h3 class="modal-titulo">${isEdit ? '✏️ Editar Veículo' : '➕ Novo Veículo'}</h3>
-                    <button type="button" class="modal-fechar" onclick="fecharModal('modal-veiculo')">&times;</button>
-                </div>
-                <div class="modal-corpo">
-                    <form id="formVeiculo" class="form-grid" style="grid-template-columns: repeat(2, 1fr);">
-                        <div class="form-grupo">
-                            <label>Placa <span class="obrigatorio">*</span></label>
-                            <input type="text" id="vPlaca" required value="${veiculo?.placa || ''}" placeholder="ABC-1234" style="text-transform:uppercase;">
-                        </div>
-                        <div class="form-grupo">
-                            <label>Categoria <span class="obrigatorio">*</span></label>
-                            <select id="vCategoria" required>
-                                <option value="">Selecione...</option>
-                                ${categorias.map(c => `<option value="${c}" ${veiculo?.categoria === c ? 'selected' : ''}>${c}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="form-grupo">
-                            <label>Marca</label>
-                            <input type="text" id="vMarca" value="${veiculo?.marca || ''}" placeholder="Ex: Volvo">
-                        </div>
-                        <div class="form-grupo">
-                            <label>Modelo</label>
-                            <input type="text" id="vModelo" value="${veiculo?.modelo || ''}" placeholder="Ex: FH 540">
-                        </div>
-                        <div class="form-grupo">
-                            <label>Ano</label>
-                            <input type="number" id="vAno" value="${veiculo?.ano || ''}" min="1990" max="2030">
-                        </div>
-                        <div class="form-grupo">
-                            <label>KM Atual</label>
-                            <input type="number" id="vKm" value="${veiculo?.km_atual || ''}" min="0">
-                        </div>
-                        <div class="form-grupo">
-                            <label>Local / Obra</label>
-                            <select id="vObra">
-                                <option value="">Selecione...</option>
-                                ${locais.map(l => `<option value="${l.nome}" ${veiculo?.obra_atual === l.nome ? 'selected' : ''}>${l.nome}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="form-grupo">
-                            <label>Status</label>
-                            <select id="vStatus">
-                                ${Object.entries(statusOptions).map(([val, label]) => 
-                                    `<option value="${val}" ${veiculo?.status === val ? 'selected' : ''}>${label}</option>`
-                                ).join('')}
-                            </select>
-                        </div>
-                        <div class="form-grupo" style="grid-column: span 2;">
-                            <label>Responsável</label>
-                            <input type="text" id="vResponsavel" value="${veiculo?.responsavel || ''}" placeholder="Nome do motorista/responsável">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-rodape">
-                    <button type="button" class="btn btn-secundario" onclick="fecharModal('modal-veiculo')">Cancelar</button>
-                    <button type="button" class="btn btn-primario" id="btnSalvarVeiculo">💾 Salvar</button>
-                </div>
+    console.log('📝 Chamada abrirModalVeiculo, id:', id || 'novo');
+    
+    // Verificação de permissão
+    if (typeof ehAdmin === 'function' && !ehAdmin()) {
+        alert('⚠️ Você não tem permissão para cadastrar veículos!');
+        return;
+    }
+    
+    // Garante que BD existe
+    if (typeof BD === 'undefined') {
+        window.BD = { veiculos: [], locais: [], config: {} };
+    }
+    if (!BD.locais) BD.locais = [];
+    if (!BD.config) BD.config = {};
+    
+    // Busca dados
+    const veiculo = id && BD.veiculos ? BD.veiculos.find(v => v.id === id) : null;
+    
+    // Categorias com fallback garantido
+    const categorias = (typeof CONFIG !== 'undefined' && CONFIG.CATEGORIAS_VEICULOS && CONFIG.CATEGORIAS_VEICULOS.length > 0) 
+        ? CONFIG.CATEGORIAS_VEICULOS 
+        : ['Caminhão', 'Carro Passeio', 'Utilitário', 'Máquina', 'Van', 'Ônibus', 'Moto', 'Outro'];
+    
+    // Status com fallback que funciona mesmo se BD.config.statusVeiculos for vazio
+    let statusOptions = BD.config && BD.config.statusVeiculos && Object.keys(BD.config.statusVeiculos).length > 0
+        ? BD.config.statusVeiculos
+        : { disponivel: 'Disponível', alocado: 'Alocado', manutencao: 'Manutenção', inativo: 'Inativo' };
+    
+    const locais = BD.locais && BD.locais.length > 0 ? BD.locais : [
+        { id: 'padrao', nome: 'Pátio Principal' }
+    ];
+    
+    // Cria o modal
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay aberto';
+    modal.id = 'modal-veiculo';
+    // Força visibilidade com estilo inline (rede de segurança)
+    modal.style.cssText = 'display:flex !important; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:99999; align-items:center; justify-content:center; padding:1rem;';
+    
+    const isEdit = !!veiculo;
+    
+    // Opções de status
+    const statusOptionsHtml = Object.entries(statusOptions).map(([val, label]) => 
+        `<option value="${val}" ${veiculo?.status === val ? 'selected' : ''}>${label}</option>`
+    ).join('');
+    
+    // Opções de locais
+    const locaisOptionsHtml = locais.map(l => 
+        `<option value="${l.nome}" ${veiculo?.obra_atual === l.nome ? 'selected' : ''}>${l.nome}</option>`
+    ).join('');
+    
+    // Opções de categorias
+    const categoriasOptionsHtml = categorias.map(c => 
+        `<option value="${c}" ${veiculo?.categoria === c ? 'selected' : ''}>${c}</option>`
+    ).join('');
+    
+    modal.innerHTML = `
+        <div class="modal-container" style="max-width:650px; width:100%; background:white; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto;">
+            <div class="modal-cabecalho" style="display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; border-bottom:1px solid #e2e8f0;">
+                <h3 class="modal-titulo" style="margin:0; font-size:1.25rem; color:#0f172a;">${isEdit ? '✏️ Editar Veículo' : '➕ Novo Veículo'}</h3>
+                <button type="button" class="modal-fechar-btn" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#64748b; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">&times;</button>
             </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // Listener do botão salvar
-        document.getElementById('btnSalvarVeiculo').addEventListener('click', function() {
+            <div class="modal-corpo" style="padding:1.5rem;">
+                <form id="formVeiculo" class="form-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:1rem;">
+                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Placa <span style="color:#dc2626;">*</span></label>
+                        <input type="text" id="vPlaca" required value="${veiculo?.placa || ''}" placeholder="ABC-1234" style="text-transform:uppercase; padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    </div>
+                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Categoria <span style="color:#dc2626;">*</span></label>
+                        <select id="vCategoria" required style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem; background:white;">
+                            <option value="">Selecione...</option>
+                            ${categoriasOptionsHtml}
+                        </select>
+                    </div>
+                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Marca</label>
+                        <input type="text" id="vMarca" value="${veiculo?.marca || ''}" placeholder="Ex: Volvo" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    </div>
+                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Modelo</label>
+                        <input type="text" id="vModelo" value="${veiculo?.modelo || ''}" placeholder="Ex: FH 540" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    </div>
+                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Ano</label>
+                        <input type="number" id="vAno" value="${veiculo?.ano || ''}" min="1990" max="2030" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    </div>
+                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">KM Atual</label>
+                        <input type="number" id="vKm" value="${veiculo?.km_atual || ''}" min="0" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    </div>
+                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Local / Obra</label>
+                        <select id="vObra" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem; background:white;">
+                            <option value="">Selecione...</option>
+                            ${locaisOptionsHtml}
+                        </select>
+                    </div>
+                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Status</label>
+                        <select id="vStatus" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem; background:white;">
+                            ${statusOptionsHtml}
+                        </select>
+                    </div>
+                    <div class="form-grupo" style="grid-column: span 2; display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Responsável</label>
+                        <input type="text" id="vResponsavel" value="${veiculo?.responsavel || ''}" placeholder="Nome do motorista/responsável" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-rodape" style="display:flex; gap:0.75rem; justify-content:flex-end; padding:1rem 1.5rem; border-top:1px solid #e2e8f0; background:#f8fafc; border-radius:0 0 12px 12px;">
+                <button type="button" class="btn-cancelar-modal" style="padding:0.55rem 1rem; border:1px solid #d1d5db; background:white; border-radius:8px; cursor:pointer; font-size:0.875rem; font-weight:500; color:#374151;">Cancelar</button>
+                <button type="button" class="btn-salvar-modal" id="btnSalvarVeiculo" style="padding:0.55rem 1rem; border:none; background:#2563eb; color:white; border-radius:8px; cursor:pointer; font-size:0.875rem; font-weight:500;">💾 Salvar</button>
+            </div>
+        </div>
+    `;
+    
+    // Adiciona ao body
+    document.body.appendChild(modal);
+    console.log('✅ Modal adicionado ao DOM');
+    
+    // Conecta botão fechar (X)
+    const btnFechar = modal.querySelector('.modal-fechar-btn');
+    if (btnFechar) {
+        btnFechar.addEventListener('click', function() {
+            modal.remove();
+        });
+    }
+    
+    // Conecta botão cancelar
+    const btnCancelar = modal.querySelector('.btn-cancelar-modal');
+    if (btnCancelar) {
+        btnCancelar.addEventListener('click', function() {
+            modal.remove();
+        });
+    }
+    
+    // Fecha ao clicar fora do modal
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    // Conecta botão salvar
+    const btnSalvar = document.getElementById('btnSalvarVeiculo');
+    if (btnSalvar) {
+        btnSalvar.addEventListener('click', function() {
             salvarVeiculoForm(id);
         });
-        
-        // Submit com Enter no formulário
-        document.getElementById('formVeiculo').addEventListener('submit', function(e) {
+    }
+    
+    // Conecta submit do formulário
+    const form = document.getElementById('formVeiculo');
+    if (form) {
+        form.addEventListener('submit', function(e) {
             e.preventDefault();
             salvarVeiculoForm(id);
         });
-        
-    } catch (e) {
-        console.error('❌ Erro ao abrir modal de veículo:', e);
-        if (typeof mostrarToast === 'function') mostrarToast('Erro ao abrir formulário', 'erro');
-        else alert('Erro ao abrir formulário');
     }
+    
+    console.log('✅ Modal de veículo aberto com sucesso!');
 }
 
 function salvarVeiculoForm(id) {
