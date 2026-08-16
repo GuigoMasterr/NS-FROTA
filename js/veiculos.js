@@ -88,159 +88,170 @@ function abrirModalVeiculo(id) {
     }
     
     // Garante que BD existe
-    if (typeof BD === 'undefined') {
-        window.BD = { veiculos: [], locais: [], config: {} };
-    }
+    if (typeof BD === 'undefined') window.BD = { veiculos: [], locais: [], config: {} };
     if (!BD.locais) BD.locais = [];
     if (!BD.config) BD.config = {};
     
-    // Busca dados
     const veiculo = id && BD.veiculos ? BD.veiculos.find(v => v.id === id) : null;
     
-    // Categorias com fallback garantido
     const categorias = (typeof CONFIG !== 'undefined' && CONFIG.CATEGORIAS_VEICULOS && CONFIG.CATEGORIAS_VEICULOS.length > 0) 
         ? CONFIG.CATEGORIAS_VEICULOS 
         : ['Caminhão', 'Carro Passeio', 'Utilitário', 'Máquina', 'Van', 'Ônibus', 'Moto', 'Outro'];
     
-    // Status com fallback que funciona mesmo se BD.config.statusVeiculos for vazio
     let statusOptions = BD.config && BD.config.statusVeiculos && Object.keys(BD.config.statusVeiculos).length > 0
         ? BD.config.statusVeiculos
         : { disponivel: 'Disponível', alocado: 'Alocado', manutencao: 'Manutenção', inativo: 'Inativo' };
     
-    const locais = BD.locais && BD.locais.length > 0 ? BD.locais : [
-        { id: 'padrao', nome: 'Pátio Principal' }
-    ];
-    
-    // Cria o modal
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay aberto';
-    modal.id = 'modal-veiculo';
-    // Força visibilidade com estilo inline (rede de segurança)
-    modal.style.cssText = 'display:flex !important; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:99999; align-items:center; justify-content:center; padding:1rem;';
+    const locais = BD.locais && BD.locais.length > 0 ? BD.locais : [{ id: 'padrao', nome: 'Pátio Principal' }];
     
     const isEdit = !!veiculo;
     
-    // Opções de status
+    // Cria o modal SEM usar classes conflitantes
+    const modal = document.createElement('div');
+    modal.id = 'modal-veiculo-emergencia';
+    
+    // 🔥 FORÇA VISIBILIDADE - estilo inline completo, sem dependência de CSS externo
+    modal.setAttribute('style', 
+        'position: fixed !important;' +
+        'top: 0 !important;' +
+        'left: 0 !important;' +
+        'width: 100vw !important;' +
+        'height: 100vh !important;' +
+        'background: rgba(0,0,0,0.6) !important;' +
+        'z-index: 2147483647 !important;' +
+        'display: flex !important;' +
+        'align-items: center !important;' +
+        'justify-content: center !important;' +
+        'padding: 20px !important;' +
+        'box-sizing: border-box !important;' +
+        'margin: 0 !important;' +
+        'opacity: 1 !important;' +
+        'visibility: visible !important;'
+    );
+    
     const statusOptionsHtml = Object.entries(statusOptions).map(([val, label]) => 
         `<option value="${val}" ${veiculo?.status === val ? 'selected' : ''}>${label}</option>`
     ).join('');
     
-    // Opções de locais
     const locaisOptionsHtml = locais.map(l => 
         `<option value="${l.nome}" ${veiculo?.obra_atual === l.nome ? 'selected' : ''}>${l.nome}</option>`
     ).join('');
     
-    // Opções de categorias
     const categoriasOptionsHtml = categorias.map(c => 
         `<option value="${c}" ${veiculo?.categoria === c ? 'selected' : ''}>${c}</option>`
     ).join('');
     
+    // Conteúdo do modal com estilos inline
     modal.innerHTML = `
-        <div class="modal-container" style="max-width:650px; width:100%; background:white; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto;">
-            <div class="modal-cabecalho" style="display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; border-bottom:1px solid #e2e8f0;">
-                <h3 class="modal-titulo" style="margin:0; font-size:1.25rem; color:#0f172a;">${isEdit ? '✏️ Editar Veículo' : '➕ Novo Veículo'}</h3>
-                <button type="button" class="modal-fechar-btn" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#64748b; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">&times;</button>
+        <div style="
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 650px;
+            max-height: 90vh;
+            overflow-y: auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        ">
+            <!-- Cabeçalho -->
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 24px; border-bottom:1px solid #e2e8f0; background:#f8fafc; border-radius:12px 12px 0 0;">
+                <h3 style="margin:0; font-size:18px; font-weight:600; color:#0f172a;">${isEdit ? '✏️ Editar Veículo' : '➕ Novo Veículo'}</h3>
+                <button id="btnFecharModalX" style="background:#f1f5f9; border:1px solid #e2e8f0; font-size:22px; cursor:pointer; color:#64748b; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:8px; line-height:1;">&times;</button>
             </div>
-            <div class="modal-corpo" style="padding:1.5rem;">
-                <form id="formVeiculo" class="form-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:1rem;">
-                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
-                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Placa <span style="color:#dc2626;">*</span></label>
-                        <input type="text" id="vPlaca" required value="${veiculo?.placa || ''}" placeholder="ABC-1234" style="text-transform:uppercase; padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+            
+            <!-- Corpo -->
+            <div style="padding:24px;">
+                <form id="formVeiculo" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:14px; font-weight:500; color:#374151;">Placa <span style="color:#dc2626;">*</span></label>
+                        <input type="text" id="vPlaca" required value="${veiculo?.placa || ''}" placeholder="ABC-1234" style="text-transform:uppercase; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
                     </div>
-                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
-                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Categoria <span style="color:#dc2626;">*</span></label>
-                        <select id="vCategoria" required style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem; background:white;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:14px; font-weight:500; color:#374151;">Categoria <span style="color:#dc2626;">*</span></label>
+                        <select id="vCategoria" required style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background:white; outline:none;">
                             <option value="">Selecione...</option>
                             ${categoriasOptionsHtml}
                         </select>
                     </div>
-                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
-                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Marca</label>
-                        <input type="text" id="vMarca" value="${veiculo?.marca || ''}" placeholder="Ex: Volvo" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:14px; font-weight:500; color:#374151;">Marca</label>
+                        <input type="text" id="vMarca" value="${veiculo?.marca || ''}" placeholder="Ex: Volvo" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
                     </div>
-                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
-                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Modelo</label>
-                        <input type="text" id="vModelo" value="${veiculo?.modelo || ''}" placeholder="Ex: FH 540" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:14px; font-weight:500; color:#374151;">Modelo</label>
+                        <input type="text" id="vModelo" value="${veiculo?.modelo || ''}" placeholder="Ex: FH 540" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
                     </div>
-                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
-                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Ano</label>
-                        <input type="number" id="vAno" value="${veiculo?.ano || ''}" min="1990" max="2030" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:14px; font-weight:500; color:#374151;">Ano</label>
+                        <input type="number" id="vAno" value="${veiculo?.ano || ''}" min="1990" max="2030" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
                     </div>
-                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
-                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">KM Atual</label>
-                        <input type="number" id="vKm" value="${veiculo?.km_atual || ''}" min="0" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:14px; font-weight:500; color:#374151;">KM Atual</label>
+                        <input type="number" id="vKm" value="${veiculo?.km_atual || ''}" min="0" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
                     </div>
-                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
-                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Local / Obra</label>
-                        <select id="vObra" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem; background:white;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:14px; font-weight:500; color:#374151;">Local / Obra</label>
+                        <select id="vObra" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background:white; outline:none;">
                             <option value="">Selecione...</option>
                             ${locaisOptionsHtml}
                         </select>
                     </div>
-                    <div class="form-grupo" style="display:flex; flex-direction:column; gap:0.25rem;">
-                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Status</label>
-                        <select id="vStatus" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem; background:white;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:14px; font-weight:500; color:#374151;">Status</label>
+                        <select id="vStatus" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background:white; outline:none;">
                             ${statusOptionsHtml}
                         </select>
                     </div>
-                    <div class="form-grupo" style="grid-column: span 2; display:flex; flex-direction:column; gap:0.25rem;">
-                        <label style="font-size:0.875rem; font-weight:500; color:#374151;">Responsável</label>
-                        <input type="text" id="vResponsavel" value="${veiculo?.responsavel || ''}" placeholder="Nome do motorista/responsável" style="padding:0.55rem 0.75rem; border:1px solid #d1d5db; border-radius:8px; font-size:0.875rem;">
+                    <div style="grid-column: span 2; display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:14px; font-weight:500; color:#374151;">Responsável</label>
+                        <input type="text" id="vResponsavel" value="${veiculo?.responsavel || ''}" placeholder="Nome do motorista/responsável" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
                     </div>
                 </form>
             </div>
-            <div class="modal-rodape" style="display:flex; gap:0.75rem; justify-content:flex-end; padding:1rem 1.5rem; border-top:1px solid #e2e8f0; background:#f8fafc; border-radius:0 0 12px 12px;">
-                <button type="button" class="btn-cancelar-modal" style="padding:0.55rem 1rem; border:1px solid #d1d5db; background:white; border-radius:8px; cursor:pointer; font-size:0.875rem; font-weight:500; color:#374151;">Cancelar</button>
-                <button type="button" class="btn-salvar-modal" id="btnSalvarVeiculo" style="padding:0.55rem 1rem; border:none; background:#2563eb; color:white; border-radius:8px; cursor:pointer; font-size:0.875rem; font-weight:500;">💾 Salvar</button>
+            
+            <!-- Rodapé -->
+            <div style="display:flex; gap:12px; justify-content:flex-end; padding:16px 24px; border-top:1px solid #e2e8f0; background:#f8fafc; border-radius:0 0 12px 12px;">
+                <button id="btnCancelarModal" style="padding:10px 20px; border:1px solid #d1d5db; background:white; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500; color:#374151;">Cancelar</button>
+                <button id="btnSalvarVeiculo" style="padding:10px 20px; border:none; background:#2563eb; color:white; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500;">💾 Salvar</button>
             </div>
         </div>
     `;
     
     // Adiciona ao body
     document.body.appendChild(modal);
-    console.log('✅ Modal adicionado ao DOM');
+    console.log('✅ Modal adicionado ao body, z-index máximo aplicado');
     
-    // Conecta botão fechar (X)
-    const btnFechar = modal.querySelector('.modal-fechar-btn');
-    if (btnFechar) {
-        btnFechar.addEventListener('click', function() {
-            modal.remove();
-        });
-    }
+    // 🔥 Garantia extra: força visibilidade após 50ms
+    setTimeout(function() {
+        modal.style.display = 'flex !important';
+        modal.style.visibility = 'visible !important';
+        modal.style.opacity = '1 !important';
+        console.log('✅ Visibilidade forçada');
+    }, 50);
+    
+    // Conecta botão fechar X
+    document.getElementById('btnFecharModalX').addEventListener('click', function() { modal.remove(); });
     
     // Conecta botão cancelar
-    const btnCancelar = modal.querySelector('.btn-cancelar-modal');
-    if (btnCancelar) {
-        btnCancelar.addEventListener('click', function() {
-            modal.remove();
-        });
-    }
+    document.getElementById('btnCancelarModal').addEventListener('click', function() { modal.remove(); });
     
-    // Fecha ao clicar fora do modal
+    // Fecha ao clicar fora
     modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            modal.remove();
-        }
+        if (e.target === modal) modal.remove();
     });
     
     // Conecta botão salvar
-    const btnSalvar = document.getElementById('btnSalvarVeiculo');
-    if (btnSalvar) {
-        btnSalvar.addEventListener('click', function() {
-            salvarVeiculoForm(id);
-        });
-    }
+    document.getElementById('btnSalvarVeiculo').addEventListener('click', function() {
+        salvarVeiculoForm(id);
+    });
     
     // Conecta submit do formulário
-    const form = document.getElementById('formVeiculo');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            salvarVeiculoForm(id);
-        });
-    }
+    document.getElementById('formVeiculo').addEventListener('submit', function(e) {
+        e.preventDefault();
+        salvarVeiculoForm(id);
+    });
     
-    console.log('✅ Modal de veículo aberto com sucesso!');
+    console.log('✅ Modal de veículo configurado completamente!');
 }
 
 function salvarVeiculoForm(id) {
@@ -325,15 +336,21 @@ function excluirVeiculo(id) {
     }
 }
 
-// Função auxiliar para fechar modais
 function fecharModal(modalId) {
     try {
-        const modal = modalId ? document.getElementById(modalId) : document.querySelector('.modal-overlay.aberto');
-        if (modal) modal.remove();
+        // Remove pelo ID se fornecido
+        if (modalId) {
+            const m = document.getElementById(modalId);
+            if (m) { m.remove(); return; }
+        }
+        // Remove todos os modais conhecidos
+        const modais = document.querySelectorAll('.modal-overlay.aberto, .modal-overlay, #modal-veiculo-emergencia');
+        modais.forEach(m => m.remove());
     } catch (e) {
         console.error('❌ Erro ao fechar modal:', e);
     }
 }
+
 window.fecharModal = fecharModal;
 window.abrirModalVeiculo = abrirModalVeiculo;
 window.excluirVeiculo = excluirVeiculo;
