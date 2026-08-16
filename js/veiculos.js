@@ -267,21 +267,19 @@ function salvarVeiculoForm(id) {
             window.BD = BD;
         }
         
-        fecharModal('modal-veiculo');
-        carregarTabelaVeiculos();
-        
-        if (typeof mostrarToast === 'function') {
-            mostrarToast(id ? 'Veículo atualizado!' : 'Veículo cadastrado!', 'sucesso');
-        } else {
-            alert(id ? '✅ Veículo atualizado!' : '✅ Veículo cadastrado!');
+        function fecharModal(modalId) {
+    try {
+        if (modalId) {
+            const m = document.getElementById(modalId);
+            if (m) { m.remove(); return; }
         }
-        
+        const modais = document.querySelectorAll('[id^="modal-"][id$="-final"]');
+        modais.forEach(m => m.remove());
     } catch (e) {
-        console.error('❌ Erro ao salvar veículo:', e);
-        if (typeof mostrarToast === 'function') mostrarToast('Erro ao salvar', 'erro');
-        else alert('❌ Erro ao salvar');
+        console.error('❌ Erro ao fechar modal:', e);
     }
 }
+window.fecharModal = fecharModal;
 
 function excluirVeiculo(id) {
     try {

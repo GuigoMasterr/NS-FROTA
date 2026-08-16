@@ -76,74 +76,132 @@ function carregarTabelaManutencao() {
 }
 
 function abrirModalManutencao(tipo) {
-    try {
-        console.log('➕ Abrindo modal de manutenção:', tipo);
-        
-        const veiculos = (typeof BD !== 'undefined' && BD.veiculos) ? BD.veiculos : [];
-        
-        if (veiculos.length === 0) {
-            if (typeof mostrarToast === 'function') mostrarToast('Cadastre um veículo primeiro!', 'aviso');
-            else alert('⚠️ Cadastre um veículo primeiro!');
-            return;
-        }
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay aberto';
-        modal.id = 'modal-manutencao';
-        
-        const titulo = tipo === 'preventiva' ? '🛡️ Manutenção Preventiva' : '🔧 Manutenção Corretiva';
-        
-        modal.innerHTML = `
-            <div class="modal-container" style="max-width: 550px;">
-                <div class="modal-cabecalho">
-                    <h3 class="modal-titulo">${titulo}</h3>
-                    <button type="button" class="modal-fechar" onclick="fecharModal('modal-manutencao')">&times;</button>
-                </div>
-                <div class="modal-corpo">
-                    <form id="formManutencao" class="form-grid">
-                        <div class="form-grupo">
-                            <label>Veículo <span class="obrigatorio">*</span></label>
-                            <select id="mVeiculo" required>
-                                <option value="">Selecione...</option>
-                                ${veiculos.map(v => `<option value="${v.id}">${v.placa} - ${v.modelo || ''}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="form-grupo">
-                            <label>Data Prevista <span class="obrigatorio">*</span></label>
-                            <input type="date" id="mData" required value="${new Date().toISOString().split('T')[0]}">
-                        </div>
-                        <div class="form-grupo" style="grid-column: span 2;">
-                            <label>Serviço / Descrição <span class="obrigatorio">*</span></label>
-                            <input type="text" id="mServico" required placeholder="Descreva o serviço...">
-                        </div>
-                        <div class="form-grupo">
-                            <label>KM Previsto</label>
-                            <input type="number" id="mKm" min="0" placeholder="Ex: 100000">
-                        </div>
-                        <div class="form-grupo">
-                            <label>Custo Estimado (R$)</label>
-                            <input type="number" id="mCusto" min="0" step="0.01" placeholder="0,00">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-rodape">
-                    <button type="button" class="btn btn-secundario" onclick="fecharModal('modal-manutencao')">Cancelar</button>
-                    <button type="button" class="btn btn-primario" id="btnSalvarManutencao">💾 Registrar</button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        document.getElementById('btnSalvarManutencao').addEventListener('click', () => salvarManutencaoForm(tipo));
-        document.getElementById('formManutencao').addEventListener('submit', (e) => {
-            e.preventDefault();
-            salvarManutencaoForm(tipo);
-        });
-        
-    } catch (e) {
-        console.error('❌ Erro ao abrir modal de manutenção:', e);
+    console.log('📝 abrirModalManutencao chamado, tipo:', tipo);
+    
+    // Verifica se há veículos cadastrados
+    if (typeof BD === 'undefined' || !BD.veiculos || BD.veiculos.length === 0) {
+        alert('⚠️ Cadastre um veículo primeiro!');
+        return;
     }
+    
+    // Remove modal anterior
+    const antigo = document.getElementById('modal-manutencao-final');
+    if (antigo) antigo.remove();
+    
+    const titulo = tipo === 'preventiva' ? '🔧 Manutenção Preventiva' : '🔨 Manutenção Corretiva';
+    
+    // Fundo do modal
+    const fundo = document.createElement('div');
+    fundo.id = 'modal-manutencao-final';
+    fundo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    fundo.addEventListener('click', function(e) { if (e.target === fundo) fundo.remove(); });
+    
+    // Caixa
+    const caixa = document.createElement('div');
+    caixa.style.cssText = 'background:white;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.4);width:100%;max-width:550px;max-height:90vh;overflow-y:auto;font-family:Arial,sans-serif;';
+    
+    // Cabeçalho
+    const cabecalho = document.createElement('div');
+    cabecalho.style.cssText = 'padding:16px 24px;background:#f59e0b;color:white;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0;';
+    cabecalho.innerHTML = `<h3 style="margin:0;font-size:18px;">${titulo}</h3>`;
+    const btnFechar = document.createElement('button');
+    btnFechar.textContent = '×';
+    btnFechar.style.cssText = 'background:transparent;border:none;color:white;font-size:28px;cursor:pointer;line-height:1;padding:0 8px;';
+    btnFechar.onclick = function() { fundo.remove(); };
+    cabecalho.appendChild(btnFechar);
+    
+    // Corpo
+    const corpo = document.createElement('div');
+    corpo.style.cssText = 'padding:24px;';
+    
+    const form = document.createElement('form');
+    form.style.cssText = 'display:flex;flex-direction:column;gap:14px;';
+    form.onsubmit = function(e) { e.preventDefault(); salvarManutencaoForm(tipo); };
+    
+    function addCampo(label, tipo, id, obrigatorio, opcoes) {
+        const grupo = document.createElement('div');
+        grupo.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+        const lbl = document.createElement('label');
+        lbl.style.cssText = 'font-size:14px;font-weight:500;color:#374151;';
+        lbl.innerHTML = label + (obrigatorio ? ' <span style="color:#dc2626;">*</span>' : '');
+        grupo.appendChild(lbl);
+        
+        let input;
+        if (opcoes) {
+            input = document.createElement('select');
+            input.innerHTML = '<option value="">Selecione...</option>' + 
+                opcoes.map(o => `<option value="${o.valor}">${o.texto}</option>`).join('');
+        } else {
+            input = document.createElement('input');
+            input.type = tipo;
+        }
+        input.id = id;
+        if (obrigatorio) input.required = true;
+        input.style.cssText = 'padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;background:white;';
+        grupo.appendChild(input);
+        return grupo;
+    }
+    
+    // Veículos
+    const veiculosOpts = BD.veiculos.map(v => ({ valor: v.id, texto: `${v.placa} - ${v.modelo || ''}` }));
+    
+    form.appendChild(addCampo('Veículo', 'text', 'mVeiculo', true, veiculosOpts));
+    form.appendChild(addCampo('Descrição', 'text', 'mDescricao', true));
+    form.appendChild(addCampo('Data', 'date', 'mData', true));
+    
+    if (tipo === 'preventiva') {
+        form.appendChild(addCampo('KM da Próxima Revisão', 'number', 'mProximaKm'));
+    }
+    
+    form.appendChild(addCampo('Valor (R$)', 'number', 'mValor'));
+    
+    // Observação
+    const grupoObs = document.createElement('div');
+    grupoObs.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+    const lblObs = document.createElement('label');
+    lblObs.style.cssText = 'font-size:14px;font-weight:500;color:#374151;';
+    lblObs.textContent = 'Observação';
+    grupoObs.appendChild(lblObs);
+    const txtObs = document.createElement('textarea');
+    txtObs.id = 'mObservacao';
+    txtObs.rows = 3;
+    txtObs.style.cssText = 'padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;resize:vertical;';
+    grupoObs.appendChild(txtObs);
+    form.appendChild(grupoObs);
+    
+    // Botões
+    const rodape = document.createElement('div');
+    rodape.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;margin-top:10px;';
+    const btnCancelar = document.createElement('button');
+    btnCancelar.type = 'button';
+    btnCancelar.textContent = 'Cancelar';
+    btnCancelar.style.cssText = 'padding:10px 20px;border:1px solid #d1d5db;background:white;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;';
+    btnCancelar.onclick = function() { fundo.remove(); };
+    const btnSalvar = document.createElement('button');
+    btnSalvar.type = 'submit';
+    btnSalvar.textContent = '💾 Salvar';
+    btnSalvar.style.cssText = 'padding:10px 20px;border:none;background:#f59e0b;color:white;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;';
+    rodape.appendChild(btnCancelar);
+    rodape.appendChild(btnSalvar);
+    form.appendChild(rodape);
+    
+    // Tipo hidden
+    const inputTipo = document.createElement('input');
+    inputTipo.type = 'hidden';
+    inputTipo.id = 'mTipo';
+    inputTipo.value = tipo;
+    form.appendChild(inputTipo);
+    
+    corpo.appendChild(form);
+    caixa.appendChild(cabecalho);
+    caixa.appendChild(corpo);
+    fundo.appendChild(caixa);
+    document.body.appendChild(fundo);
+    
+    // Data padrão = hoje
+    document.getElementById('mData').value = new Date().toISOString().split('T')[0];
+    
+    console.log('✅ Modal de manutenção aberto!');
 }
 
 function abrirModalManutencaoEditar(id) {
