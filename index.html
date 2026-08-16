@@ -23,79 +23,94 @@
     
     <style>
         /* ======================================================
-   🔒 AJUSTE AUTOMÁTICO DO LAYOUT — Sem bagunçar botões
+   🔒 RESET PARA AJUSTE AUTOMÁTICO DO LAYOUT
+   Copie este bloco logo no INÍCIO da sua tag <style>
    ====================================================== */
-html, body {
+* {
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+}
+
+html {
     width: 100%;
     overflow-x: hidden;
-    margin: 0;
-    padding: 0;
 }
 
-* {
-    box-sizing: border-box;
+body {
+    width: 100vw;
+    overflow-x: hidden;
 }
 
-/* Áreas principais que precisam se ajustar */
-.main-content,
-.pagina,
-.card,
-.card-body,
-.table-container,
-.form-grid,
-.config-secao,
-.stats-grid,
-.config-cards-topo {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
+input, select, textarea, button, table, tr, td, th, .card, .pagina, .main-content {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
-/* Corrige largura do conteúdo ao lado da sidebar */
-.main-content {
-    margin-left: 240px;
-    width: calc(100% - 240px);
-    max-width: calc(100% - 240px);
+/* Botões e textos NÃO podem ter 100% de largura */
+button, .btn, .btn-sair, .user-avatar, .topbar-esq, .topbar-dir, .sidebar-logo span {
+    width: auto !important;
+    max-width: none !important;
 }
 
-/* Tabelas com scroll horizontal */
-.table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-table {
-    min-width: 800px;
-    width: 100%;
-}
-
-/* Inputs e selects se ajustam */
-input, select, textarea {
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-/* 📱 Telas menores — Sidebar sai, conteúdo ocupa tudo */
-@media (max-width: 1024px) {
-    .main-content {
-        margin-left: 0;
-        width: 100%;
-        max-width: 100%;
-    }
-}
-
-/* 📱 Ajuste de fonte automático */
+/* ======================================================
+   📱 AJUSTE AUTOMÁTICO DE FONTE POR TELA
+   ====================================================== */
 @media (max-width: 1400px) { html { font-size: 15px; } }
 @media (max-width: 1024px) { html { font-size: 14px; } }
 @media (max-width: 768px)  { html { font-size: 13px; } }
 @media (max-width: 480px)  { html { font-size: 12px; } }
 
-/* ✅ EXCEÇÃO: Botões e ícones NÃO mudam de tamanho */
-button, .btn, .acao-btn, .status-badge, .user-avatar,
-.botao-acao, .btn-editar, .btn-excluir, .btn-historico, .btn-transferir {
-    width: auto !important;
-    max-width: none !important;
-    flex-shrink: 0;
+/* ======================================================
+   📐 CORRIGE LARGURA DO CONTEÚDO PRINCIPAL
+   ====================================================== */
+:root {
+    --largura-sidebar: 240px;
+}
+
+.main-content {
+    margin-left: var(--largura-sidebar);
+    width: calc(100% - var(--largura-sidebar));
+    max-width: calc(100% - var(--largura-sidebar));
+    overflow-x: hidden;
+}
+
+/* ======================================================
+   📱 TELAS MENORES QUE 768px — SIDEBAR FECHA, CONTEÚDO OCUPA TUDO
+   ====================================================== */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .config-cards-topo, .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .config-cards-topo, .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ======================================================
+   📊 TABELAS E GRIDS — Scroll suave sem quebrar layout
+   ====================================================== */
+.table-container {
+    width: 100% !important;
+    overflow-x: auto;
+}
+
+table {
+    min-width: 600px;
+}
+
+.config-2col, .config-3col, .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
 }
 
         /* CSS Customizado */
