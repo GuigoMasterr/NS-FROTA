@@ -1497,19 +1497,57 @@
         </section>
 
         <!-- ============================================================
-             PÁGINA: SOLICITAÇÕES DE TRANSFERÊNCIA
+        <!-- ============================================================
+             PÁGINA: TRANSFERÊNCIAS DE RESPONSABILIDADE
              ============================================================ -->
         <section class="pagina" id="pagina-solicitacoes">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                 <div>
-                    <h1 class="page-title">🔄 Solicitações de Transferência</h1>
-                    <p class="page-subtitle">Gerencie transferências de responsabilidade entre motoristas</p>
+                    <h1 class="page-title">🔄 Transferências de Responsabilidade</h1>
+                    <p class="page-subtitle">Solicite, aprove e acompanhe transferências de veículos entre motoristas</p>
                 </div>
             </div>
-            
-            <div class="card" style="overflow-x: auto;">
-                <div class="card-header">
-                    <div class="card-title">Todas as Solicitações</div>
+
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-header" style="border-bottom: 1px solid #e5e7eb;">
+                    <div class="card-title">📤 Solicitar Nova Transferência</div>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: end;">
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Veículo *</label>
+                            <select id="transfVeiculo" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: white;">
+                                <option value="">Selecione o veículo...</option>
+                            </select>
+                        </div>
+                        <div id="infoRespAtual" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Responsável Atual</label>
+                            <div style="padding: 10px 12px; background: #f3f4f6; border-radius: 8px; font-size: 14px; color: #6b7280;">Selecione um veículo</div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Novo Responsável *</label>
+                            <select id="transfNovoResp" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: white;">
+                                <option value="">Selecione o motorista...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button onclick="solicitarTransferenciaDireta()" style="width: 100%; padding: 10px 16px; border: none; background: #f59e0b; color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                📤 Solicitar
+                            </button>
+                        </div>
+                    </div>
+                    <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 13px; font-weight: 500; color: #374151;">Motivo/Observação</label>
+                        <textarea id="transfObsDireta" rows="2" placeholder="Informe o motivo..." style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cardsTransf" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;"></div>
+
+            <div class="card" style="margin-bottom: 24px; overflow-x: auto;">
+                <div class="card-header" style="border-bottom: 1px solid #e5e7eb;">
+                    <div class="card-title">⏳ Solicitações Pendentes</div>
                 </div>
                 <div class="card-body" style="padding: 0;">
                     <div class="table-container">
@@ -1520,24 +1558,51 @@
                                     <th>Veículo</th>
                                     <th>De</th>
                                     <th>Para</th>
+                                    <th>Solicitado por</th>
                                     <th>Status</th>
-                                    <th>Observação</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabelaSolicitacoes">
-                                <tr><td colspan="7" style="text-align:center;padding:40px;color:#64748b;">Carregando...</td></tr>
+                            <tbody id="tabelaPendentes">
+                                <tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="overflow-x: auto;">
+                <div class="card-header" style="border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="card-title">📜 Histórico de Transferências</div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="date" id="filtroHistDataIni" style="padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" onchange="carregarHistoricoTransferencias()">
+                        <span style="color: #6b7280; font-size: 13px;">até</span>
+                        <input type="date" id="filtroHistDataFim" style="padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" onchange="carregarHistoricoTransferencias()">
+                    </div>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data Solicitação</th>
+                                    <th>Data Conclusão</th>
+                                    <th>Veículo</th>
+                                    <th>De</th>
+                                    <th>Para</th>
+                                    <th>Check-list</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaHistoricoTransf">
+                                <tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Carregando...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </section>
-        
 
-        <!-- ============================================================
-             PÁGINA: RELATÓRIOS
-             ============================================================ -->
         <section class="pagina" id="pagina-relatorios">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                 <div>
