@@ -1,166 +1,201 @@
 // ==================================================
-// 💰 CONTROLE DE GASTOS - VERSÃO ROBUSTA
+// ⛽ CONTROLE DE GASTOS - VERSÃO CORRIGIDA
 // ==================================================
 
-function _getBD() { return window.getBD ? window.getBD() : (window.BD || {}); }
-function _garantirModais() {
-  if (!document.getElementById('modais')) {
-    const c = document.createElement('div'); c.id = 'modais'; document.body.appendChild(c);
-  }
-}
-function _fm() { window.fecharModal && window.fecharModal(); }
-function _formatarMoeda(v) {
-  if (window.Utils && window.Utils.formatarMoeda) return window.Utils.formatarMoeda(v);
-  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+function carregarTabelaGastos() {
+    try {
+        console.log('💸 Carregando tabela de gastos...');
+        
+        const tabela = document.getElementById('tabelaGastos');
+        if (!tabela) return;
+        
+        const filtroVeiculo = document.getElementById('filtroGastosVeiculo')?.value || 'todos';
+        
+        let gastos = (typeof BD !== 'undefined' && BD.gastos) ? [...BD.gastos] : [];
+        
+        if (filtroVeiculo !== 'todos') {
+            gastos = gastos.filter(g => String(g.veiculoId) === String(filtroVeiculo));
+        }
+        
+        // Ordena por data (mais recentes primeiro)
+        gastos.sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
+        
+        if (gastos.length === 0) {
+            tabela.innerHTML = '<tr><td colspan="6" class="estado-vazio">Nenhum gasto registrado</td></tr>';
+            return;
+        }
+        
+        const veiculos = (typeof BD !== 'undefined' && BD.veiculos) ? BD.veiculos : [];
+        const getPlaca = (id) => {
+            const v = veiculos.find(v => String(v.id) === String(id));
+            return v ? v.placa : '-';
+        };
+        
+        tabela.innerHTML = gastos.map(g => `
+            <tr>
+                <td>${g.data || '-'}</td>
+                <td><strong>${getPlaca(g.veiculoId)}</strong></td>
+                <td>${g.tipo || '-'}</td>
+                <td>${g.observacao || '-'}</td>
+                <td><strong style="color:#dc2626;">R$ ${Number(g.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></td>
+                <td>
+                    <button class="btn-mini" onclick="excluirGasto(${g.id})" title="Excluir" style="color:#dc2626;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        
+        console.log(`✅ ${gastos.length} gasto(s) carregado(s)`);
+        
+    } catch (e) {
+        console.error('❌ Erro ao carregar gastos:', e);
+    }
 }
 
-window.abrirModalGasto = function(gasto = null) {
-  try {
-    const BD = _getBD();
-    _garantirModais();
-    const ehEdicao = !!gasto;
-    const veiculos = BD.veiculos || [];
-    const obras = BD.obras || BD.locais?.map(l => l.nome) || [];
-    
-    const opcoesVeiculos = veiculos.map(v => 
-      `<option value="${v.id}" ${String(gasto?.veiculoId) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo}</option>`
-    ).join('');
-    const opcoesObras = obras.map(o => `<option value="${o}" ${gasto?.obra === o ? 'selected' : ''}>${o}</option>`).join('');
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay aberto';
-    modal.onclick = (e) => { if (e.target === modal) _fm(); };
-    
-    modal.innerHTML = `
-      <div class="modal-container" style="max-width: 550px;">
-        <div class="modal-cabecalho">
-          <h3 class="modal-titulo">💰 ${ehEdicao ? '✏️ Editar' : '➕ Lançar'} Gasto</h3>
-          <button type="button" class="modal-fechar" onclick="_fm()">&times;</button>
-        </div>
-        <div class="modal-corpo">
-          <form id="formGasto">
-            <div class="form-grid">
-              <div class="form-grupo">
-                <label>Data <span class="obrigatorio">*</span></label>
-                <input type="date" id="gData" required value="${gasto?.data || new Date().toISOString().split('T')[0]}">
-              </div>
-              <div class="form-grupo">
-                <label>Valor (R$) <span class="obrigatorio">*</span></label>
-                <input type="number" step="0.01" id="gValor" required value="${gasto?.valor || ''}" min="0.01">
-              </div>
-              <div class="form-grupo">
-                <label>Veículo <span class="obrigatorio">*</span></label>
-                <select id="gVeiculo" required><option value="">Selecione</option>${opcoesVeiculos}</select>
-              </div>
-              <div class="form-grupo">
-                <label>Obra / Local <span class="obrigatorio">*</span></label>
-                <select id="gObra" required><option value="">Selecione</option>${opcoesObras}</select>
-              </div>
-              <div class="form-grupo" style="grid-column: 1 / -1;">
-                <label>Tipo de Gasto <span class="obrigatorio">*</span></label>
-                <select id="gTipo" required>
-                  <option value="Combustível" ${gasto?.tipo === 'Combustível' ? 'selected' : ''}>⛽ Combustível</option>
-                  <option value="Manutenção" ${gasto?.tipo === 'Manutenção' ? 'selected' : ''}>🔧 Manutenção</option>
-                  <option value="Pneus" ${gasto?.tipo === 'Pneus' ? 'selected' : ''}>🚛 Pneus</option>
-                  <option value="Pedágio" ${gasto?.tipo === 'Pedágio' ? 'selected' : ''}>🛣️ Pedágio</option>
-                  <option value="Seguro" ${gasto?.tipo === 'Seguro' ? 'selected' : ''}>🛡️ Seguro</option>
-                  <option value="IPVA" ${gasto?.tipo === 'IPVA' ? 'selected' : ''}>📄 IPVA</option>
-                  <option value="Licenciamento" ${gasto?.tipo === 'Licenciamento' ? 'selected' : ''}>📋 Licenciamento</option>
-                  <option value="Multa" ${gasto?.tipo === 'Multa' ? 'selected' : ''}>⚠️ Multa</option>
-                  <option value="Outro" ${gasto?.tipo === 'Outro' ? 'selected' : ''}>📋 Outro</option>
-                </select>
-              </div>
-              <div class="form-grupo" style="grid-column: 1 / -1;">
-                <label>Observação</label>
-                <input type="text" id="gObs" value="${gasto?.observacao || ''}">
-              </div>
+function abrirModalGasto() {
+    try {
+        const veiculos = (typeof BD !== 'undefined' && BD.veiculos) ? BD.veiculos : [];
+        
+        if (veiculos.length === 0) {
+            alert('⚠️ Cadastre um veículo primeiro!');
+            return;
+        }
+        
+        const tipos = (typeof CONFIG !== 'undefined' && CONFIG.TIPO_GASTOS) 
+            ? CONFIG.TIPO_GASTOS 
+            : ['Combustível', 'Peças', 'Serviço', 'IPVA', 'Seguro', 'Licenciamento', 'Multa', 'Outros'];
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay aberto';
+        modal.id = 'modal-gasto';
+        
+        modal.innerHTML = `
+            <div class="modal-container" style="max-width: 500px;">
+                <div class="modal-cabecalho">
+                    <h3 class="modal-titulo">💸 Registrar Gasto</h3>
+                    <button type="button" class="modal-fechar" onclick="fecharModal('modal-gasto')">&times;</button>
+                </div>
+                <div class="modal-corpo">
+                    <form id="formGasto" class="form-grid">
+                        <div class="form-grupo">
+                            <label>Data <span class="obrigatorio">*</span></label>
+                            <input type="date" id="gData" required value="${new Date().toISOString().split('T')[0]}">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Veículo <span class="obrigatorio">*</span></label>
+                            <select id="gVeiculo" required>
+                                <option value="">Selecione...</option>
+                                ${veiculos.map(v => `<option value="${v.id}">${v.placa} - ${v.modelo || ''}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-grupo">
+                            <label>Tipo <span class="obrigatorio">*</span></label>
+                            <select id="gTipo" required>
+                                <option value="">Selecione...</option>
+                                ${tipos.map(t => `<option value="${t}">${t}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-grupo">
+                            <label>Valor (R$) <span class="obrigatorio">*</span></label>
+                            <input type="number" id="gValor" required min="0" step="0.01" placeholder="0,00">
+                        </div>
+                        <div class="form-grupo" style="grid-column: span 2;">
+                            <label>Observação</label>
+                            <input type="text" id="gObs" placeholder="Detalhes adicionais...">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-rodape">
+                    <button type="button" class="btn btn-secundario" onclick="fecharModal('modal-gasto')">Cancelar</button>
+                    <button type="button" class="btn btn-primario" id="btnSalvarGasto">💾 Registrar</button>
+                </div>
             </div>
-          </form>
-        </div>
-        <div class="modal-rodape">
-          <button type="button" class="btn btn-secundario" onclick="_fm()">Cancelar</button>
-          <button type="button" class="btn btn-sucesso" id="btnSalvarGasto">💾 Salvar Gasto</button>
-        </div>
-      </div>
-    `;
-    document.getElementById('modais').appendChild(modal);
-    
-    document.getElementById('btnSalvarGasto').addEventListener('click', async () => {
-      try {
-        const data = document.getElementById('gData').value;
-        const veiculoId = parseInt(document.getElementById('gVeiculo').value);
-        const obra = document.getElementById('gObra').value;
-        const tipo = document.getElementById('gTipo').value;
-        const valor = parseFloat(document.getElementById('gValor').value);
-        const observacao = document.getElementById('gObs').value.trim();
+        `;
         
-        if (!data || !veiculoId || !obra || !tipo) { alert('❌ Preencha todos os campos!'); return; }
-        if (!valor || valor <= 0) { alert('❌ Valor inválido!'); return; }
+        document.body.appendChild(modal);
         
-        const dados = { data, veiculoId, obra, tipo, valor, observacao, lancadoPor: window.usuarioAtual?.nome || 'Sistema' };
-        if (ehEdicao) dados.id = gasto.id;
+        document.getElementById('btnSalvarGasto').addEventListener('click', salvarGastoForm);
+        document.getElementById('formGasto').addEventListener('submit', (e) => {
+            e.preventDefault();
+            salvarGastoForm();
+        });
         
-        const r = await window.salvarGasto(dados);
-        if (r) {
-          alert('✅ Gasto salvo!');
-          _fm();
-          window.carregarTabelaGastos && window.carregarTabelaGastos();
-          window.atualizarDashboardCompleto && window.atualizarDashboardCompleto();
-        } else alert('❌ Erro ao salvar!');
-      } catch (e) { console.error(e); alert('❌ Erro: ' + e.message); }
-    });
-  } catch (e) { console.error(e); alert('❌ Erro: ' + e.message); }
-};
-
-window.excluirGasto = async function(id) {
-  try {
-    if (!confirm('⚠️ Excluir este lançamento?')) return;
-    await window.excluirGastoBD(id);
-    alert('✅ Gasto excluído!');
-    window.carregarTabelaGastos && window.carregarTabelaGastos();
-    window.atualizarDashboardCompleto && window.atualizarDashboardCompleto();
-  } catch (e) { alert('❌ Erro: ' + e.message); }
-};
-
-window.carregarTabelaGastos = async function(filtroPlaca = 'todos') {
-  try {
-    const BD = _getBD();
-    const corpo = document.getElementById('tabelaGastos');
-    if (!corpo) return;
-    
-    let dados = BD.gastos || [];
-    if (filtroPlaca !== 'todos') {
-      dados = dados.filter(g => {
-        const v = (BD.veiculos || []).find(x => String(x.id) === String(g.veiculoId));
-        return v?.placa === filtroPlaca;
-      });
+    } catch (e) {
+        console.error('❌ Erro ao abrir modal de gasto:', e);
     }
-    dados = [...dados].sort((a, b) => new Date(b.data) - new Date(a.data));
-    
-    if (!dados.length) {
-      corpo.innerHTML = `<tr><td colspan="7" class="estado-vazio"><div class="estado-vazio-icone">💰</div><div class="estado-vazio-texto">Nenhum registro de gasto</div></td></tr>`;
-      return;
-    }
-    
-    const tipoIcone = { 'Combustível': '⛽', 'Manutenção': '🔧', 'Pneus': '🚛', 'Pedágio': '🛣️', 'Seguro': '🛡️', 'IPVA': '📄', 'Licenciamento': '📋', 'Multa': '⚠️', 'Outro': '📋' };
-    
-    corpo.innerHTML = dados.slice(0, 100).map(g => {
-      const v = (BD.veiculos || []).find(x => String(x.id) === String(g.veiculoId));
-      const seguro = JSON.stringify(g).replace(/"/g, '&quot;');
-      return `<tr>
-        <td>${g.data ? new Date(g.data).toLocaleDateString('pt-BR') : '—'}</td>
-        <td class="font-mono font-semibold">${v?.placa || '—'}</td>
-        <td>${tipoIcone[g.tipo] || '📋'} ${g.tipo || '—'}</td>
-        <td>${g.obra || '—'}</td>
-        <td><strong>${_formatarMoeda(g.valor)}</strong></td>
-        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${g.observacao || '—'}</td>
-        <td>
-          <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;margin-right:0.25rem;" onclick='window.abrirModalGasto(${seguro})'><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b;" onclick="window.excluirGasto('${g.id}')"><i class="fa-solid fa-trash"></i></button>
-        </td>
-      </tr>`;
-    }).join('');
-  } catch (e) { console.error(e); }
-};
+}
 
-console.log('✅ gastos.js carregado');
+function salvarGastoForm() {
+    try {
+        const data = document.getElementById('gData')?.value;
+        const veiculoId = document.getElementById('gVeiculo')?.value;
+        const tipo = document.getElementById('gTipo')?.value;
+        const valor = parseFloat(document.getElementById('gValor')?.value);
+        
+        if (!data || !veiculoId || !tipo || isNaN(valor)) {
+            alert('⚠️ Preencha todos os campos obrigatórios!');
+            return;
+        }
+        
+        const dados = {
+            data: data,
+            veiculoId: parseInt(veiculoId),
+            tipo: tipo,
+            valor: valor,
+            observacao: document.getElementById('gObs')?.value.trim() || '',
+            lancadoPor: window.usuarioAtual?.nome || 'Sistema'
+        };
+        
+        if (typeof salvarGasto === 'function') {
+            salvarGasto(dados);
+        } else if (typeof BD !== 'undefined') {
+            if (!BD.gastos) BD.gastos = [];
+            dados.id = BD.gastos.length > 0 ? Math.max(...BD.gastos.map(g => g.id || 0)) + 1 : 1;
+            BD.gastos.push(dados);
+            if (typeof salvarDados === 'function') salvarDados();
+            window.BD = BD;
+        }
+        
+        fecharModal('modal-gasto');
+        carregarTabelaGastos();
+        
+        if (typeof mostrarToast === 'function') mostrarToast('Gasto registrado!', 'sucesso');
+        else alert('✅ Gasto registrado!');
+        
+    } catch (e) {
+        console.error('❌ Erro ao salvar gasto:', e);
+    }
+}
+
+function excluirGasto(id) {
+    try {
+        if (!confirm('Tem certeza que deseja excluir este gasto?')) return;
+        
+        if (typeof excluirGastoBD === 'function') {
+            excluirGastoBD(id);
+        } else if (typeof BD !== 'undefined' && BD.gastos) {
+            BD.gastos = BD.gastos.filter(g => g.id !== id);
+            if (typeof salvarDados === 'function') salvarDados();
+            window.BD = BD;
+        }
+        
+        carregarTabelaGastos();
+        if (typeof mostrarToast === 'function') mostrarToast('Gasto excluído!', 'sucesso');
+        
+    } catch (e) {
+        console.error('❌ Erro ao excluir gasto:', e);
+    }
+}
+
+// Expõe funções
+window.abrirModalGasto = abrirModalGasto;
+window.excluirGasto = excluirGasto;
+window.carregarTabelaGastos = carregarTabelaGastos;
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    const filtro = document.getElementById('filtroGastosVeiculo');
+    if (filtro) filtro.addEventListener('change', carregarTabelaGastos);
+    console.log('✅ js/gastos.js inicializado');
+});

@@ -1,92 +1,113 @@
 // ==================================================
-// SINCRONIZAÇÃO LOCAL COM BACKEND
+// 🔄 SINCRONIZAÇÃO COM SUPABASE - VERSÃO CORRIGIDA
 // ==================================================
 
-const Sincronizacao = {
-  // Detecta ambiente - só tenta sincronizar se houver URL explícita configurada
-  endpoint: (() => {
-    const urlConfig = localStorage.getItem('gf_sync_url');
-    if (urlConfig) return urlConfig;
-    // Em desenvolvimento (localhost) usa a API local
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:3000/api';
-    }
-    // Em produção, não tenta sincronizar automaticamente
-    return null;
-  })(),
-  
-  dispositivoId: localStorage.getItem('gf_device_id') || (() => {
-    const id = (typeof Utils !== 'undefined' && Utils.gerarId) ? Utils.gerarId() : Date.now().toString(36);
-    localStorage.setItem('gf_device_id', id);
-    return id;
-  })(),
-  
-  get estaAtivo() {
-    return this.endpoint !== null;
-  },
-  
-  async sincronizarRegistro(collection, registro) {
-    if (!this.estaAtivo) return;
+async function sincronizarBD() {
     try {
-      await fetch(`${this.endpoint}/sync/push`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          deviceId: this.dispositivoId,
-          collection,
-          registros: [registro]
-        })
-      });
-    } catch (erro) {
-      console.warn('Falha ao sincronizar registro (modo offline):', erro.message);
-    }
-  },
-  
-  async puxarBase() {
-    if (!this.estaAtivo) return;
-    try {
-      const resposta = await fetch(`${this.endpoint}/sync/bundle?deviceId=${encodeURIComponent(this.dispositivoId)}`);
-      if (!resposta.ok) return;
-      const dadosServidor = await resposta.json();
-      
-      ['checklists', 'chamados', 'veiculos', 'manutencoes', 'gastos'].forEach(lista => {
-        if (!Array.isArray(dadosServidor[lista])) return;
-        if (!BD[lista]) BD[lista] = [];
+        console.log('🔄 Iniciando sincronização...');
         
-        const existentes = new Set(BD[lista].map(item => String(item.id)));
-        dadosServidor[lista].forEach(item => {
-          if (!existentes.has(String(item.id))) {
-            BD[lista].push(item);
-          }
-        });
-      });
-      
-      if (typeof salvarDados === 'function') salvarDados();
-      if (typeof carregarTabelaChecklist === 'function') carregarTabelaChecklist();
-      if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
-      if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
-      if (typeof carregarMeusRegistros === 'function') carregarMeusRegistros();
-      
-      console.log('✅ Base sincronizada com servidor');
-    } catch (erro) {
-      console.warn('Falha ao buscar dados do servidor (modo offline):', erro.message);
+        const supabaseDB = window.supabase;
+        
+        // Se não tem conexão real, apenas carrega dados locais
+        if (!supabaseDB || !supabaseDB.temConexaoReal) {
+            console.log('ℹ️ Modo local - carregando dados do localStorage');
+            await carregarDadosLocais();
+            
+            // Se não tem dados locais, carrega dados de demonstração
+            if (typeof BD !== 'undefined' && (!BD.veiculos || BD.veiculos.length === 0)) {
+                if (typeof carregarDadosDemonstracao === 'function') {
+                    carregarDadosDemonstracao();
+                }
+            }
+            
+            window.BD = BD;
+            atualizarListasDependentes();
+            return;
+        }
+        
+        console.log('🌐 Sincronizando com Supabase...');
+        
+        // Lista de tabelas para sincronizar
+        const tabelas = ['veiculos', 'usuarios', 'manutencoes', 'gastos', 'chamados', 'checklists', 'alocacoes', 'locais'];
+        
+        for (const tabela of tabelas) {
+            try {
+                const { data, error } = await supabaseDB.from(tabela).select('*');
+                if (!error && data && BD[tabela] !== undefined) {
+                    BD[tabela] = data;
+                    console.log(`✅ ${tabela}: ${data.length} registro(s)`);
+                }
+            } catch (e) {
+                console.warn(`⚠️ Erro ao sincronizar ${tabela}:`, e.message);
+            }
+        }
+        
+        if (typeof salvarDados === 'function') salvarDados();
+        window.BD = BD;
+        atualizarListasDependentes();
+        
+        console.log('✅ Sincronização concluída!');
+        
+    } catch (e) {
+        console.error('❌ Erro na sincronização:', e);
+        // Fallback para dados locais
+        try {
+            await carregarDadosLocais();
+        } catch (err) {
+            console.error('❌ Erro ao carregar dados locais:', err);
+        }
     }
-  },
-  
-  iniciar() {
-    if (!this.estaAtivo) {
-      console.log('ℹ️ Sincronização desativada - usando apenas armazenamento local');
-      return;
-    }
-    
-    const executar = () => this.puxarBase();
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', executar, { once: true });
-    } else {
-      executar();
-    }
-  }
-};
+}
 
-window.Sincronizacao = Sincronizacao;
-Sincronizacao.iniciar();
+async function sincronizarManualmente() {
+    try {
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('Sincronizando...', 'info');
+        } else {
+            alert('🔄 Sincronizando...');
+        }
+        
+        await sincronizarBD();
+        
+        // Atualiza a página atual
+        if (typeof window.paginaAtual !== 'undefined' && typeof carregarDadosPagina === 'function') {
+            carregarDadosPagina(window.paginaAtual);
+        } else if (typeof atualizarDashboardCompleto === 'function') {
+            atualizarDashboardCompleto();
+        }
+        
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('Sincronização concluída!', 'sucesso');
+        } else {
+            alert('✅ Sincronização concluída!');
+        }
+        
+        fecharModal();
+        
+    } catch (e) {
+        console.error('❌ Erro na sincronização manual:', e);
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('Erro ao sincronizar', 'erro');
+        }
+    }
+}
+
+function atualizarListasDependentes() {
+    try {
+        if (typeof atualizarListaVeiculosNosFiltros === 'function') {
+            atualizarListaVeiculosNosFiltros();
+        }
+        if (typeof atualizarListaUsuariosNosFiltros === 'function') {
+            atualizarListaUsuariosNosFiltros();
+        }
+    } catch (e) {
+        console.error('❌ Erro ao atualizar listas:', e);
+    }
+}
+
+// Expõe funções
+window.sincronizarBD = sincronizarBD;
+window.sincronizarManualmente = sincronizarManualmente;
+window.atualizarListasDependentes = atualizarListasDependentes;
+
+console.log('✅ js/sync.js inicializado');

@@ -1,277 +1,309 @@
 // ==================================================
-// 🚗 CADASTRO E GESTÃO DE VEÍCULOS
-// ✅ VERSÃO ROBUSTA: Tratamento de erro em todos os níveis
+// 🚛 GESTÃO DE VEÍCULOS - VERSÃO CORRIGIDA
 // ==================================================
 
-// Garante que BD existe (não captura referência antecipada!)
-function getBD() {
-  if (!window.BD) window.BD = { veiculos: [], gastos: [], manutencoes: [], chamados: [], checklists: [], alocacoes: [], usuarios: [], locais: [] };
-  return window.BD;
-}
-
-// ✅ Abre janela de cadastro ou edição
-window.abrirModalVeiculo = function(veiculo = null) {
-  try {
-    const BD = getBD();
-    const ehEdicao = !!veiculo;
-    
-    // Garante que o container de modais existe
-    if (!document.getElementById('modais')) {
-      const container = document.createElement('div');
-      container.id = 'modais';
-      document.body.appendChild(container);
-    }
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay aberto';
-    modal.onclick = (e) => { if (e.target === modal) window.fecharModal && window.fecharModal(); };
-    
-    modal.innerHTML = `
-      <div class="modal-container">
-        <div class="modal-cabecalho">
-          <h3 class="modal-titulo">${ehEdicao ? '✏️ Editar' : '➕ Cadastrar'} Veículo</h3>
-          <button type="button" class="modal-fechar" onclick="window.fecharModal && window.fecharModal()">&times;</button>
-        </div>
-        <div class="modal-corpo">
-          <form id="formVeiculo">
-            <div class="form-grid">
-              <div class="form-grupo">
-                <label>Placa <span class="obrigatorio">*</span></label>
-                <input type="text" id="vPlaca" style="text-transform:uppercase;" required value="${veiculo?.placa || ''}" ${ehEdicao ? 'readonly' : ''} placeholder="ABC-1234">
-              </div>
-              <div class="form-grupo">
-                <label>Ano</label>
-                <input type="number" id="vAno" value="${veiculo?.ano || ''}" placeholder="2024">
-              </div>
-              <div class="form-grupo">
-                <label>Categoria <span class="obrigatorio">*</span></label>
-                <select id="vCategoria" required>
-                  <option value="">Selecione</option>
-                  <option value="caminhao" ${veiculo?.categoria === 'caminhao' ? 'selected' : ''}>🚛 Caminhão</option>
-                  <option value="utilitario" ${veiculo?.categoria === 'utilitario' ? 'selected' : ''}>🚐 Utilitário</option>
-                  <option value="carro" ${veiculo?.categoria === 'carro' ? 'selected' : ''}>🚗 Carro Passeio</option>
-                  <option value="moto" ${veiculo?.categoria === 'moto' ? 'selected' : ''}>🏍️ Moto</option>
-                  <option value="maquina" ${veiculo?.categoria === 'maquina' ? 'selected' : ''}>🚜 Máquina</option>
-                  <option value="van" ${veiculo?.categoria === 'van' ? 'selected' : ''}>🚐 Van</option>
-                  <option value="onibus" ${veiculo?.categoria === 'onibus' ? 'selected' : ''}>🚌 Ônibus</option>
-                  <option value="outro" ${veiculo?.categoria === 'outro' ? 'selected' : ''}>❔ Outro</option>
-                </select>
-              </div>
-              <div class="form-grupo">
-                <label>Marca / Modelo <span class="obrigatorio">*</span></label>
-                <input type="text" id="vModelo" required value="${veiculo?.modelo || ''}" placeholder="Ex: Volvo FH">
-              </div>
-              <div class="form-grupo">
-                <label>Km Atual <span class="obrigatorio">*</span></label>
-                <input type="number" id="vKm" required value="${veiculo?.km_atual || 0}" min="0">
-              </div>
-              <div class="form-grupo">
-                <label>Próxima Revisão (KM)</label>
-                <input type="number" id="vProximaRevisao" value="${veiculo?.proxima_revisao_km || ''}" min="0">
-              </div>
-              <div class="form-grupo">
-                <label>Vencimento Seguro</label>
-                <input type="date" id="vSeguroVencimento" value="${veiculo?.seguro_vencimento || ''}">
-              </div>
-              <div class="form-grupo">
-                <label>Status</label>
-                <select id="vStatus">
-                  <option value="disponivel" ${veiculo?.status === 'disponivel' ? 'selected' : ''}>✅ Disponível</option>
-                  <option value="alocado" ${veiculo?.status === 'alocado' ? 'selected' : ''}>🚛 Alocado</option>
-                  <option value="manutencao" ${veiculo?.status === 'manutencao' ? 'selected' : ''}>🔧 Manutenção</option>
-                  <option value="inativo" ${veiculo?.status === 'inativo' ? 'selected' : ''}>⛔ Inativo</option>
-                </select>
-              </div>
-              <div class="form-grupo">
-                <label>Obra / Local <span class="obrigatorio">*</span></label>
-                <input type="text" id="vObra" required value="${veiculo?.obra_atual || ''}" placeholder="Nome da obra ou local">
-              </div>
-              <div class="form-grupo">
-                <label>Responsável</label>
-                <input type="text" id="vResponsavel" value="${veiculo?.responsavel || ''}" placeholder="Nome do motorista">
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-rodape">
-          <button type="button" class="btn btn-secundario" onclick="window.fecharModal && window.fecharModal()">Cancelar</button>
-          <button type="button" class="btn btn-primario" id="btnSalvarVeiculo">${ehEdicao ? '💾 Salvar' : '➕ Cadastrar'}</button>
-        </div>
-      </div>
-    `;
-    
-    document.getElementById('modais').appendChild(modal);
-    
-    // Evento de salvar
-    document.getElementById('btnSalvarVeiculo').addEventListener('click', async () => {
-      try {
-        const placa = document.getElementById('vPlaca').value.toUpperCase().trim();
-        const categoria = document.getElementById('vCategoria').value;
-        const modelo = document.getElementById('vModelo').value.trim();
-        const ano = document.getElementById('vAno').value || null;
-        const kmAtual = parseInt(document.getElementById('vKm').value) || 0;
-        const proximaRevisao = document.getElementById('vProximaRevisao').value || null;
-        const seguroVencimento = document.getElementById('vSeguroVencimento').value || null;
-        const status = document.getElementById('vStatus').value;
-        const obraAtual = document.getElementById('vObra').value.trim();
-        const responsavel = document.getElementById('vResponsavel').value.trim() || null;
+function carregarTabelaVeiculos() {
+    try {
+        console.log('📋 Carregando tabela de veículos...');
         
-        // ✅ VALIDAÇÕES
-        const placaLimpa = placa.replace(/[^A-Z0-9]/g, '');
-        if (!/^[A-Z]{3}[0-9]{4}$/.test(placaLimpa) && !/^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(placaLimpa)) {
-          alert('❌ Placa inválida! Use o formato AAA-1234 ou AAA1A23');
-          return;
-        }
-        if (!categoria || !modelo || !obraAtual) {
-          alert('❌ Preencha todos os campos obrigatórios!');
-          return;
-        }
-        if (kmAtual < 0) {
-          alert('❌ Quilometragem deve ser um número positivo!');
-          return;
+        const tabela = document.getElementById('tabelaVeiculos');
+        if (!tabela) {
+            console.warn('⚠️ Tabela de veículos não encontrada');
+            return;
         }
         
-        const dados = { 
-          placa, categoria, modelo, 
-          marca: modelo.split(' ')[0],
-          ano, km_atual: kmAtual,
-          km_inicial: ehEdicao ? (veiculo?.km_inicial || kmAtual) : kmAtual,
-          proxima_revisao_km: proximaRevisao ? parseInt(proximaRevisao) : null,
-          seguro_vencimento: seguroVencimento,
-          status, obra_atual: obraAtual, responsavel,
-          data_cadastro: veiculo?.data_cadastro || new Date().toISOString().split('T')[0]
+        const busca = (document.getElementById('buscaVeiculos')?.value || '').toLowerCase();
+        const filtroCategoria = document.getElementById('filtroVeiculoCategoria')?.value || 'todos';
+        
+        let veiculos = (typeof BD !== 'undefined' && BD.veiculos) ? [...BD.veiculos] : [];
+        
+        // Filtros
+        if (busca) {
+            veiculos = veiculos.filter(v => 
+                (v.placa || '').toLowerCase().includes(busca) ||
+                (v.modelo || '').toLowerCase().includes(busca) ||
+                (v.marca || '').toLowerCase().includes(busca) ||
+                (v.obra_atual || '').toLowerCase().includes(busca) ||
+                (v.responsavel || '').toLowerCase().includes(busca)
+            );
+        }
+        
+        if (filtroCategoria !== 'todos') {
+            veiculos = veiculos.filter(v => v.categoria === filtroCategoria);
+        }
+        
+        if (veiculos.length === 0) {
+            tabela.innerHTML = '<tr><td colspan="9" class="estado-vazio">Nenhum veículo cadastrado</td></tr>';
+            return;
+        }
+        
+        const statusConfig = (typeof BD !== 'undefined' && BD.config && BD.config.statusVeiculos) 
+            ? BD.config.statusVeiculos 
+            : { disponivel: 'Disponível', alocado: 'Alocado', manutencao: 'Manutenção', inativo: 'Inativo' };
+        
+        const badgeClass = {
+            'disponivel': 'badge-success',
+            'alocado': 'badge-info',
+            'manutencao': 'badge-warning',
+            'inativo': 'badge-secondary'
         };
         
-        if (ehEdicao) {
-          dados.id = veiculo.id;
-        } else {
-          const existe = BD.veiculos.find(v => v.placa === placa);
-          if (existe) {
-            alert('❌ Já existe um veículo cadastrado com esta placa!');
+        tabela.innerHTML = veiculos.map(v => `
+            <tr>
+                <td><strong>${v.placa || '-'}</strong></td>
+                <td>${v.categoria || '-'}</td>
+                <td>${v.modelo || '-'}</td>
+                <td>${v.km_atual ? Number(v.km_atual).toLocaleString('pt-BR') + ' km' : '-'}</td>
+                <td>${v.obra_atual || '-'}</td>
+                <td><span class="badge ${badgeClass[v.status] || 'badge-secondary'}">${statusConfig[v.status] || v.status || '-'}</span></td>
+                <td>
+                    <button class="btn-mini" onclick="abrirModalVeiculo(${v.id})" title="Editar">
+                        <i class="fa-solid fa-edit"></i>
+                    </button>
+                    <button class="btn-mini" onclick="excluirVeiculo(${v.id})" title="Excluir" style="color:#dc2626;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        
+        console.log(`✅ ${veiculos.length} veículo(s) carregado(s)`);
+        
+    } catch (e) {
+        console.error('❌ Erro ao carregar veículos:', e);
+        const tabela = document.getElementById('tabelaVeiculos');
+        if (tabela) {
+            tabela.innerHTML = '<tr><td colspan="9" class="estado-vazio" style="color:#dc2626;">Erro ao carregar veículos</td></tr>';
+        }
+    }
+}
+
+function abrirModalVeiculo(id) {
+    try {
+        console.log('📝 Abrindo modal de veículo:', id || 'novo');
+        
+        if (typeof ehAdmin === 'function' && !ehAdmin()) {
+            if (typeof mostrarToast === 'function') mostrarToast('Você não tem permissão!', 'erro');
+            else alert('Você não tem permissão!');
             return;
-          }
         }
         
-        const resultado = await window.salvarVeiculo(dados);
-        if (resultado) {
-          alert('✅ Veículo salvo com sucesso!');
-          window.fecharModal && window.fecharModal();
-          await window.carregarTabelaVeiculos();
-          window.atualizarDashboardCompleto && window.atualizarDashboardCompleto();
-          window.atualizarListaVeiculosNosFiltros && window.atualizarListaVeiculosNosFiltros();
-        } else {
-          alert('❌ Erro ao salvar veículo!');
+        const veiculo = id && typeof BD !== 'undefined' && BD.veiculos 
+            ? BD.veiculos.find(v => v.id === id) 
+            : null;
+        
+        const categorias = (typeof CONFIG !== 'undefined' && CONFIG.CATEGORIAS_VEICULOS) 
+            ? CONFIG.CATEGORIAS_VEICULOS 
+            : ['Caminhão', 'Carro Passeio', 'Utilitário', 'Máquina', 'Van', 'Ônibus', 'Moto', 'Outro'];
+        
+        const statusOptions = (typeof BD !== 'undefined' && BD.config && BD.config.statusVeiculos)
+            ? BD.config.statusVeiculos
+            : { disponivel: 'Disponível', alocado: 'Alocado', manutencao: 'Manutenção', inativo: 'Inativo' };
+        
+        const locais = (typeof BD !== 'undefined' && BD.locais) ? BD.locais : [];
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay aberto';
+        modal.id = 'modal-veiculo';
+        
+        const isEdit = !!veiculo;
+        
+        modal.innerHTML = `
+            <div class="modal-container" style="max-width: 650px;">
+                <div class="modal-cabecalho">
+                    <h3 class="modal-titulo">${isEdit ? '✏️ Editar Veículo' : '➕ Novo Veículo'}</h3>
+                    <button type="button" class="modal-fechar" onclick="fecharModal('modal-veiculo')">&times;</button>
+                </div>
+                <div class="modal-corpo">
+                    <form id="formVeiculo" class="form-grid" style="grid-template-columns: repeat(2, 1fr);">
+                        <div class="form-grupo">
+                            <label>Placa <span class="obrigatorio">*</span></label>
+                            <input type="text" id="vPlaca" required value="${veiculo?.placa || ''}" placeholder="ABC-1234" style="text-transform:uppercase;">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Categoria <span class="obrigatorio">*</span></label>
+                            <select id="vCategoria" required>
+                                <option value="">Selecione...</option>
+                                ${categorias.map(c => `<option value="${c}" ${veiculo?.categoria === c ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-grupo">
+                            <label>Marca</label>
+                            <input type="text" id="vMarca" value="${veiculo?.marca || ''}" placeholder="Ex: Volvo">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Modelo</label>
+                            <input type="text" id="vModelo" value="${veiculo?.modelo || ''}" placeholder="Ex: FH 540">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Ano</label>
+                            <input type="number" id="vAno" value="${veiculo?.ano || ''}" min="1990" max="2030">
+                        </div>
+                        <div class="form-grupo">
+                            <label>KM Atual</label>
+                            <input type="number" id="vKm" value="${veiculo?.km_atual || ''}" min="0">
+                        </div>
+                        <div class="form-grupo">
+                            <label>Local / Obra</label>
+                            <select id="vObra">
+                                <option value="">Selecione...</option>
+                                ${locais.map(l => `<option value="${l.nome}" ${veiculo?.obra_atual === l.nome ? 'selected' : ''}>${l.nome}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-grupo">
+                            <label>Status</label>
+                            <select id="vStatus">
+                                ${Object.entries(statusOptions).map(([val, label]) => 
+                                    `<option value="${val}" ${veiculo?.status === val ? 'selected' : ''}>${label}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div class="form-grupo" style="grid-column: span 2;">
+                            <label>Responsável</label>
+                            <input type="text" id="vResponsavel" value="${veiculo?.responsavel || ''}" placeholder="Nome do motorista/responsável">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-rodape">
+                    <button type="button" class="btn btn-secundario" onclick="fecharModal('modal-veiculo')">Cancelar</button>
+                    <button type="button" class="btn btn-primario" id="btnSalvarVeiculo">💾 Salvar</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Listener do botão salvar
+        document.getElementById('btnSalvarVeiculo').addEventListener('click', function() {
+            salvarVeiculoForm(id);
+        });
+        
+        // Submit com Enter no formulário
+        document.getElementById('formVeiculo').addEventListener('submit', function(e) {
+            e.preventDefault();
+            salvarVeiculoForm(id);
+        });
+        
+    } catch (e) {
+        console.error('❌ Erro ao abrir modal de veículo:', e);
+        if (typeof mostrarToast === 'function') mostrarToast('Erro ao abrir formulário', 'erro');
+        else alert('Erro ao abrir formulário');
+    }
+}
+
+function salvarVeiculoForm(id) {
+    try {
+        const placa = document.getElementById('vPlaca')?.value.trim().toUpperCase();
+        const categoria = document.getElementById('vCategoria')?.value;
+        
+        if (!placa || !categoria) {
+            if (typeof mostrarToast === 'function') mostrarToast('Preencha os campos obrigatórios!', 'aviso');
+            else alert('Preencha os campos obrigatórios!');
+            return;
         }
-      } catch (erro) {
-        console.error('Erro ao salvar veículo:', erro);
-        alert('❌ Erro: ' + erro.message);
-      }
+        
+        const dados = {
+            placa: placa,
+            categoria: categoria,
+            marca: document.getElementById('vMarca')?.value.trim() || '',
+            modelo: document.getElementById('vModelo')?.value.trim() || '',
+            ano: parseInt(document.getElementById('vAno')?.value) || null,
+            km_atual: parseFloat(document.getElementById('vKm')?.value) || 0,
+            obra_atual: document.getElementById('vObra')?.value || '',
+            status: document.getElementById('vStatus')?.value || 'disponivel',
+            responsavel: document.getElementById('vResponsavel')?.value.trim() || ''
+        };
+        
+        if (typeof salvarVeiculo === 'function') {
+            if (id) dados.id = id;
+            salvarVeiculo(dados);
+        } else {
+            // Fallback direto no BD
+            if (typeof BD === 'undefined') BD = { veiculos: [] };
+            if (!BD.veiculos) BD.veiculos = [];
+            
+            if (id) {
+                const idx = BD.veiculos.findIndex(v => v.id === id);
+                if (idx >= 0) BD.veiculos[idx] = { ...BD.veiculos[idx], ...dados };
+            } else {
+                dados.id = BD.veiculos.length > 0 ? Math.max(...BD.veiculos.map(v => v.id || 0)) + 1 : 1;
+                dados.data_cadastro = new Date().toISOString().split('T')[0];
+                BD.veiculos.push(dados);
+            }
+            
+            if (typeof salvarDados === 'function') salvarDados();
+            window.BD = BD;
+        }
+        
+        fecharModal('modal-veiculo');
+        carregarTabelaVeiculos();
+        
+        if (typeof mostrarToast === 'function') {
+            mostrarToast(id ? 'Veículo atualizado!' : 'Veículo cadastrado!', 'sucesso');
+        } else {
+            alert(id ? '✅ Veículo atualizado!' : '✅ Veículo cadastrado!');
+        }
+        
+    } catch (e) {
+        console.error('❌ Erro ao salvar veículo:', e);
+        if (typeof mostrarToast === 'function') mostrarToast('Erro ao salvar', 'erro');
+        else alert('❌ Erro ao salvar');
+    }
+}
+
+function excluirVeiculo(id) {
+    try {
+        if (!confirm('Tem certeza que deseja excluir este veículo?')) return;
+        
+        if (typeof excluirVeiculoBD === 'function') {
+            excluirVeiculoBD(id);
+        } else if (typeof BD !== 'undefined' && BD.veiculos) {
+            BD.veiculos = BD.veiculos.filter(v => v.id !== id);
+            if (typeof salvarDados === 'function') salvarDados();
+            window.BD = BD;
+        }
+        
+        carregarTabelaVeiculos();
+        
+        if (typeof mostrarToast === 'function') mostrarToast('Veículo excluído!', 'sucesso');
+        else alert('✅ Veículo excluído!');
+        
+    } catch (e) {
+        console.error('❌ Erro ao excluir veículo:', e);
+    }
+}
+
+// Função auxiliar para fechar modais
+function fecharModal(modalId) {
+    try {
+        const modal = modalId ? document.getElementById(modalId) : document.querySelector('.modal-overlay.aberto');
+        if (modal) modal.remove();
+    } catch (e) {
+        console.error('❌ Erro ao fechar modal:', e);
+    }
+}
+window.fecharModal = fecharModal;
+window.abrirModalVeiculo = abrirModalVeiculo;
+window.excluirVeiculo = excluirVeiculo;
+window.carregarTabelaVeiculos = carregarTabelaVeiculos;
+
+// Inicialização
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Listener do campo de busca
+        const busca = document.getElementById('buscaVeiculos');
+        if (busca) {
+            busca.addEventListener('input', carregarTabelaVeiculos);
+        }
+        const filtroCat = document.getElementById('filtroVeiculoCategoria');
+        if (filtroCat) {
+            filtroCat.addEventListener('change', carregarTabelaVeiculos);
+        }
+        console.log('✅ js/veiculos.js inicializado');
     });
-  } catch (erro) {
-    console.error('Erro ao abrir modal veículo:', erro);
-    alert('❌ Erro ao abrir formulário: ' + erro.message);
-  }
-};
-
-// ✅ Carrega e exibe a tabela completa
-window.carregarTabelaVeiculos = async function() {
-  try {
-    const BD = getBD();
-    const corpo = document.getElementById('tabelaVeiculos');
-    if (!corpo) return;
-    
-    const busca = (document.getElementById('buscaVeiculos')?.value || '').toLowerCase();
-    const veiculos = BD.veiculos || [];
-    
-    const veiculosFiltrados = busca 
-      ? veiculos.filter(v => 
-          v.placa?.toLowerCase().includes(busca) ||
-          v.modelo?.toLowerCase().includes(busca) ||
-          v.obra_atual?.toLowerCase().includes(busca) ||
-          v.responsavel?.toLowerCase().includes(busca)
-        )
-      : veiculos;
-    
-    if (!veiculosFiltrados.length) {
-      corpo.innerHTML = `<tr><td colspan="9" class="estado-vazio">
-        <div class="estado-vazio-icone">🚛</div>
-        <div class="estado-vazio-texto">${busca ? 'Nenhum veículo encontrado na busca' : 'Nenhum veículo cadastrado'}</div>
-      </td></tr>`;
-      return;
-    }
-    
-    const statusMap = {
-      disponivel: '<span class="badge badge-success">✅ Disponível</span>',
-      alocado: '<span class="badge badge-info">🚛 Alocado</span>',
-      manutencao: '<span class="badge badge-warning">🔧 Manutenção</span>',
-      inativo: '<span class="badge badge-danger">⛔ Inativo</span>'
-    };
-    
-    const catIcone = {
-      caminhao: '🚛', utilitario: '🚐', carro: '🚗', moto: '🏍️', 
-      maquina: '🚜', van: '🚐', onibus: '🚌', outro: '❔'
-    };
-    
-    corpo.innerHTML = veiculosFiltrados.map(v => {
-      const seguro = JSON.stringify(v).replace(/"/g, '&quot;');
-      return `<tr>
-        <td class="font-mono font-semibold">${v.placa}</td>
-        <td>${catIcone[v.categoria] || '❔'} ${v.categoria || '-'}</td>
-        <td>${v.modelo}</td>
-        <td>${v.ano || '-'}</td>
-        <td>${Number(v.km_atual || 0).toLocaleString('pt-BR')} km</td>
-        <td>${v.obra_atual || '—'}</td>
-        <td>${v.responsavel || '—'}</td>
-        <td>${statusMap[v.status] || v.status || '<span class="badge badge-secondary">—</span>'}</td>
-        <td>
-          <button class="btn btn-sm" style="background:#fef3c7; color:#92400e; margin-right:0.25rem;" onclick='window.abrirModalVeiculo(${seguro})'>
-            <i class="fa-solid fa-pen"></i>
-          </button>
-          <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="window.excluirVeiculo('${v.placa || v.id}')">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
-      </tr>`;
-    }).join('');
-  } catch (erro) {
-    console.error('Erro ao carregar tabela veículos:', erro);
-  }
-};
-
-// ✅ Excluir veículo
-window.excluirVeiculo = async function(identificador) {
-  try {
-    if (!confirm('⚠️ Tem certeza que deseja excluir este veículo?')) return;
-    await window.excluirVeiculoBD(identificador);
-    alert('✅ Veículo excluído!');
-    await window.carregarTabelaVeiculos();
-    window.atualizarDashboardCompleto && window.atualizarDashboardCompleto();
-    window.atualizarListaVeiculosNosFiltros && window.atualizarListaVeiculosNosFiltros();
-  } catch (erro) {
-    console.error('Erro ao excluir veículo:', erro);
-    alert('❌ Erro: ' + erro.message);
-  }
-};
-
-// ✅ Atualiza lista de veículos nos filtros
-window.atualizarListaVeiculosNosFiltros = function() {
-  try {
-    const BD = getBD();
-    const veiculos = BD.veiculos || [];
-    const opcoes = veiculos.map(v => `<option value="${v.placa}">${v.placa} — ${v.modelo}</option>`).join('');
-    
-    const filtroManut = document.getElementById('filtroVeiculoManutencao');
-    if (filtroManut) {
-      filtroManut.innerHTML = '<option value="todos">Todos os veículos</option>' + opcoes;
-    }
-    
-    const filtroGastos = document.getElementById('filtroVeiculoGastos');
-    if (filtroGastos) {
-      filtroGastos.innerHTML = '<option value="todos">Todos os veículos</option>' + opcoes;
-    }
-  } catch (e) {
-    console.warn('Erro ao atualizar filtros:', e.message);
-  }
-};
-
-console.log('✅ veiculos.js carregado - funções disponíveis globalmente');
+} else {
+    const busca = document.getElementById('buscaVeiculos');
+    if (busca) busca.addEventListener('input', carregarTabelaVeiculos);
+    const filtroCat = document.getElementById('filtroVeiculoCategoria');
+    if (filtroCat) filtroCat.addEventListener('change', carregarTabelaVeiculos);
+}
