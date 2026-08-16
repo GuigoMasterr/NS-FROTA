@@ -992,7 +992,105 @@
             flex-shrink: 0;
         }
         
- 
+        /* ======================================================
+   🎯 CORRIGE TUDO: ESPAÇAMENTO + LIMITE DE LARGURA
+   ====================================================== */
+
+/* ===== ÁREA PRINCIPAL — AFASTA DO MENU E CENTRALIZA ===== */
+.main-content,
+.pagina {
+    margin-left: 240px !important;   /* ← Espaço exato ao lado do menu */
+    width: calc(100% - 240px) !important;
+    max-width: calc(100% - 240px) !important;
+    padding: 1.5rem !important;     /* ← Espaçamento interno de todos os lados */
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;    /* ← BLOQUEIA qualquer coisa passar para o lado */
+}
+
+/* ===== PÁGINA DE CONFIGURAÇÕES — LIMITE RÍGIDO ===== */
+#pagina-configuracoes {
+    margin-left: 240px !important;
+    width: calc(100% - 240px) !important;
+    max-width: calc(100% - 240px) !important;
+    padding: 1.5rem !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;   /* ← NADA estoura para o lado */
+}
+
+/* ===== TODOS OS ELEMENTOS — NÃO PODEM ULTRAPASSAR ===== */
+#pagina-configuracoes *,
+.main-content * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* ===== CARDS DO TOPO ===== */
+.config-cards-topo {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    width: 100% !important;
+    margin-bottom: 1.5rem !important;
+}
+
+/* ===== SEÇÕES E FORMULÁRIOS ===== */
+.config-secao {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 1.25rem !important;
+    margin-bottom: 1.25rem !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+/* ===== GRIDS DE COLUNAS ===== */
+.config-2col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    width: 100% !important;
+}
+
+.config-3col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    width: 100% !important;
+}
+
+/* ===== INPUTS E SELECTS — CABEM DENTRO DA CAIXA ===== */
+.config-secao input,
+.config-secao select {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* ===== BOTÕES — EXCEÇÃO, MANTÊM TAMANHO NATURAL ===== */
+button, .btn,
+.config-secao button {
+    width: auto !important;
+    max-width: none !important;
+}
+
+/* ===== RESPONSIVIDADE — TELAS MENORES ===== */
+@media (max-width: 1024px) {
+    .main-content,
+    .pagina,
+    #pagina-configuracoes {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .config-cards-topo { grid-template-columns: repeat(2, 1fr); }
+    .config-3col { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+    .config-cards-topo { grid-template-columns: 1fr; }
+    .config-2col,
+    .config-3col { grid-template-columns: 1fr; }
+}
 
     </style>
 </head>
