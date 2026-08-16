@@ -991,7 +991,7 @@
             max-width: none !important;
             flex-shrink: 0;
         }
-               
+
     </style>
 </head>
 <body>
@@ -2545,6 +2545,103 @@ document.addEventListener('DOMContentLoaded',function(){
         setTimeout(inicializarPaginaConfig,200);
     }
 });
+
+    // ======================================================
+// CARREGAR USUÁRIOS DO SUPABASE
+// ======================================================
+async function carregarUsuarios() {
+    console.log("🔍 Buscando usuários...");
+
+    try {
+        if (!window.supabaseReal) {
+            console.log("❌ Supabase não inicializado");
+            return;
+        }
+
+        const { data, error } = await window.supabaseReal
+            .from('usuarios')
+            .select('*')
+            .order('nome', { ascending: true });
+
+        if (error) {
+            console.error("❌ Erro ao buscar usuários:", error);
+            return;
+        }
+
+        console.log("✅ Usuários encontrados:", data.length, "registro(s)");
+        console.log("📋 Dados:", data);
+
+        // Exibir na tabela
+        const corpoTabela = document.querySelector('#pagina-usuarios tbody');
+        if (!corpoTabela) {
+            console.log("⚠️ Tabela de usuários não encontrada na página");
+            return;
+        }
+
+        corpoTabela.innerHTML = "";
+
+        if (data.length === 0) {
+            corpoTabela.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:2rem;">Nenhum usuário cadastrado</td></tr>`;
+            return;
+        }
+
+        // Montar cada linha
+        data.forEach(usuario => {
+            const linha = document.createElement('tr');
+            linha.innerHTML = `
+                <td>${usuario.nome || ''}</td>
+                <td>${usuario.usuario || ''}</td>
+                <td>${usuario.perfil || 'Padrão'}</td>
+                <td><span style="color:green;">Ativo</span></td>
+                <td>
+                    <button class="btn btn-secundario">Editar</button>
+                    <button class="btn" style="background:#fee2e2; color:#991b1b;">Excluir</button>
+                </td>
+            `;
+            corpoTabela.appendChild(linha);
+        });
+
+    } catch (e) {
+        console.error("❌ Falha:", e.message);
+    }
+}
+
+window.carregarUsuarios = carregarUsuarios;
+
+
+// ======================================================
+// EXECUTAR QUANDO A PÁGINA DE USUÁRIOS ABRIR
+// ======================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar se a página já está aberta
+    if (document.getElementById('pagina-usuarios') && 
+        document.getElementById('pagina-usuarios').classList.contains('ativa')) {
+        setTimeout(carregarUsuarios, 300);
+    }
+});
+
+// Também executar ao navegar para a página
+const observadorPaginas = new MutationObserver(function() {
+    const paginaUsuarios = document.getElementById('pagina-usuarios');
+    if (paginaUsuarios && paginaUsuarios.classList.contains('ativa')) {
+        // Só carrega se ainda não carregou
+        if (!paginaUsuarios.dataset.carregado) {
+            carregarUsuarios();
+            paginaUsuarios.dataset.carregado = "sim";
+        }
+    }
+});
+
+// Observar mudanças em todas as páginas
+document.addEventListener('DOMContentLoaded', function() {
+    const areaPaginas = document.getElementById('areaPaginas') || document.body;
+    observadorPaginas.observe(areaPaginas, { 
+        attributes: true, 
+        subtree: true, 
+        attributeFilter: ['class'] 
+    });
+});
+
 </script>
 
 
