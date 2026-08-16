@@ -993,19 +993,27 @@
         }
         
         /* ======================================================
-   ⚙️ PÁGINA DE CONFIGURAÇÕES — LIMITE DE LARGURA + ORGANIZAÇÃO
+   ⚙️ PÁGINA DE CONFIGURAÇÕES — LIMITE RÍGIDO + NÃO PASSA LADO
    ====================================================== */
 
-/* Container geral da página de configurações */
+/* Área da página — TOTALMENTE CONTIDA, não passa do limite */
 #pagina-configuracoes {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
     padding: 1.25rem !important;
-    overflow-x: hidden !important;
+    overflow-x: hidden !important;  /* ❌ NADA passa para o lado */
+    overflow-y: auto !important;     /* ✅ Rola para BAIXO se precisar */
+    margin: 0 !important;
 }
 
-/* Cards do topo — não ultrapassam a largura */
+/* Todos os elementos filhos também NÃO podem ultrapassar */
+#pagina-configuracoes * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Cards do topo — largura controlada */
 .config-cards-topo {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1015,7 +1023,7 @@
     margin-bottom: 1.5rem !important;
 }
 
-/* Seções de configuração — com largura controlada */
+/* Seções — largura exata, sem ultrapassar */
 .config-secao {
     width: 100% !important;
     max-width: 100% !important;
@@ -1025,7 +1033,7 @@
     overflow: hidden !important;
 }
 
-/* Grids de formulários — se ajustam sozinhos */
+/* Grids de colunas — se ajustam DENTRO do espaço */
 .config-2col {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1042,16 +1050,15 @@
     box-sizing: border-box !important;
 }
 
-/* Inputs e selects — nunca ultrapassam a caixa */
+/* Inputs e selects — NUNCA ultrapassam a borda */
 .config-secao input,
-.config-secao select,
-.config-secao textarea {
+.config-secao select {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
 }
 
-/* Botões — mantêm tamanho correto */
+/* Botões — mantêm tamanho natural */
 .config-botoes {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1060,9 +1067,9 @@
 }
 
 /* ======================================================
-   📱 AJUSTE AUTOMÁTICO EM TELAS MENORES
+   📱 TELAS MENORES — QUEBRA AUTOMÁTICA DE COLUNAS
    ====================================================== */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
     .config-cards-topo { grid-template-columns: repeat(2, 1fr); }
     .config-3col { grid-template-columns: repeat(2, 1fr); }
 }
