@@ -1106,3 +1106,21 @@ body {
 .dashboard-card, .stat-card, .cartao-despesa {
     animation: fadeInUp 0.4s ease;
 }
+
+.login-erro {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    display: none;
+    border: 1px solid #fecaca;
+    animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
