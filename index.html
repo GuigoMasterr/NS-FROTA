@@ -991,6 +991,87 @@
             max-width: none !important;
             flex-shrink: 0;
         }
+        
+        /* ======================================================
+   ⚙️ PÁGINA DE CONFIGURAÇÕES — LIMITE DE LARGURA + ORGANIZAÇÃO
+   ====================================================== */
+
+/* Container geral da página de configurações */
+#pagina-configuracoes {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 1.25rem !important;
+    overflow-x: hidden !important;
+}
+
+/* Cards do topo — não ultrapassam a largura */
+.config-cards-topo {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 1.5rem !important;
+}
+
+/* Seções de configuração — com largura controlada */
+.config-secao {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 1.25rem !important;
+    margin-bottom: 1.25rem !important;
+    overflow: hidden !important;
+}
+
+/* Grids de formulários — se ajustam sozinhos */
+.config-2col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.config-3col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Inputs e selects — nunca ultrapassam a caixa */
+.config-secao input,
+.config-secao select,
+.config-secao textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Botões — mantêm tamanho correto */
+.config-botoes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    width: 100% !important;
+}
+
+/* ======================================================
+   📱 AJUSTE AUTOMÁTICO EM TELAS MENORES
+   ====================================================== */
+@media (max-width: 1024px) {
+    .config-cards-topo { grid-template-columns: repeat(2, 1fr); }
+    .config-3col { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+    .config-cards-topo { grid-template-columns: 1fr; }
+    .config-2col,
+    .config-3col { grid-template-columns: 1fr; }
+}
 
     </style>
 </head>
