@@ -2546,7 +2546,7 @@ document.addEventListener('DOMContentLoaded',function(){
     }
 });
 
-    // ======================================================
+// ======================================================
 // CARREGAR USUÁRIOS DO SUPABASE
 // ======================================================
 async function carregarUsuarios() {
@@ -2569,16 +2569,15 @@ async function carregarUsuarios() {
         }
 
         console.log("✅ Usuários encontrados:", data.length, "registro(s)");
-        console.log("📋 Dados:", data);
 
         // Exibir na tabela
         const corpoTabela = document.querySelector('#pagina-usuarios tbody');
         if (!corpoTabela) {
-            console.log("⚠️ Tabela de usuários não encontrada na página");
+            console.log("⚠️ Tabela de usuários não encontrada");
             return;
         }
 
-        corpoTabela.innerHTML = "";
+        corpoTabela.innerHTML = ""; // ← LIMPA a tabela sempre antes de recarregar
 
         if (data.length === 0) {
             corpoTabela.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:2rem;">Nenhum usuário cadastrado</td></tr>`;
@@ -2610,29 +2609,16 @@ window.carregarUsuarios = carregarUsuarios;
 
 
 // ======================================================
-// EXECUTAR QUANDO A PÁGINA DE USUÁRIOS ABRIR
+// SEMPRE BUSCAR NOVAMENTE ao entrar na página
 // ======================================================
-document.addEventListener('DOMContentLoaded', function() {
-    // Verificar se a página já está aberta
-    if (document.getElementById('pagina-usuarios') && 
-        document.getElementById('pagina-usuarios').classList.contains('ativa')) {
-        setTimeout(carregarUsuarios, 300);
-    }
-});
-
-// Também executar ao navegar para a página
 const observadorPaginas = new MutationObserver(function() {
     const paginaUsuarios = document.getElementById('pagina-usuarios');
     if (paginaUsuarios && paginaUsuarios.classList.contains('ativa')) {
-        // Só carrega se ainda não carregou
-        if (!paginaUsuarios.dataset.carregado) {
-            carregarUsuarios();
-            paginaUsuarios.dataset.carregado = "sim";
-        }
+        // ✅ REMOVIDA a marcação "já carregou" — BUSCA TODA VEZ!
+        setTimeout(carregarUsuarios, 150);
     }
 });
 
-// Observar mudanças em todas as páginas
 document.addEventListener('DOMContentLoaded', function() {
     const areaPaginas = document.getElementById('areaPaginas') || document.body;
     observadorPaginas.observe(areaPaginas, { 
@@ -2640,6 +2626,11 @@ document.addEventListener('DOMContentLoaded', function() {
         subtree: true, 
         attributeFilter: ['class'] 
     });
+
+    // Se já abriu na página de usuários
+    if (document.getElementById('pagina-usuarios')?.classList.contains('ativa')) {
+        setTimeout(carregarUsuarios, 300);
+    }
 });
 
 </script>
