@@ -79,179 +79,148 @@ function carregarTabelaVeiculos() {
 }
 
 function abrirModalVeiculo(id) {
-    console.log('📝 Chamada abrirModalVeiculo, id:', id || 'novo');
+    console.log('📝 abrirModalVeiculo chamado');
     
-    // Verificação de permissão
-    if (typeof ehAdmin === 'function' && !ehAdmin()) {
-        alert('⚠️ Você não tem permissão para cadastrar veículos!');
-        return;
-    }
+    // Remove modal anterior se existir
+    const antigo = document.getElementById('modal-veiculo-final');
+    if (antigo) antigo.remove();
     
-    // Garante que BD existe
+    // Garante dados
     if (typeof BD === 'undefined') window.BD = { veiculos: [], locais: [], config: {} };
     if (!BD.locais) BD.locais = [];
     if (!BD.config) BD.config = {};
     
     const veiculo = id && BD.veiculos ? BD.veiculos.find(v => v.id === id) : null;
+    const isEdit = !!veiculo;
     
-    const categorias = (typeof CONFIG !== 'undefined' && CONFIG.CATEGORIAS_VEICULOS && CONFIG.CATEGORIAS_VEICULOS.length > 0) 
+    const categorias = (typeof CONFIG !== 'undefined' && CONFIG.CATEGORIAS_VEICULOS && CONFIG.CATEGORIAS_VEICULOS.length) 
         ? CONFIG.CATEGORIAS_VEICULOS 
         : ['Caminhão', 'Carro Passeio', 'Utilitário', 'Máquina', 'Van', 'Ônibus', 'Moto', 'Outro'];
     
-    let statusOptions = BD.config && BD.config.statusVeiculos && Object.keys(BD.config.statusVeiculos).length > 0
+    let statusOptions = BD.config && BD.config.statusVeiculos && Object.keys(BD.config.statusVeiculos).length
         ? BD.config.statusVeiculos
         : { disponivel: 'Disponível', alocado: 'Alocado', manutencao: 'Manutenção', inativo: 'Inativo' };
     
-    const locais = BD.locais && BD.locais.length > 0 ? BD.locais : [{ id: 'padrao', nome: 'Pátio Principal' }];
+    const locais = BD.locais && BD.locais.length ? BD.locais : [{ id: 'padrao', nome: 'Pátio Principal' }];
     
-    const isEdit = !!veiculo;
-    
-    // Cria o modal SEM usar classes conflitantes
-    const modal = document.createElement('div');
-    modal.id = 'modal-veiculo-emergencia';
-    
-    // 🔥 FORÇA VISIBILIDADE - estilo inline completo, sem dependência de CSS externo
-    modal.setAttribute('style', 
-        'position: fixed !important;' +
-        'top: 0 !important;' +
-        'left: 0 !important;' +
-        'width: 100vw !important;' +
-        'height: 100vh !important;' +
-        'background: rgba(0,0,0,0.6) !important;' +
-        'z-index: 2147483647 !important;' +
-        'display: flex !important;' +
-        'align-items: center !important;' +
-        'justify-content: center !important;' +
-        'padding: 20px !important;' +
-        'box-sizing: border-box !important;' +
-        'margin: 0 !important;' +
-        'opacity: 1 !important;' +
-        'visibility: visible !important;'
-    );
-    
-    const statusOptionsHtml = Object.entries(statusOptions).map(([val, label]) => 
-        `<option value="${val}" ${veiculo?.status === val ? 'selected' : ''}>${label}</option>`
-    ).join('');
-    
-    const locaisOptionsHtml = locais.map(l => 
-        `<option value="${l.nome}" ${veiculo?.obra_atual === l.nome ? 'selected' : ''}>${l.nome}</option>`
-    ).join('');
-    
-    const categoriasOptionsHtml = categorias.map(c => 
-        `<option value="${c}" ${veiculo?.categoria === c ? 'selected' : ''}>${c}</option>`
-    ).join('');
-    
-    // Conteúdo do modal com estilos inline
-    modal.innerHTML = `
-        <div style="
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
-            width: 100%;
-            max-width: 650px;
-            max-height: 90vh;
-            overflow-y: auto;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        ">
-            <!-- Cabeçalho -->
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 24px; border-bottom:1px solid #e2e8f0; background:#f8fafc; border-radius:12px 12px 0 0;">
-                <h3 style="margin:0; font-size:18px; font-weight:600; color:#0f172a;">${isEdit ? '✏️ Editar Veículo' : '➕ Novo Veículo'}</h3>
-                <button id="btnFecharModalX" style="background:#f1f5f9; border:1px solid #e2e8f0; font-size:22px; cursor:pointer; color:#64748b; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:8px; line-height:1;">&times;</button>
-            </div>
-            
-            <!-- Corpo -->
-            <div style="padding:24px;">
-                <form id="formVeiculo" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:14px; font-weight:500; color:#374151;">Placa <span style="color:#dc2626;">*</span></label>
-                        <input type="text" id="vPlaca" required value="${veiculo?.placa || ''}" placeholder="ABC-1234" style="text-transform:uppercase; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:14px; font-weight:500; color:#374151;">Categoria <span style="color:#dc2626;">*</span></label>
-                        <select id="vCategoria" required style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background:white; outline:none;">
-                            <option value="">Selecione...</option>
-                            ${categoriasOptionsHtml}
-                        </select>
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:14px; font-weight:500; color:#374151;">Marca</label>
-                        <input type="text" id="vMarca" value="${veiculo?.marca || ''}" placeholder="Ex: Volvo" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:14px; font-weight:500; color:#374151;">Modelo</label>
-                        <input type="text" id="vModelo" value="${veiculo?.modelo || ''}" placeholder="Ex: FH 540" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:14px; font-weight:500; color:#374151;">Ano</label>
-                        <input type="number" id="vAno" value="${veiculo?.ano || ''}" min="1990" max="2030" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:14px; font-weight:500; color:#374151;">KM Atual</label>
-                        <input type="number" id="vKm" value="${veiculo?.km_atual || ''}" min="0" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:14px; font-weight:500; color:#374151;">Local / Obra</label>
-                        <select id="vObra" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background:white; outline:none;">
-                            <option value="">Selecione...</option>
-                            ${locaisOptionsHtml}
-                        </select>
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:14px; font-weight:500; color:#374151;">Status</label>
-                        <select id="vStatus" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background:white; outline:none;">
-                            ${statusOptionsHtml}
-                        </select>
-                    </div>
-                    <div style="grid-column: span 2; display:flex; flex-direction:column; gap:6px;">
-                        <label style="font-size:14px; font-weight:500; color:#374151;">Responsável</label>
-                        <input type="text" id="vResponsavel" value="${veiculo?.responsavel || ''}" placeholder="Nome do motorista/responsável" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline:none;">
-                    </div>
-                </form>
-            </div>
-            
-            <!-- Rodapé -->
-            <div style="display:flex; gap:12px; justify-content:flex-end; padding:16px 24px; border-top:1px solid #e2e8f0; background:#f8fafc; border-radius:0 0 12px 12px;">
-                <button id="btnCancelarModal" style="padding:10px 20px; border:1px solid #d1d5db; background:white; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500; color:#374151;">Cancelar</button>
-                <button id="btnSalvarVeiculo" style="padding:10px 20px; border:none; background:#2563eb; color:white; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500;">💾 Salvar</button>
-            </div>
-        </div>
-    `;
-    
-    // Adiciona ao body
-    document.body.appendChild(modal);
-    console.log('✅ Modal adicionado ao body, z-index máximo aplicado');
-    
-    // 🔥 Garantia extra: força visibilidade após 50ms
-    setTimeout(function() {
-        modal.style.display = 'flex !important';
-        modal.style.visibility = 'visible !important';
-        modal.style.opacity = '1 !important';
-        console.log('✅ Visibilidade forçada');
-    }, 50);
-    
-    // Conecta botão fechar X
-    document.getElementById('btnFecharModalX').addEventListener('click', function() { modal.remove(); });
-    
-    // Conecta botão cancelar
-    document.getElementById('btnCancelarModal').addEventListener('click', function() { modal.remove(); });
+    // Cria o fundo do modal (mesma técnica do quadrado vermelho!)
+    const fundo = document.createElement('div');
+    fundo.id = 'modal-veiculo-final';
+    fundo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;';
     
     // Fecha ao clicar fora
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) modal.remove();
+    fundo.addEventListener('click', function(e) {
+        if (e.target === fundo) fundo.remove();
     });
     
-    // Conecta botão salvar
-    document.getElementById('btnSalvarVeiculo').addEventListener('click', function() {
-        salvarVeiculoForm(id);
-    });
+    // Cria a caixa branca do modal
+    const caixa = document.createElement('div');
+    caixa.style.cssText = 'background:white;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.4);width:100%;max-width:600px;max-height:90vh;overflow-y:auto;font-family:Arial,sans-serif;';
     
-    // Conecta submit do formulário
-    document.getElementById('formVeiculo').addEventListener('submit', function(e) {
+    // Cabeçalho
+    const cabecalho = document.createElement('div');
+    cabecalho.style.cssText = 'padding:16px 24px;background:#1e40af;color:white;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0;';
+    cabecalho.innerHTML = `<h3 style="margin:0;font-size:18px;">${isEdit ? '✏️ Editar Veículo' : '➕ Novo Veículo'}</h3>`;
+    
+    const btnFechar = document.createElement('button');
+    btnFechar.textContent = '×';
+    btnFechar.style.cssText = 'background:transparent;border:none;color:white;font-size:28px;cursor:pointer;line-height:1;padding:0 8px;';
+    btnFechar.onclick = function() { fundo.remove(); };
+    cabecalho.appendChild(btnFechar);
+    
+    // Corpo
+    const corpo = document.createElement('div');
+    corpo.style.cssText = 'padding:24px;';
+    
+    // Formulário
+    const form = document.createElement('form');
+    form.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;';
+    form.onsubmit = function(e) {
         e.preventDefault();
         salvarVeiculoForm(id);
-    });
+    };
     
-    console.log('✅ Modal de veículo configurado completamente!');
+    // Função auxiliar para criar campos
+    function criarCampo(label, tipo, id, valor, placeholder, obrigatorio, opcoes) {
+        const grupo = document.createElement('div');
+        grupo.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+        
+        const lbl = document.createElement('label');
+        lbl.style.cssText = 'font-size:14px;font-weight:500;color:#374151;';
+        lbl.innerHTML = label + (obrigatorio ? ' <span style="color:#dc2626;">*</span>' : '');
+        grupo.appendChild(lbl);
+        
+        let input;
+        if (opcoes) {
+            input = document.createElement('select');
+            input.innerHTML = '<option value="">Selecione...</option>' + 
+                opcoes.map(o => `<option value="${o.valor}" ${o.valor === valor ? 'selected' : ''}>${o.texto}</option>`).join('');
+        } else {
+            input = document.createElement('input');
+            input.type = tipo;
+            input.placeholder = placeholder || '';
+            input.value = valor || '';
+        }
+        
+        input.id = id;
+        if (obrigatorio) input.required = true;
+        input.style.cssText = 'padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;background:white;';
+        if (id === 'vPlaca') input.style.textTransform = 'uppercase';
+        
+        grupo.appendChild(input);
+        return grupo;
+    }
+    
+    // Cria todos os campos
+    form.appendChild(criarCampo('Placa', 'text', 'vPlaca', veiculo?.placa, 'ABC-1234', true));
+    form.appendChild(criarCampo('Categoria', 'text', 'vCategoria', veiculo?.categoria, '', true, 
+        categorias.map(c => ({ valor: c, texto: c }))
+    ));
+    form.appendChild(criarCampo('Marca', 'text', 'vMarca', veiculo?.marca, 'Ex: Volvo'));
+    form.appendChild(criarCampo('Modelo', 'text', 'vModelo', veiculo?.modelo, 'Ex: FH 540'));
+    form.appendChild(criarCampo('Ano', 'number', 'vAno', veiculo?.ano));
+    form.appendChild(criarCampo('KM Atual', 'number', 'vKm', veiculo?.km_atual));
+    form.appendChild(criarCampo('Local/Obra', 'text', 'vObra', veiculo?.obra_atual, '', false,
+        locais.map(l => ({ valor: l.nome, texto: l.nome }))
+    ));
+    form.appendChild(criarCampo('Status', 'text', 'vStatus', veiculo?.status || 'disponivel', '', false,
+        Object.entries(statusOptions).map(([v, t]) => ({ valor: v, texto: t }))
+    ));
+    
+    // Campo responsável (ocupa 2 colunas)
+    const grupoResp = criarCampo('Responsável', 'text', 'vResponsavel', veiculo?.responsavel, 'Nome do motorista');
+    grupoResp.style.gridColumn = 'span 2';
+    form.appendChild(grupoResp);
+    
+    // Rodapé com botões
+    const rodape = document.createElement('div');
+    rodape.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;grid-column:span 2;';
+    
+    const btnCancelar = document.createElement('button');
+    btnCancelar.type = 'button';
+    btnCancelar.textContent = 'Cancelar';
+    btnCancelar.style.cssText = 'padding:10px 20px;border:1px solid #d1d5db;background:white;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;color:#374151;';
+    btnCancelar.onclick = function() { fundo.remove(); };
+    
+    const btnSalvar = document.createElement('button');
+    btnSalvar.type = 'submit';
+    btnSalvar.textContent = '💾 Salvar';
+    btnSalvar.style.cssText = 'padding:10px 20px;border:none;background:#2563eb;color:white;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;';
+    
+    rodape.appendChild(btnCancelar);
+    rodape.appendChild(btnSalvar);
+    form.appendChild(rodape);
+    
+    // Monta tudo
+    corpo.appendChild(form);
+    caixa.appendChild(cabecalho);
+    caixa.appendChild(corpo);
+    fundo.appendChild(caixa);
+    
+    // Adiciona à página (mesma técnica do quadrado vermelho!)
+    document.body.appendChild(fundo);
+    
+    console.log('✅ Modal criado com a técnica que funcionou!');
 }
 
 function salvarVeiculoForm(id) {
