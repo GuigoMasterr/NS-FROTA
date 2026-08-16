@@ -2670,5 +2670,161 @@ console.log('✅ Supabase inicializado');
 </script>
 
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<script>
+function trocarAbaConfig(nomeAba) {
+    try {
+        var abas = document.querySelectorAll('.aba-config-conteudo');
+        for (var i = 0; i < abas.length; i++) { abas[i].style.display = 'none'; }
+        var sel = document.getElementById('aba-config-' + nomeAba);
+        if (sel) sel.style.display = 'block';
+        var botoes = document.querySelectorAll('.aba-config-btn');
+        for (var j = 0; j < botoes.length; j++) {
+            var btn = botoes[j];
+            if (btn.getAttribute('data-aba') === nomeAba) {
+                btn.style.color = '#2563eb'; btn.style.borderBottomColor = '#2563eb'; btn.style.fontWeight = '600';
+            } else {
+                btn.style.color = '#64748b'; btn.style.borderBottomColor = 'transparent'; btn.style.fontWeight = '500';
+            }
+        }
+        if (nomeAba === 'dados-gerais') carregarListasDadosGerais();
+        if (nomeAba === 'integracoes') atualizarStatusSupabase();
+    } catch (e) { console.error('Erro trocar aba:', e); }
+}
+window.trocarAbaConfig = trocarAbaConfig;
+
+function sv(id,v){var e=document.getElementById(id);if(e)e.value=v;}
+function sc(id,v){var e=document.getElementById(id);if(e)e.checked=v;}
+function gv(id){var e=document.getElementById(id);return e?e.value:'';}
+function gc(id){var e=document.getElementById(id);return e?e.checked:false;}
+
+function carregarConfiguracoes() {
+    try {
+        if(!window.BD||!window.BD.config)return;var c=window.BD.config;
+        sv('cfgNomeEmpresa',c.nomeEmpresa||'');sv('cfgCNPJ',c.cnpj||'');sv('cfgEmail',c.email||'');sv('cfgTelefone',c.telefone||'');sv('cfgLogo',c.logo||'');
+        sv('cfgMoeda',c.moeda||'BRL');sv('cfgDistancia',c.distancia||'km');sv('cfgFormatoData',c.formatoData||'pt-BR');sv('cfgFusoHorario',c.fusoHorario||'America/Sao_Paulo');
+        sv('cfgKmAviso',c.kmAviso||500);sv('cfgDiasAviso',c.diasAviso||15);sc('cfgAvisoManutencao',c.avisoManutencao!==false);
+        sc('cfgAlertaKm',c.alertaKm!==false);sv('cfgLimiteKm',c.limiteKm||200000);sc('cfgAlertaStatus',c.alertaStatus!==false);
+        sv('cfgDiasParado',c.diasParado||30);sv('cfgEmailAlerta',c.emailAlerta||'');
+        sc('cfgExigirChecklist',c.exigirChecklist!==false);sv('cfgPctAprovacao',c.pctAprovacao||70);
+        sc('cfgPermitirMotoristaAceitar',c.permitirMotoristaAceitar!==false);sc('cfgAtualizarResponsavelAuto',c.atualizarResponsavelAuto!==false);
+        sv('cfgValorMaxAdiantamento',c.valorMaxAdiantamento||500);sc('cfgExigirPrestacaoContas',c.exigirPrestacaoContas!==false);
+        sv('cfgDiasPrestacao',c.diasPrestacao||7);sc('cfgExigirChecklistAlocacao',c.exigirChecklistAlocacao||false);
+        sc('cfgBloquearVeiculoAlocado',c.bloquearVeiculoAlocado!==false);sc('cfgRegistrarHistorico',c.registrarHistorico!==false);
+        sv('cfgTempoSessao',c.tempoSessao||240);sc('cfgManterSessao',c.manterSessao!==false);
+        sv('cfgTentativasLogin',c.tentativasLogin||5);sv('cfgTamanhoMinSenha',c.tamanhoMinSenha||4);
+        sc('cfgSenhaNumero',c.senhaNumero||false);sc('cfgSenhaMaiuscula',c.senhaMaiuscula||false);
+        sc('cfgLogAcoes',c.logAcoes!==false);sc('cfgLogLogin',c.logLogin!==false);
+        var es=document.getElementById('cfgUltimoSalvamento');if(es)es.textContent=c.ultimaAtualizacao||'--';
+        var et=document.getElementById('cfgTamanhoDados');if(et&&window.BD)et.textContent=Math.round(JSON.stringify(window.BD).length/1024)+' KB';
+    } catch(e){console.error('Erro carregar cfg:',e);}
+}
+window.carregarConfiguracoes=carregarConfiguracoes;
+
+function salvarTodasConfiguracoes() {
+    try {
+        if(!window.BD)window.BD={};if(!window.BD.config)window.BD.config={};var c=window.BD.config;
+        c.nomeEmpresa=gv('cfgNomeEmpresa');c.cnpj=gv('cfgCNPJ');c.email=gv('cfgEmail');c.telefone=gv('cfgTelefone');c.logo=gv('cfgLogo');
+        c.moeda=gv('cfgMoeda');c.distancia=gv('cfgDistancia');c.formatoData=gv('cfgFormatoData');c.fusoHorario=gv('cfgFusoHorario');
+        c.kmAviso=Number(gv('cfgKmAviso'));c.diasAviso=Number(gv('cfgDiasAviso'));c.avisoManutencao=gc('cfgAvisoManutencao');
+        c.alertaKm=gc('cfgAlertaKm');c.limiteKm=Number(gv('cfgLimiteKm'));c.alertaStatus=gc('cfgAlertaStatus');
+        c.diasParado=Number(gv('cfgDiasParado'));c.emailAlerta=gv('cfgEmailAlerta');
+        c.exigirChecklist=gc('cfgExigirChecklist');c.pctAprovacao=Number(gv('cfgPctAprovacao'));
+        c.permitirMotoristaAceitar=gc('cfgPermitirMotoristaAceitar');c.atualizarResponsavelAuto=gc('cfgAtualizarResponsavelAuto');
+        c.valorMaxAdiantamento=Number(gv('cfgValorMaxAdiantamento'));c.exigirPrestacaoContas=gc('cfgExigirPrestacaoContas');
+        c.diasPrestacao=Number(gv('cfgDiasPrestacao'));c.exigirChecklistAlocacao=gc('cfgExigirChecklistAlocacao');
+        c.bloquearVeiculoAlocado=gc('cfgBloquearVeiculoAlocado');c.registrarHistorico=gc('cfgRegistrarHistorico');
+        c.tempoSessao=Number(gv('cfgTempoSessao'));c.manterSessao=gc('cfgManterSessao');
+        c.tentativasLogin=Number(gv('cfgTentativasLogin'));c.tamanhoMinSenha=Number(gv('cfgTamanhoMinSenha'));
+        c.senhaNumero=gc('cfgSenhaNumero');c.senhaMaiuscula=gc('cfgSenhaMaiuscula');
+        c.logAcoes=gc('cfgLogAcoes');c.logLogin=gc('cfgLogLogin');
+        c.ultimaAtualizacao=new Date().toLocaleString('pt-BR');
+        if(typeof salvarDados==='function')salvarDados();
+        if(c.nomeEmpresa){var el=document.querySelector('.sidebar-logo-text strong');if(el)el.textContent=c.nomeEmpresa;}
+        if(typeof mostrarToast==='function')mostrarToast('Configurações salvas!','sucesso');else alert('Salvo!');
+    } catch(e){console.error('Erro salvar:',e);alert('Erro: '+e.message);}
+}
+window.salvarTodasConfiguracoes=salvarTodasConfiguracoes;
+
+function carregarListaSimples(chave,containerId,funcRemover) {
+    try{
+        if(!window.BD.config)window.BD.config={};var lista=window.BD.config[chave]||[];
+        var padroes={'locais':['Patio Metalica','Patio Usina Conc.','Obra'],'categoriasVeiculo':['Caminhão','Carro Passeio','Utilitário','Máquina','Van','Ônibus','Moto'],'tiposGasto':['Combustível','Manutenção','Peças','Pneus','Seguro','IPVA','Pedágio','Multas','Serviços','Outros'],'origensDestinos':['Patio Metalica','Patio Usina Conc.','Obra']};
+        if(lista.length===0&&padroes[chave]){lista=padroes[chave];window.BD.config[chave]=lista;}
+        var c=document.getElementById(containerId);if(!c)return;c.innerHTML='';
+        for(var i=0;i<lista.length;i++){
+            var d=document.createElement('div');d.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.75rem;background:#f8fafc;border-radius:8px;font-size:0.875rem;';
+            d.innerHTML='<span style="color:#374151;">'+lista[i]+'</span><button onclick="'+funcRemover+'('+i+')" style="background:none;border:none;color:#dc2626;cursor:pointer;padding:4px 8px;border-radius:4px;"><i class="fa-solid fa-trash-can"></i></button>';
+            c.appendChild(d);
+        }
+        if(lista.length===0)c.innerHTML='<div style="text-align:center;padding:1rem;color:#94a3b8;font-size:0.875rem;">Nenhum item</div>';
+    }catch(e){console.error(e);}
+}
+
+function adicionarItemLista(chave,inputId,containerId,funcRemover){
+    try{
+        var inp=document.getElementById(inputId);if(!inp||!inp.value.trim())return;
+        if(!window.BD.config)window.BD.config={};if(!window.BD.config[chave])window.BD.config[chave]=[];
+        if(window.BD.config[chave].includes(inp.value.trim())){if(typeof mostrarToast==='function')mostrarToast('Já existe!','aviso');return;}
+        window.BD.config[chave].push(inp.value.trim());inp.value='';
+        if(typeof salvarDados==='function')salvarDados();carregarListaSimples(chave,containerId,funcRemover);
+        if(typeof mostrarToast==='function')mostrarToast('Adicionado!','sucesso');
+    }catch(e){console.error(e);}
+}
+
+function removerItemLista(chave,i,containerId,funcRemover){
+    try{if(!confirm('Remover?'))return;window.BD.config[chave].splice(i,1);if(typeof salvarDados==='function')salvarDados();carregarListaSimples(chave,containerId,funcRemover);}catch(e){console.error(e);}
+}
+
+function adicionarLocal(){adicionarItemLista('locais','novoLocal','listaLocais','removerLocal');}
+function removerLocal(i){removerItemLista('locais',i,'listaLocais','removerLocal');}
+function adicionarCategoria(){adicionarItemLista('categoriasVeiculo','novaCategoria','listaCategorias','removerCategoria');}
+function removerCategoria(i){removerItemLista('categoriasVeiculo',i,'listaCategorias','removerCategoria');}
+function adicionarTipoGasto(){adicionarItemLista('tiposGasto','novoTipoGasto','listaTiposGasto','removerTipoGasto');}
+function removerTipoGasto(i){removerItemLista('tiposGasto',i,'listaTiposGasto','removerTipoGasto');}
+function adicionarOrigemDestino(){adicionarItemLista('origensDestinos','novaOrigemDestino','listaOrigensDestinos','removerOrigemDestino');}
+function removerOrigemDestino(i){removerItemLista('origensDestinos',i,'listaOrigensDestinos','removerOrigemDestino');}
+window.adicionarLocal=adicionarLocal;window.removerLocal=removerLocal;
+window.adicionarCategoria=adicionarCategoria;window.removerCategoria=removerCategoria;
+window.adicionarTipoGasto=adicionarTipoGasto;window.removerTipoGasto=removerTipoGasto;
+window.adicionarOrigemDestino=adicionarOrigemDestino;window.removerOrigemDestino=removerOrigemDestino;
+
+function carregarListasDadosGerais(){
+    carregarListaSimples('locais','listaLocais','removerLocal');
+    carregarListaSimples('categoriasVeiculo','listaCategorias','removerCategoria');
+    carregarListaSimples('tiposGasto','listaTiposGasto','removerTipoGasto');
+    carregarListaSimples('origensDestinos','listaOrigensDestinos','removerOrigemDestino');
+}
+window.carregarListasDadosGerais=carregarListasDadosGerais;
+
+function atualizarStatusSupabase(){
+    try{var el=document.getElementById('statusConexaoSupabase');if(!el)return;
+    var ok=window.supabase&&window.supabase.temConexaoReal;
+    el.textContent=ok?'Conectado':'Apenas Local';el.style.color=ok?'#10b981':'#f59e0b';}catch(e){}
+}
+window.atualizarStatusSupabase=atualizarStatusSupabase;
+
+async function testarConexaoSupabase(){
+    try{if(!window.supabaseReal){alert('Não inicializado');return;}
+    var t=await window.supabaseReal.from('locais').select('count',{count:'exact',head:true});
+    alert(t.error?'Erro: '+t.error.message:'Conexão OK!');atualizarStatusSupabase();}catch(e){alert('Erro: '+e.message);}
+}
+window.testarConexaoSupabase=testarConexaoSupabase;
+
+function inicializarPaginaConfig(){
+    carregarConfiguracoes();carregarListasDadosGerais();atualizarStatusSupabase();
+    var b=document.querySelector('.aba-config-btn');
+    if(b){b.style.color='#2563eb';b.style.borderBottomColor='#2563eb';b.style.fontWeight='600';}
+}
+window.inicializarPaginaConfig=inicializarPaginaConfig;
+
+// Auto-inicializar se a página já estiver aberta
+document.addEventListener('DOMContentLoaded',function(){
+    if(document.getElementById('pagina-configuracoes')&&document.getElementById('pagina-configuracoes').classList.contains('ativa')){
+        setTimeout(inicializarPaginaConfig,200);
+    }
+});
+</script>
+
 </body>
 </html>
