@@ -544,10 +544,6 @@ function abrirModalVeiculo(id) {
     form.appendChild(criarCampo('Local/Obra', 'text', 'vObra', veiculo ? veiculo.obra_atual : '', '', false, opcoesLocais));
     form.appendChild(criarCampo('Status', 'text', 'vStatus', veiculo ? veiculo.status : 'disponivel', '', false, opcoesStatus));
     
-    var grupoResp = criarCampo('Responsavel', 'text', 'vResponsavel', veiculo ? veiculo.responsavel : '', 'Nome do motorista/responsavel');
-    grupoResp.style.gridColumn = 'span 2';
-    form.appendChild(grupoResp);
-    
     var rodape = document.createElement('div');
     rodape.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;grid-column:span 2;';
     
@@ -594,7 +590,7 @@ function salvarVeiculoForm(id) {
             km_atual: parseFloat(document.getElementById('vKm')?.value) || 0,
             obra_atual: document.getElementById('vObra')?.value || '',
             status: document.getElementById('vStatus')?.value || 'disponivel',
-            responsavel: document.getElementById('vResponsavel')?.value.trim() || ''
+            responsavel: ''
         };
         
         var veiculoAntigo = null;
@@ -639,12 +635,6 @@ function salvarVeiculoForm(id) {
             
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
-        }
-        
-        if (veiculoAntigo && veiculoAntigo.responsavel !== dados.responsavel) {
-            registrarHistoricoCondutor(dados.id, dados.responsavel, 'responsavel', 'Alteracao no cadastro');
-        } else if (!veiculoAntigo && dados.responsavel) {
-            registrarHistoricoCondutor(dados.id, dados.responsavel, 'responsavel', 'Cadastro inicial');
         }
         
         var modal = document.getElementById('modal-veiculo-final');
