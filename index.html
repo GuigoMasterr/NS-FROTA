@@ -827,6 +827,110 @@
         .status-parcial { background: #fef3c7; color: #92400e; }
         .status-fechado { background: #d1fae5; color: #065f46; }
     </style>
+
+    /* ============================================================
+       CONFIGURAÇÕES - Abas e Componentes
+       ============================================================ */
+    .config-tabs {
+        display: flex;
+        border-bottom: 2px solid #e2e8f0;
+        background: #f8fafc;
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+    .config-tab {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.875rem 1.25rem;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #64748b;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+    .config-tab:hover {
+        color: #0ea5e9;
+        background: #f0f9ff;
+    }
+    .config-tab.ativo {
+        color: #0ea5e9;
+        border-bottom-color: #0ea5e9;
+        font-weight: 600;
+        background: white;
+    }
+    .config-tab i {
+        font-size: 0.9rem;
+    }
+    .config-conteudo {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+    .config-conteudo.ativo {
+        display: block;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .input {
+        padding: 0.625rem 0.875rem;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: #1e293b;
+        background: white;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
+    }
+    .input:focus {
+        outline: none;
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    }
+    .tag-categoria {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.75rem;
+        background: #e0f2fe;
+        color: #0369a1;
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    .tag-categoria button {
+        background: none;
+        border: none;
+        color: #0369a1;
+        cursor: pointer;
+        font-size: 1rem;
+        line-height: 1;
+        padding: 0;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+    .tag-categoria button:hover {
+        opacity: 1;
+    }
+    .tag-categoria.manutencao {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    .tag-categoria.manutencao button {
+        color: #92400e;
+    }
+    .tag-categoria.gasto {
+        background: #dcfce7;
+        color: #166534;
+    }
+    .tag-categoria.gasto button {
+        color: #166534;
+    }
 </head>
 <body>
 
@@ -1619,52 +1723,295 @@
         <!-- ============================================================
              PÁGINA: CONFIGURAÇÕES
              ============================================================ -->
+
+        <!-- ============================================================
+             PÁGINA: CONFIGURAÇÕES
+             ============================================================ -->
         <section class="pagina" id="pagina-configuracoes">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                 <div>
                     <h1 class="page-title">⚙️ Configurações do Sistema</h1>
-                    <p class="page-subtitle">Gerencie dados, conexões e utilitários do sistema</p>
+                    <p class="page-subtitle">Personalize todos os aspectos do sistema de gestão de frotas</p>
+                </div>
+                <button class="btn btn-primario" onclick="salvarTodasConfiguracoes()">
+                    <i class="fa-solid fa-save"></i> 💾 Salvar Configurações
+                </button>
+            </div>
+
+            <!-- Status Rápido -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="card" style="padding: 1rem;">
+                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Supabase</div>
+                    <div id="statusSupabase" style="font-size: 1.1rem; font-weight: 700; color: #0ea5e9; margin-top: 0.25rem;">Verificando...</div>
+                </div>
+                <div class="card" style="padding: 1rem;">
+                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Veículos</div>
+                    <div id="statusVeiculos" style="font-size: 1.1rem; font-weight: 700; color: #0ea5e9; margin-top: 0.25rem;">0</div>
+                </div>
+                <div class="card" style="padding: 1rem;">
+                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Gastos</div>
+                    <div id="statusGastos" style="font-size: 1.1rem; font-weight: 700; color: #0ea5e9; margin-top: 0.25rem;">0</div>
+                </div>
+                <div class="card" style="padding: 1rem;">
+                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Tema</div>
+                    <div id="statusTema" style="font-size: 1.1rem; font-weight: 700; color: #0ea5e9; margin-top: 0.25rem;">Claro</div>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-                <div class="card" style="padding: 1.25rem;">
-                    <div style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem;">Conexão Supabase</div>
-                    <div id="statusSupabase" style="font-size: 1.25rem; font-weight: 700; color: #0ea5e9;">Verificando...</div>
+            <!-- Abas -->
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div class="config-tabs" style="display: flex; border-bottom: 2px solid #e2e8f0; background: #f8fafc; overflow-x: auto;">
+                    <button class="config-tab ativo" onclick="mudarAbaConfig('geral')" data-aba="geral">
+                        <i class="fa-solid fa-sliders"></i> Geral
+                    </button>
+                    <button class="config-tab" onclick="mudarAbaConfig('veiculos')" data-aba="veiculos">
+                        <i class="fa-solid fa-truck"></i> Veículos
+                    </button>
+                    <button class="config-tab" onclick="mudarAbaConfig('manutencao')" data-aba="manutencao">
+                        <i class="fa-solid fa-wrench"></i> Manutenção
+                    </button>
+                    <button class="config-tab" onclick="mudarAbaConfig('gastos')" data-aba="gastos">
+                        <i class="fa-solid fa-receipt"></i> Gastos
+                    </button>
+                    <button class="config-tab" onclick="mudarAbaConfig('sistema')" data-aba="sistema">
+                        <i class="fa-solid fa-palette"></i> Sistema
+                    </button>
+                    <button class="config-tab" onclick="mudarAbaConfig('backup')" data-aba="backup">
+                        <i class="fa-solid fa-database"></i> Backup
+                    </button>
+                    <button class="config-tab" onclick="mudarAbaConfig('sobre')" data-aba="sobre">
+                        <i class="fa-solid fa-circle-info"></i> Sobre
+                    </button>
                 </div>
-                <div class="card" style="padding: 1.25rem;">
-                    <div style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem;">Veículos Cadastrados</div>
-                    <div id="statusVeiculos" style="font-size: 1.25rem; font-weight: 700; color: #0ea5e9;">0</div>
-                </div>
-                <div class="card" style="padding: 1.25rem;">
-                    <div style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem;">Gastos Registrados</div>
-                    <div id="statusGastos" style="font-size: 1.25rem; font-weight: 700; color: #0ea5e9;">0</div>
-                </div>
-                <div class="card" style="padding: 1.25rem;">
-                    <div style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem;">Usuários</div>
-                    <div id="statusUsuarios" style="font-size: 1.25rem; font-weight: 700; color: #0ea5e9;">0</div>
-                </div>
-            </div>
 
-            <div class="card" style="padding: 1.5rem;">
-                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">🔧 Ações do Sistema</h3>
-                <div style="display: grid; gap: 0.75rem;">
-                    <button class="btn btn-primario" onclick="sincronizarManualmente()" style="width: 100%; padding: 0.875rem; font-size: 0.95rem;">
-                        <i class="fa-solid fa-sync"></i> 🔄 Sincronizar com Supabase
-                    </button>
-                    <button class="btn btn-secundario" onclick="exportarDadosJSON()" style="width: 100%; padding: 0.875rem; font-size: 0.95rem;">
-                        <i class="fa-solid fa-download"></i> 📤 Exportar Dados (JSON)
-                    </button>
-                    <button class="btn btn-secundario" onclick="document.getElementById('importarArquivoPagina').click()" style="width: 100%; padding: 0.875rem; font-size: 0.95rem;">
-                        <i class="fa-solid fa-upload"></i> 📥 Importar Dados
-                    </button>
-                    <input type="file" id="importarArquivoPagina" accept=".json" style="display: none;" onchange="importarDadosJSON(event)">
-                    <button class="btn" onclick="recarregarDadosDemo()" style="width: 100%; padding: 0.875rem; font-size: 0.95rem; background: #fef3c7; color: #92400e;">
-                        <i class="fa-solid fa-database"></i> 📦 Recarregar Dados de Demonstração
-                    </button>
-                    <button class="btn" onclick="limparTodosDados()" style="width: 100%; padding: 0.875rem; font-size: 0.95rem; background: #fee2e2; color: #991b1b;">
-                        <i class="fa-solid fa-trash"></i> 🗑️ Limpar Todos os Dados Locais
-                    </button>
+                <div style="padding: 1.5rem;">
+                    <!-- ABA: GERAL -->
+                    <div class="config-conteudo ativo" id="aba-geral">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">🏢 Dados da Empresa</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Nome da Empresa</label>
+                                <input type="text" id="cfg-empresa-nome" class="input" placeholder="Ex: NS Transportes Ltda" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">CNPJ</label>
+                                <input type="text" id="cfg-empresa-cnpj" class="input" placeholder="00.000.000/0001-00" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">E-mail de Contato</label>
+                                <input type="email" id="cfg-empresa-email" class="input" placeholder="contato@empresa.com.br" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Telefone</label>
+                                <input type="text" id="cfg-empresa-telefone" class="input" placeholder="(00) 00000-0000" style="width: 100%;">
+                            </div>
+                        </div>
+
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">🌐 Localização e Moeda</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Moeda</label>
+                                <select id="cfg-moeda" class="input" style="width: 100%;">
+                                    <option value="BRL">R$ - Real Brasileiro</option>
+                                    <option value="USD">US$ - Dólar Americano</option>
+                                    <option value="EUR">€ - Euro</option>
+                                    <option value="ARS">$ - Peso Argentino</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Formato de Data</label>
+                                <select id="cfg-formato-data" class="input" style="width: 100%;">
+                                    <option value="pt-BR">DD/MM/AAAA (Brasil)</option>
+                                    <option value="en-US">MM/DD/AAAA (EUA)</option>
+                                    <option value="en-GB">DD/MM/AAAA (Reino Unido)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Unidade de Distância</label>
+                                <select id="cfg-unidade-km" class="input" style="width: 100%;">
+                                    <option value="KM">Quilômetros (KM)</option>
+                                    <option value="MI">Milhas (MI)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA: VEÍCULOS -->
+                    <div class="config-conteudo" id="aba-veiculos">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">🚗 Categorias de Veículos</h3>
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                            <input type="text" id="cfg-nova-categoria" class="input" placeholder="Nova categoria..." style="flex: 1;">
+                            <button class="btn btn-primario" onclick="adicionarCategoriaVeiculo()">
+                                <i class="fa-solid fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                        <div id="lista-categorias" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem;"></div>
+
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">⚠️ Alertas de KM</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Alerta de Troca de Óleo (KM)</label>
+                                <input type="number" id="cfg-alerta-oleo" class="input" placeholder="10000" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Alerta de Pneus (KM)</label>
+                                <input type="number" id="cfg-alerta-pneus" class="input" placeholder="40000" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Alerta de Revisão Geral (KM)</label>
+                                <input type="number" id="cfg-alerta-revisao" class="input" placeholder="50000" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">KM Médio Diário (para cálculos)</label>
+                                <input type="number" id="cfg-km-medio" class="input" placeholder="200" style="width: 100%;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA: MANUTENÇÃO -->
+                    <div class="config-conteudo" id="aba-manutencao">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">🔧 Tipos de Manutenção</h3>
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                            <input type="text" id="cfg-novo-tipo-manutencao" class="input" placeholder="Novo tipo..." style="flex: 1;">
+                            <button class="btn btn-primario" onclick="adicionarTipoManutencao()">
+                                <i class="fa-solid fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                        <div id="lista-tipos-manutencao" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem;"></div>
+
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">📅 Intervalos Padrão (em dias)</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Preventiva - Dias</label>
+                                <input type="number" id="cfg-preventiva-dias" class="input" placeholder="180" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Preventiva - KM</label>
+                                <input type="number" id="cfg-preventiva-km" class="input" placeholder="10000" style="width: 100%;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA: GASTOS -->
+                    <div class="config-conteudo" id="aba-gastos">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">💰 Tipos de Gastos</h3>
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                            <input type="text" id="cfg-novo-tipo-gasto" class="input" placeholder="Novo tipo de gasto..." style="flex: 1;">
+                            <button class="btn btn-primario" onclick="adicionarTipoGasto()">
+                                <i class="fa-solid fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                        <div id="lista-tipos-gasto" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem;"></div>
+
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">⛽ Consumo Médio</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Consumo Médio (KM/L)</label>
+                                <input type="number" step="0.1" id="cfg-consumo-medio" class="input" placeholder="4.5" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Valor Médio do Combustível (R$)</label>
+                                <input type="number" step="0.01" id="cfg-valor-combustivel" class="input" placeholder="5.89" style="width: 100%;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA: SISTEMA -->
+                    <div class="config-conteudo" id="aba-sistema">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">🎨 Aparência</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Tema</label>
+                                <select id="cfg-tema" class="input" style="width: 100%;" onchange="aplicarTema(this.value)">
+                                    <option value="claro">☀️ Claro</option>
+                                    <option value="escuro">🌙 Escuro</option>
+                                    <option value="sistema">💻 Automático (Sistema)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.35rem;">Cor Principal</label>
+                                <input type="color" id="cfg-cor-principal" value="#0ea5e9" style="width: 100%; height: 42px; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer;">
+                            </div>
+                        </div>
+
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">⚡ Comportamento</h3>
+                        <div style="display: grid; gap: 1rem;">
+                            <label style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 8px; cursor: pointer;">
+                                <input type="checkbox" id="cfg-sync-auto" style="width: 18px; height: 18px;">
+                                <div>
+                                    <div style="font-weight: 500; color: #1e293b;">Sincronização Automática</div>
+                                    <div style="font-size: 0.8rem; color: #64748b;">Sincronizar dados com Supabase automaticamente</div>
+                                </div>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 8px; cursor: pointer;">
+                                <input type="checkbox" id="cfg-confirmacoes" checked style="width: 18px; height: 18px;">
+                                <div>
+                                    <div style="font-weight: 500; color: #1e293b;">Confirmações em Ações</div>
+                                    <div style="font-size: 0.8rem; color: #64748b;">Mostrar confirmação antes de excluir itens</div>
+                                </div>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 8px; cursor: pointer;">
+                                <input type="checkbox" id="cfg-notificacoes" checked style="width: 18px; height: 18px;">
+                                <div>
+                                    <div style="font-weight: 500; color: #1e293b;">Notificações Toast</div>
+                                    <div style="font-size: 0.8rem; color: #64748b;">Mostrar notificações rápidas no canto da tela</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- ABA: BACKUP -->
+                    <div class="config-conteudo" id="aba-backup">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">💾 Gerenciamento de Dados</h3>
+                        <div style="display: grid; gap: 0.75rem; max-width: 500px;">
+                            <button class="btn btn-primario" onclick="sincronizarManualmente()" style="padding: 0.875rem; font-size: 0.95rem; text-align: left;">
+                                <i class="fa-solid fa-sync"></i> 🔄 Sincronizar com Supabase
+                            </button>
+                            <button class="btn btn-secundario" onclick="exportarDadosJSON()" style="padding: 0.875rem; font-size: 0.95rem; text-align: left;">
+                                <i class="fa-solid fa-download"></i> 📤 Exportar Todos os Dados (JSON)
+                            </button>
+                            <button class="btn btn-secundario" onclick="document.getElementById('importarArquivoPagina').click()" style="padding: 0.875rem; font-size: 0.95rem; text-align: left;">
+                                <i class="fa-solid fa-upload"></i> 📥 Importar Dados de Backup
+                            </button>
+                            <input type="file" id="importarArquivoPagina" accept=".json" style="display: none;" onchange="importarDadosJSON(event)">
+                            <button class="btn" onclick="recarregarDadosDemo()" style="padding: 0.875rem; font-size: 0.95rem; text-align: left; background: #fef3c7; color: #92400e;">
+                                <i class="fa-solid fa-database"></i> 📦 Recarregar Dados de Demonstração
+                            </button>
+                            <button class="btn" onclick="limparTodosDados()" style="padding: 0.875rem; font-size: 0.95rem; text-align: left; background: #fee2e2; color: #991b1b;">
+                                <i class="fa-solid fa-trash"></i> 🗑️ Limpar Todos os Dados Locais
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ABA: SOBRE -->
+                    <div class="config-conteudo" id="aba-sobre">
+                        <div style="text-align: center; max-width: 500px; margin: 0 auto;">
+                            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #0ea5e9, #0284c7); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                                <i class="fa-solid fa-truck-fast" style="font-size: 2rem; color: white;"></i>
+                            </div>
+                            <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">NS Frotas</h3>
+                            <p style="color: #64748b; margin-bottom: 1.5rem;">Sistema Completo de Gestão de Frotas</p>
+                            
+                            <div style="text-align: left; background: #f8fafc; border-radius: 12px; padding: 1.25rem;">
+                                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e2e8f0;">
+                                    <span style="color: #64748b;">Versão</span>
+                                    <strong style="color: #1e293b;">2.0.0</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e2e8f0;">
+                                    <span style="color: #64748b;">Build</span>
+                                    <strong style="color: #1e293b;">2026.08.17</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e2e8f0;">
+                                    <span style="color: #64748b;">Tecnologia</span>
+                                    <strong style="color: #1e293b;">HTML + JS + Supabase</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                                    <span style="color: #64748b;">Licença</span>
+                                    <strong style="color: #1e293b;">Proprietária</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1835,29 +2182,316 @@
     // ============================================================
     // ATUALIZAR PÁGINA DE CONFIGURAÇÕES
     // ============================================================
+    
+    // ============================================================
+    // CONFIGURAÇÕES - Funções de Abas
+    // ============================================================
+    window.mudarAbaConfig = function(aba) {
+        // Atualiza abas
+        document.querySelectorAll('.config-tab').forEach(tab => tab.classList.remove('ativo'));
+        const tabAtiva = document.querySelector('.config-tab[data-aba="' + aba + '"]');
+        if (tabAtiva) tabAtiva.classList.add('ativo');
+        
+        // Atualiza conteúdo
+        document.querySelectorAll('.config-conteudo').forEach(cont => cont.classList.remove('ativo'));
+        const conteudoAtivo = document.getElementById('aba-' + aba);
+        if (conteudoAtivo) conteudoAtivo.classList.add('ativo');
+    };
+
+    // ============================================================
+    // CONFIGURAÇÕES - Sistema de Persistência
+    // ============================================================
+    window.CONFIG_SISTEMA = window.CONFIG_SISTEMA || {
+        empresa: { nome: '', cnpj: '', email: '', telefone: '' },
+        moeda: 'BRL',
+        formatoData: 'pt-BR',
+        unidadeKm: 'KM',
+        categoriasVeiculos: ['Caminhão', 'Carro Passeio', 'Utilitário', 'Máquina', 'Van', 'Ônibus', 'Moto', 'Outro'],
+        tiposManutencao: ['Preventiva', 'Corretiva', 'Revisão', 'Troca de Óleo', 'Pneus', 'Freios'],
+        tiposGasto: ['Abastecimento', 'Peças', 'Serviço', 'IPVA', 'Seguro', 'Licenciamento', 'Multa', 'Outros'],
+        alertas: { oleo: 10000, pneus: 40000, revisao: 50000, kmMedio: 200 },
+        preventiva: { dias: 180, km: 10000 },
+        combustivel: { consumoMedio: 4.5, valorLitro: 5.89 },
+        tema: 'claro',
+        corPrincipal: '#0ea5e9',
+        syncAuto: true,
+        confirmacoes: true,
+        notificacoes: true
+    };
+
+    window.salvarConfiguracoesStorage = function() {
+        try {
+            localStorage.setItem('config_sistema', JSON.stringify(window.CONFIG_SISTEMA));
+        } catch (e) {
+            console.error('Erro ao salvar configurações:', e);
+        }
+    };
+
+    window.carregarConfiguracoesStorage = function() {
+        try {
+            const salvas = localStorage.getItem('config_sistema');
+            if (salvas) {
+                const dados = JSON.parse(salvas);
+                window.CONFIG_SISTEMA = Object.assign({}, window.CONFIG_SISTEMA, dados);
+            }
+        } catch (e) {
+            console.error('Erro ao carregar configurações:', e);
+        }
+    };
+
+    // Carregar na inicialização
+    carregarConfiguracoesStorage();
+
+    // ============================================================
+    // CONFIGURAÇÕES - Carregar valores nos campos
+    // ============================================================
+    window.carregarValoresConfiguracoes = function() {
+        const cfg = window.CONFIG_SISTEMA;
+        
+        // Geral
+        const elNome = document.getElementById('cfg-empresa-nome'); if (elNome) elNome.value = cfg.empresa.nome || '';
+        const elCnpj = document.getElementById('cfg-empresa-cnpj'); if (elCnpj) elCnpj.value = cfg.empresa.cnpj || '';
+        const elEmail = document.getElementById('cfg-empresa-email'); if (elEmail) elEmail.value = cfg.empresa.email || '';
+        const elTel = document.getElementById('cfg-empresa-telefone'); if (elTel) elTel.value = cfg.empresa.telefone || '';
+        
+        const elMoeda = document.getElementById('cfg-moeda'); if (elMoeda) elMoeda.value = cfg.moeda;
+        const elData = document.getElementById('cfg-formato-data'); if (elData) elData.value = cfg.formatoData;
+        const elUnidade = document.getElementById('cfg-unidade-km'); if (elUnidade) elUnidade.value = cfg.unidadeKm;
+        
+        // Alertas
+        const elOleo = document.getElementById('cfg-alerta-oleo'); if (elOleo) elOleo.value = cfg.alertas.oleo;
+        const elPneus = document.getElementById('cfg-alerta-pneus'); if (elPneus) elPneus.value = cfg.alertas.pneus;
+        const elRevisao = document.getElementById('cfg-alerta-revisao'); if (elRevisao) elRevisao.value = cfg.alertas.revisao;
+        const elKmMedio = document.getElementById('cfg-km-medio'); if (elKmMedio) elKmMedio.value = cfg.alertas.kmMedio;
+        
+        // Manutenção
+        const elPrevDias = document.getElementById('cfg-preventiva-dias'); if (elPrevDias) elPrevDias.value = cfg.preventiva.dias;
+        const elPrevKm = document.getElementById('cfg-preventiva-km'); if (elPrevKm) elPrevKm.value = cfg.preventiva.km;
+        
+        // Gastos
+        const elConsumo = document.getElementById('cfg-consumo-medio'); if (elConsumo) elConsumo.value = cfg.combustivel.consumoMedio;
+        const elValorComb = document.getElementById('cfg-valor-combustivel'); if (elValorComb) elValorComb.value = cfg.combustivel.valorLitro;
+        
+        // Sistema
+        const elTema = document.getElementById('cfg-tema'); if (elTema) elTema.value = cfg.tema;
+        const elCor = document.getElementById('cfg-cor-principal'); if (elCor) elCor.value = cfg.corPrincipal;
+        const elSync = document.getElementById('cfg-sync-auto'); if (elSync) elSync.checked = cfg.syncAuto;
+        const elConf = document.getElementById('cfg-confirmacoes'); if (elConf) elConf.checked = cfg.confirmacoes;
+        const elNotif = document.getElementById('cfg-notificacoes'); if (elNotif) elNotif.checked = cfg.notificacoes;
+        
+        // Listas
+        renderizarCategoriasVeiculos();
+        renderizarTiposManutencao();
+        renderizarTiposGasto();
+    };
+
+    // ============================================================
+    // CONFIGURAÇÕES - Salvar todas as configurações
+    // ============================================================
+    window.salvarTodasConfiguracoes = function() {
+        const cfg = window.CONFIG_SISTEMA;
+        
+        // Geral
+        cfg.empresa.nome = document.getElementById('cfg-empresa-nome')?.value || '';
+        cfg.empresa.cnpj = document.getElementById('cfg-empresa-cnpj')?.value || '';
+        cfg.empresa.email = document.getElementById('cfg-empresa-email')?.value || '';
+        cfg.empresa.telefone = document.getElementById('cfg-empresa-telefone')?.value || '';
+        
+        cfg.moeda = document.getElementById('cfg-moeda')?.value || 'BRL';
+        cfg.formatoData = document.getElementById('cfg-formato-data')?.value || 'pt-BR';
+        cfg.unidadeKm = document.getElementById('cfg-unidade-km')?.value || 'KM';
+        
+        // Alertas
+        cfg.alertas.oleo = parseInt(document.getElementById('cfg-alerta-oleo')?.value) || 10000;
+        cfg.alertas.pneus = parseInt(document.getElementById('cfg-alerta-pneus')?.value) || 40000;
+        cfg.alertas.revisao = parseInt(document.getElementById('cfg-alerta-revisao')?.value) || 50000;
+        cfg.alertas.kmMedio = parseInt(document.getElementById('cfg-km-medio')?.value) || 200;
+        
+        // Manutenção
+        cfg.preventiva.dias = parseInt(document.getElementById('cfg-preventiva-dias')?.value) || 180;
+        cfg.preventiva.km = parseInt(document.getElementById('cfg-preventiva-km')?.value) || 10000;
+        
+        // Gastos
+        cfg.combustivel.consumoMedio = parseFloat(document.getElementById('cfg-consumo-medio')?.value) || 4.5;
+        cfg.combustivel.valorLitro = parseFloat(document.getElementById('cfg-valor-combustivel')?.value) || 5.89;
+        
+        // Sistema
+        cfg.tema = document.getElementById('cfg-tema')?.value || 'claro';
+        cfg.corPrincipal = document.getElementById('cfg-cor-principal')?.value || '#0ea5e9';
+        cfg.syncAuto = document.getElementById('cfg-sync-auto')?.checked || false;
+        cfg.confirmacoes = document.getElementById('cfg-confirmacoes')?.checked !== false;
+        cfg.notificacoes = document.getElementById('cfg-notificacoes')?.checked !== false;
+        
+        // Sincronizar com CONFIG global (categorias)
+        if (window.CONFIG) {
+            window.CONFIG.CATEGORIAS_VEICULOS = cfg.categoriasVeiculos;
+            window.CATEGORIAS_VEICULOS = cfg.categoriasVeiculos;
+            window.TIPO_GASTOS = cfg.tiposGasto;
+        }
+        
+        salvarConfiguracoesStorage();
+        aplicarTema(cfg.tema);
+        
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('✅ Configurações salvas com sucesso!', 'sucesso');
+        } else {
+            alert('✅ Configurações salvas com sucesso!');
+        }
+    };
+
+    // ============================================================
+    // CONFIGURAÇÕES - Gerenciar Categorias de Veículos
+    // ============================================================
+    window.adicionarCategoriaVeiculo = function() {
+        const input = document.getElementById('cfg-nova-categoria');
+        const valor = input?.value.trim();
+        if (!valor) return;
+        if (window.CONFIG_SISTEMA.categoriasVeiculos.includes(valor)) {
+            alert('⚠️ Esta categoria já existe!');
+            return;
+        }
+        window.CONFIG_SISTEMA.categoriasVeiculos.push(valor);
+        input.value = '';
+        renderizarCategoriasVeiculos();
+        salvarConfiguracoesStorage();
+    };
+
+    window.removerCategoriaVeiculo = function(index) {
+        if (!confirm('Remover esta categoria?')) return;
+        window.CONFIG_SISTEMA.categoriasVeiculos.splice(index, 1);
+        renderizarCategoriasVeiculos();
+        salvarConfiguracoesStorage();
+    };
+
+    window.renderizarCategoriasVeiculos = function() {
+        const container = document.getElementById('lista-categorias');
+        if (!container) return;
+        container.innerHTML = window.CONFIG_SISTEMA.categoriasVeiculos.map(function(cat, i) {
+            return '<span class="tag-categoria">' + cat + 
+                '<button onclick="removerCategoriaVeiculo(' + i + ')" title="Remover">×</button></span>';
+        }).join('');
+    };
+
+    // ============================================================
+    // CONFIGURAÇÕES - Gerenciar Tipos de Manutenção
+    // ============================================================
+    window.adicionarTipoManutencao = function() {
+        const input = document.getElementById('cfg-novo-tipo-manutencao');
+        const valor = input?.value.trim();
+        if (!valor) return;
+        if (window.CONFIG_SISTEMA.tiposManutencao.includes(valor)) {
+            alert('⚠️ Este tipo já existe!');
+            return;
+        }
+        window.CONFIG_SISTEMA.tiposManutencao.push(valor);
+        input.value = '';
+        renderizarTiposManutencao();
+        salvarConfiguracoesStorage();
+    };
+
+    window.removerTipoManutencao = function(index) {
+        if (!confirm('Remover este tipo de manutenção?')) return;
+        window.CONFIG_SISTEMA.tiposManutencao.splice(index, 1);
+        renderizarTiposManutencao();
+        salvarConfiguracoesStorage();
+    };
+
+    window.renderizarTiposManutencao = function() {
+        const container = document.getElementById('lista-tipos-manutencao');
+        if (!container) return;
+        container.innerHTML = window.CONFIG_SISTEMA.tiposManutencao.map(function(tipo, i) {
+            return '<span class="tag-categoria manutencao">' + tipo + 
+                '<button onclick="removerTipoManutencao(' + i + ')" title="Remover">×</button></span>';
+        }).join('');
+    };
+
+    // ============================================================
+    // CONFIGURAÇÕES - Gerenciar Tipos de Gasto
+    // ============================================================
+    window.adicionarTipoGasto = function() {
+        const input = document.getElementById('cfg-novo-tipo-gasto');
+        const valor = input?.value.trim();
+        if (!valor) return;
+        if (window.CONFIG_SISTEMA.tiposGasto.includes(valor)) {
+            alert('⚠️ Este tipo de gasto já existe!');
+            return;
+        }
+        window.CONFIG_SISTEMA.tiposGasto.push(valor);
+        input.value = '';
+        renderizarTiposGasto();
+        salvarConfiguracoesStorage();
+    };
+
+    window.removerTipoGasto = function(index) {
+        if (!confirm('Remover este tipo de gasto?')) return;
+        window.CONFIG_SISTEMA.tiposGasto.splice(index, 1);
+        renderizarTiposGasto();
+        salvarConfiguracoesStorage();
+    };
+
+    window.renderizarTiposGasto = function() {
+        const container = document.getElementById('lista-tipos-gasto');
+        if (!container) return;
+        container.innerHTML = window.CONFIG_SISTEMA.tiposGasto.map(function(tipo, i) {
+            return '<span class="tag-categoria gasto">' + tipo + 
+                '<button onclick="removerTipoGasto(' + i + ')" title="Remover">×</button></span>';
+        }).join('');
+    };
+
+    // ============================================================
+    // CONFIGURAÇÕES - Tema
+    // ============================================================
+    window.aplicarTema = function(tema) {
+        const body = document.body;
+        body.classList.remove('tema-claro', 'tema-escuro');
+        
+        if (tema === 'escuro') {
+            body.classList.add('tema-escuro');
+        } else if (tema === 'sistema') {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                body.classList.add('tema-escuro');
+            }
+        }
+        
+        const elStatusTema = document.getElementById('statusTema');
+        if (elStatusTema) {
+            const nomes = { claro: '☀️ Claro', escuro: '🌙 Escuro', sistema: '💻 Automático' };
+            elStatusTema.textContent = nomes[tema] || tema;
+        }
+    };
+
+    // ============================================================
+    // CONFIGURAÇÕES - Atualizar Página
+    // ============================================================
     window.atualizarPaginaConfiguracoes = function() {
         try {
             const modoSupabase = window.supabase?.temConexaoReal ? '✅ Conectado' : '⚠️ Apenas Local';
             const totalVeiculos = BD.veiculos?.length || 0;
             const totalGastos = BD.gastos?.length || 0;
-            const totalUsuarios = BD.usuarios?.length || 0;
             
             const elSupabase = document.getElementById('statusSupabase');
             const elVeiculos = document.getElementById('statusVeiculos');
             const elGastos = document.getElementById('statusGastos');
-            const elUsuarios = document.getElementById('statusUsuarios');
             
             if (elSupabase) elSupabase.textContent = modoSupabase;
             if (elVeiculos) elVeiculos.textContent = totalVeiculos;
             if (elGastos) elGastos.textContent = totalGastos;
-            if (elUsuarios) elUsuarios.textContent = totalUsuarios;
+            
+            // Carregar valores dos campos
+            carregarValoresConfiguracoes();
+            
+            // Aplicar tema atual no status
+            const elStatusTema = document.getElementById('statusTema');
+            if (elStatusTema) {
+                const nomes = { claro: '☀️ Claro', escuro: '🌙 Escuro', sistema: '💻 Automático' };
+                elStatusTema.textContent = nomes[window.CONFIG_SISTEMA.tema] || 'Claro';
+            }
             
             console.log('✅ Página de configurações atualizada');
         } catch (e) {
             console.error('❌ Erro ao atualizar página de configurações:', e);
         }
     };
-    
     // Funções de configuração
     window.sincronizarManualmente = async function() {
         if (typeof sincronizarBD === 'function') {
