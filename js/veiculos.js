@@ -541,7 +541,6 @@ function abrirModalVeiculo(id) {
     form.appendChild(criarCampo('Modelo', 'text', 'vModelo', veiculo ? veiculo.modelo : '', 'Ex: FH 540'));
     form.appendChild(criarCampo('Ano', 'number', 'vAno', veiculo ? veiculo.ano : ''));
     form.appendChild(criarCampo('KM Atual', 'number', 'vKm', veiculo ? veiculo.km_atual : ''));
-    form.appendChild(criarCampo('Local/Obra', 'text', 'vObra', veiculo ? veiculo.obra_atual : '', '', false, opcoesLocais));
     form.appendChild(criarCampo('Status', 'text', 'vStatus', veiculo ? veiculo.status : 'disponivel', '', false, opcoesStatus));
     
     var rodape = document.createElement('div');
@@ -588,7 +587,7 @@ function salvarVeiculoForm(id) {
             modelo: document.getElementById('vModelo')?.value.trim() || '',
             ano: parseInt(document.getElementById('vAno')?.value) || null,
             km_atual: parseFloat(document.getElementById('vKm')?.value) || 0,
-            obra_atual: document.getElementById('vObra')?.value || '',
+            obra_atual: '',
             status: document.getElementById('vStatus')?.value || 'disponivel',
             responsavel: ''
         };
