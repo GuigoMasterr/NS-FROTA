@@ -1,8 +1,7 @@
 // ==================================================
-// 🚛 GESTÃO DE VEÍCULOS + HISTORICO DE CONDUTORES
-// ✅ Versao completa - sem template strings
+// 🚛 GESTÃO DE VEÍCULOS + HISTORICO DE CONDUTORES + DOCUMENTOS
+// ✅ Versao completa - organizada e com documentos
 // ==================================================
-
 function carregarTabelaVeiculos() {
     try {
         var tabela = document.getElementById('tabelaVeiculos');
@@ -29,7 +28,7 @@ function carregarTabelaVeiculos() {
         }
         
         if (veiculos.length === 0) {
-            tabela.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#64748b;">Nenhum veiculo cadastrado</td></tr>';
+            tabela.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#64748b;">Nenhum veiculo cadastrado</td></tr>';
             return;
         }
         
@@ -41,6 +40,8 @@ function carregarTabelaVeiculos() {
             var v = veiculos[i];
             var cor = statusCor[v.status] || '#6b7280';
             var status = statusConfig[v.status] || v.status;
+            var responsavel = v.responsavel && v.responsavel.trim() ? v.responsavel : '<span style="color:#94a3b8;">—</span>';
+            
             html += '<tr>' +
                 '<td><strong>' + (v.placa || '-') + '</strong></td>' +
                 '<td>' + (v.categoria || '-') + '</td>' +
@@ -48,12 +49,13 @@ function carregarTabelaVeiculos() {
                 '<td>' + (v.ano || '-') + '</td>' +
                 '<td>' + Number(v.km_atual || 0).toLocaleString('pt-BR') + '</td>' +
                 '<td>' + (v.obra_atual || '-') + '</td>' +
+                '<td>' + responsavel + '</td>' +
                 '<td><span style="display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;color:white;background:' + cor + ';">' + status + '</span></td>' +
                 '<td>' +
                     '<button onclick="abrirModalVeiculo(' + v.id + ')" style="padding:6px 10px;border:none;background:#3b82f6;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">Editar</button>' +
                     '<button onclick="verHistoricoCondutores(' + v.id + ')" style="padding:6px 10px;border:none;background:#7c3aed;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">Historico</button>' +
+                    '<button onclick="abrirModalDocumentos(' + v.id + ')" style="padding:6px 10px;border:none;background:#0ea5e9;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">📄 Doc</button>' +
                     '<button onclick="excluirVeiculo(' + v.id + ')" style="padding:6px 10px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;font-size:12px;">Excluir</button>' +
-                    '<button onclick="abrirModalSolicitarTransferencia(' + v.id + ')" style="padding:6px 10px;border:none;background:#f59e0b;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">🔄 Transferir</button>' +
                 '</td>' +
                 '</tr>';
         }
@@ -64,6 +66,305 @@ function carregarTabelaVeiculos() {
     }
 }
 
+// ==================================================
+// 📄 GESTÃO DE DOCUMENTOS DO VEÍCULO
+// ==================================================
+function inicializarDocumentos() {
+    if (typeof BD === 'undefined') BD = {};
+    if (!BD.documentosVeiculos) BD.documentosVeiculos = [];
+}
+
+function getStatusVencimento(dataVencimento) {
+    if (!dataVencimento) return { texto: 'Sem data', cor: '#6b7280', classe: 'neutral' };
+    
+    var hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    var venc = new Date(dataVencimento);
+    venc.setHours(0, 0, 0, 0);
+    
+    var diffMs = venc - hoje;
+    var diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDias < 0) return { texto: 'Vencido', cor: '#dc2626', classe: 'vencido', dias: diffDias };
+    if (diffDias <= 30) return { texto: 'Vencendo (' + diffDias + 'd)', cor: '#f59e0b', classe: 'alerta', dias: diffDias };
+    return { texto: 'Em dia', cor: '#10b981', classe: 'ok', dias: diffDias };
+}
+
+function abrirModalDocumentos(veiculoId) {
+    try {
+        inicializarDocumentos();
+        
+        if (typeof ehAdmin === 'function' && !ehAdmin()) {
+            alert('Voce nao tem permissao!');
+            return;
+        }
+        
+        var veiculo = null;
+        if (BD.veiculos) {
+            for (var i = 0; i < BD.veiculos.length; i++) {
+                if (BD.veiculos[i].id === veiculoId) {
+                    veiculo = BD.veiculos[i];
+                    break;
+                }
+            }
+        }
+        
+        if (!veiculo) {
+            alert('Veiculo nao encontrado!');
+            return;
+        }
+        
+        var antigo = document.getElementById('modal-documentos-final');
+        if (antigo) antigo.remove();
+        
+        var fundo = document.createElement('div');
+        fundo.id = 'modal-documentos-final';
+        fundo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        fundo.addEventListener('click', function(e) { if (e.target === fundo) fundo.remove(); });
+        
+        var caixa = document.createElement('div');
+        caixa.style.cssText = 'background:white;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.4);width:100%;max-width:800px;max-height:90vh;overflow-y:auto;font-family:Arial,sans-serif;';
+        
+        var cabecalho = document.createElement('div');
+        cabecalho.style.cssText = 'padding:16px 24px;background:#0ea5e9;color:white;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0;';
+        var titulo = document.createElement('h3');
+        titulo.style.cssText = 'margin:0;font-size:18px;';
+        titulo.innerHTML = '📄 Documentos do Veículo - <strong>' + veiculo.placa + '</strong>';
+        cabecalho.appendChild(titulo);
+        var btnFechar = document.createElement('button');
+        btnFechar.textContent = '×';
+        btnFechar.style.cssText = 'background:transparent;border:none;color:white;font-size:28px;cursor:pointer;line-height:1;padding:0 8px;';
+        btnFechar.onclick = function() { fundo.remove(); };
+        cabecalho.appendChild(btnFechar);
+        
+        var corpo = document.createElement('div');
+        corpo.style.cssText = 'padding:24px;';
+        corpo.id = 'corpo-documentos';
+        
+        // Formulário de adicionar documento
+        var formAdd = document.createElement('div');
+        formAdd.style.cssText = 'background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:20px;';
+        formAdd.innerHTML = 
+            '<div style="font-weight:600;color:#1e293b;margin-bottom:12px;font-size:15px;">➕ Adicionar Novo Documento</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">' +
+                '<div>' +
+                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Tipo *</label>' +
+                    '<select id="docTipo" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">' +
+                        '<option value="Licenciamento">Licenciamento</option>' +
+                        '<option value="IPVA">IPVA</option>' +
+                        '<option value="Multa">Multa</option>' +
+                        '<option value="Seguro">Seguro</option>' +
+                        '<option value="DPVAT">DPVAT</option>' +
+                        '<option value="CRLV">CRLV</option>' +
+                        '<option value="Inspecao">Inspeção Veicular</option>' +
+                        '<option value="Outro">Outro</option>' +
+                    '</select>' +
+                '</div>' +
+                '<div>' +
+                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Número/Processo</label>' +
+                    '<input type="text" id="docNumero" placeholder="Ex: 123456" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+                '</div>' +
+                '<div>' +
+                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Data Emissão</label>' +
+                    '<input type="date" id="docEmissao" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+                '</div>' +
+                '<div>' +
+                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Data Vencimento *</label>' +
+                    '<input type="date" id="docVencimento" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+                '</div>' +
+                '<div>' +
+                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Valor (R$)</label>' +
+                    '<input type="number" step="0.01" id="docValor" placeholder="0,00" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+                '</div>' +
+                '<div style="grid-column:span 2;">' +
+                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Observação</label>' +
+                    '<input type="text" id="docObs" placeholder="Detalhes adicionais..." style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+                '</div>' +
+            '</div>' +
+            '<div style="margin-top:12px;text-align:right;">' +
+                '<button onclick="adicionarDocumento(' + veiculoId + ')" style="padding:8px 16px;border:none;background:#0ea5e9;color:white;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;">Adicionar Documento</button>' +
+            '</div>';
+        corpo.appendChild(formAdd);
+        
+        // Lista de documentos
+        var listaContainer = document.createElement('div');
+        listaContainer.id = 'lista-documentos-container';
+        corpo.appendChild(listaContainer);
+        
+        renderizarListaDocumentos(veiculoId, listaContainer);
+        
+        caixa.appendChild(cabecalho);
+        caixa.appendChild(corpo);
+        fundo.appendChild(caixa);
+        document.body.appendChild(fundo);
+        
+    } catch (e) {
+        console.error('Erro ao abrir modal de documentos:', e);
+        alert('Erro ao abrir documentos');
+    }
+}
+
+function adicionarDocumento(veiculoId) {
+    try {
+        inicializarDocumentos();
+        
+        var tipo = document.getElementById('docTipo')?.value;
+        var vencimento = document.getElementById('docVencimento')?.value;
+        
+        if (!tipo || !vencimento) {
+            alert('Preencha o Tipo e a Data de Vencimento!');
+            return;
+        }
+        
+        var novoDoc = {
+            id: Date.now(),
+            veiculoId: veiculoId,
+            tipo: tipo,
+            numero: document.getElementById('docNumero')?.value.trim() || '',
+            dataEmissao: document.getElementById('docEmissao')?.value || '',
+            dataVencimento: vencimento,
+            valor: parseFloat(document.getElementById('docValor')?.value) || 0,
+            observacao: document.getElementById('docObs')?.value.trim() || '',
+            dataCadastro: new Date().toISOString().split('T')[0],
+            pago: false
+        };
+        
+        BD.documentosVeiculos.push(novoDoc);
+        
+        if (typeof salvarDados === 'function') salvarDados();
+        window.BD = BD;
+        
+        // Limpar campos
+        document.getElementById('docNumero').value = '';
+        document.getElementById('docEmissao').value = '';
+        document.getElementById('docVencimento').value = '';
+        document.getElementById('docValor').value = '';
+        document.getElementById('docObs').value = '';
+        
+        // Atualizar lista
+        var container = document.getElementById('lista-documentos-container');
+        if (container) renderizarListaDocumentos(veiculoId, container);
+        
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('✅ Documento adicionado!', 'sucesso');
+        }
+        
+    } catch (e) {
+        console.error('Erro ao adicionar documento:', e);
+        alert('Erro ao adicionar documento');
+    }
+}
+
+function excluirDocumento(veiculoId, docId) {
+    try {
+        if (!confirm('Tem certeza que deseja excluir este documento?')) return;
+        
+        inicializarDocumentos();
+        BD.documentosVeiculos = BD.documentosVeiculos.filter(function(d) { return d.id !== docId; });
+        
+        if (typeof salvarDados === 'function') salvarDados();
+        window.BD = BD;
+        
+        var container = document.getElementById('lista-documentos-container');
+        if (container) renderizarListaDocumentos(veiculoId, container);
+        
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('Documento excluído!', 'sucesso');
+        }
+        
+    } catch (e) {
+        console.error('Erro ao excluir documento:', e);
+    }
+}
+
+function togglePagamentoDocumento(veiculoId, docId) {
+    try {
+        inicializarDocumentos();
+        for (var i = 0; i < BD.documentosVeiculos.length; i++) {
+            if (BD.documentosVeiculos[i].id === docId) {
+                BD.documentosVeiculos[i].pago = !BD.documentosVeiculos[i].pago;
+                break;
+            }
+        }
+        
+        if (typeof salvarDados === 'function') salvarDados();
+        window.BD = BD;
+        
+        var container = document.getElementById('lista-documentos-container');
+        if (container) renderizarListaDocumentos(veiculoId, container);
+        
+    } catch (e) {
+        console.error('Erro:', e);
+    }
+}
+
+function renderizarListaDocumentos(veiculoId, container) {
+    try {
+        inicializarDocumentos();
+        
+        var docs = BD.documentosVeiculos.filter(function(d) { return d.veiculoId === veiculoId; });
+        
+        // Ordenar por vencimento (mais próximo primeiro)
+        docs.sort(function(a, b) {
+            if (!a.dataVencimento) return 1;
+            if (!b.dataVencimento) return -1;
+            return new Date(a.dataVencimento) - new Date(b.dataVencimento);
+        });
+        
+        if (docs.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:30px;color:#64748b;background:#f8fafc;border-radius:8px;">📭 Nenhum documento cadastrado para este veículo.</div>';
+            return;
+        }
+        
+        var tipoIcone = {
+            'Licenciamento': '📋', 'IPVA': '💰', 'Multa': '⚠️', 'Seguro': '🛡️',
+            'DPVAT': '🏥', 'CRLV': '📄', 'Inspecao': '🔍', 'Outro': '📎'
+        };
+        
+        var html = '<div style="font-weight:600;color:#1e293b;margin-bottom:12px;font-size:15px;">📋 Documentos Cadastrados (' + docs.length + ')</div>';
+        html += '<div style="display:grid;gap:10px;">';
+        
+        for (var d = 0; d < docs.length; d++) {
+            var doc = docs[d];
+            var status = getStatusVencimento(doc.dataVencimento);
+            var icone = tipoIcone[doc.tipo] || '📎';
+            var valorFormatado = doc.valor > 0 ? 'R$ ' + Number(doc.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '';
+            
+            html += 
+                '<div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:14px;display:flex;align-items:center;gap:14px;' + (doc.pago ? 'opacity:0.7;' : '') + '">' +
+                    '<div style="font-size:28px;">' + icone + '</div>' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">' +
+                            '<span style="font-weight:600;color:#1e293b;font-size:14px;">' + doc.tipo + '</span>' +
+                            (doc.numero ? '<span style="font-size:12px;color:#64748b;">#' + doc.numero + '</span>' : '') +
+                            '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:' + status.cor + '20;color:' + status.cor + ';font-weight:600;">' + status.texto + '</span>' +
+                            (doc.pago ? '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#10b98120;color:#10b981;font-weight:600;">✓ Pago</span>' : '') +
+                        '</div>' +
+                        '<div style="font-size:12px;color:#64748b;display:flex;gap:16px;flex-wrap:wrap;">' +
+                            (doc.dataEmissao ? '<span>Emissão: <strong>' + doc.dataEmissao + '</strong></span>' : '') +
+                            '<span>Vencimento: <strong style="color:' + status.cor + ';">' + (doc.dataVencimento || '-') + '</strong></span>' +
+                            (valorFormatado ? '<span>Valor: <strong>' + valorFormatado + '</strong></span>' : '') +
+                        '</div>' +
+                        (doc.observacao ? '<div style="font-size:12px;color:#94a3b8;margin-top:4px;">📝 ' + doc.observacao + '</div>' : '') +
+                    '</div>' +
+                    '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+                        '<button onclick="togglePagamentoDocumento(' + veiculoId + ',' + doc.id + ')" style="padding:6px 10px;border:1px solid #d1d5db;background:white;color:#374151;border-radius:6px;cursor:pointer;font-size:11px;" title="Marcar como pago">' + (doc.pago ? '↩️ Desfazer' : '✓ Pago') + '</button>' +
+                        '<button onclick="excluirDocumento(' + veiculoId + ',' + doc.id + ')" style="padding:6px 10px;border:none;background:#fee2e2;color:#991b1b;border-radius:6px;cursor:pointer;font-size:11px;">🗑️ Excluir</button>' +
+                    '</div>' +
+                '</div>';
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+    } catch (e) {
+        console.error('Erro ao renderizar documentos:', e);
+    }
+}
+
+// ==================================================
+// HISTÓRICO DE CONDUTORES
+// ==================================================
 function registrarHistoricoCondutor(veiculoId, motorista, tipo, observacao) {
     try {
         if (typeof BD === 'undefined') BD = {};
@@ -243,7 +544,7 @@ function abrirModalVeiculo(id) {
     form.appendChild(criarCampo('Local/Obra', 'text', 'vObra', veiculo ? veiculo.obra_atual : '', '', false, opcoesLocais));
     form.appendChild(criarCampo('Status', 'text', 'vStatus', veiculo ? veiculo.status : 'disponivel', '', false, opcoesStatus));
     
-    var grupoResp = criarCampo('Responsavel', 'text', 'vResponsavel', veiculo ? veiculo.responsavel : '', 'Nome do motorista');
+    var grupoResp = criarCampo('Responsavel', 'text', 'vResponsavel', veiculo ? veiculo.responsavel : '', 'Nome do motorista/responsavel');
     grupoResp.style.gridColumn = 'span 2';
     form.appendChild(grupoResp);
     
@@ -340,7 +641,6 @@ function salvarVeiculoForm(id) {
             window.BD = BD;
         }
         
-        // Registra historico de condutor se responsavel mudou
         if (veiculoAntigo && veiculoAntigo.responsavel !== dados.responsavel) {
             registrarHistoricoCondutor(dados.id, dados.responsavel, 'responsavel', 'Alteracao no cadastro');
         } else if (!veiculoAntigo && dados.responsavel) {
@@ -530,6 +830,12 @@ window.excluirVeiculo = excluirVeiculo;
 window.carregarTabelaVeiculos = carregarTabelaVeiculos;
 window.verHistoricoCondutores = verHistoricoCondutores;
 window.registrarHistoricoCondutor = registrarHistoricoCondutor;
+window.abrirModalDocumentos = abrirModalDocumentos;
+window.adicionarDocumento = adicionarDocumento;
+window.excluirDocumento = excluirDocumento;
+window.togglePagamentoDocumento = togglePagamentoDocumento;
+window.renderizarListaDocumentos = renderizarListaDocumentos;
+window.inicializarDocumentos = inicializarDocumentos;
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', inicializarVeiculos);
@@ -539,6 +845,8 @@ if (document.readyState === 'loading') {
 
 function inicializarVeiculos() {
     try {
+        inicializarDocumentos();
+        
         var busca = document.getElementById('buscaVeiculos');
         if (busca) busca.addEventListener('input', carregarTabelaVeiculos);
         
