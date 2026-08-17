@@ -1,0 +1,286 @@
+/* ============================================================
+   CORREÇÕES DE LAYOUT - Sistema de Gestão de Frotas
+   Resolve conflitos de CSS e problemas de posicionamento
+   ============================================================ */
+
+/* ---------- 1. RESET DAS REGRAS CONFLITANTES ---------- */
+.main-content,
+.pagina,
+#pagina-configuracoes {
+    margin-left: 260px !important;
+    width: calc(100% - 260px) !important;
+    max-width: calc(100% - 260px) !important;
+    padding: 0 !important;  /* Remove padding do main-content */
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+}
+
+/* Padding fica apenas nas páginas, não no container principal */
+.pagina {
+    padding: 1.5rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+}
+
+#pagina-configuracoes {
+    padding: 1.5rem !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* ---------- 2. SIDEBAR - LARGURA PADRONIZADA ---------- */
+.sidebar {
+    width: 260px !important;
+    height: 100vh !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    z-index: 40 !important;
+}
+
+/* ---------- 3. TOPBAR - AJUSTE DE POSICIONAMENTO ---------- */
+.topbar {
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.85rem 1.5rem !important;
+    margin: 0 !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Remove qualquer margem ou padding extra no conteúdo interno do topbar */
+.topbar > div:first-child {
+    margin: 0;
+    padding: 0;
+}
+
+/* ---------- 4. CORREÇÃO DOS BOTÕES DE AÇÃO NAS TABELAS ---------- */
+.card-body .btn,
+table .btn {
+    margin-right: 4px;
+    margin-bottom: 2px;
+}
+
+/* Container de botões com espaçamento */
+.botoes-acao {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ---------- 5. CARDS E GRÁFICOS - LARGURA CORRETA ---------- */
+.main-content .card,
+.main-content .grafico-card,
+.main-content .stat-card {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* ---------- 6. TABELAS RESPONSIVAS ---------- */
+.table-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* ---------- 7. MEDIA QUERIES AJUSTADAS ---------- */
+
+/* Tablets e telas médias */
+@media (min-width: 1025px) and (max-width: 1440px) {
+    .sidebar {
+        width: 240px !important;
+    }
+    .main-content,
+    .pagina,
+    #pagina-configuracoes {
+        margin-left: 240px !important;
+        width: calc(100% - 240px) !important;
+        max-width: calc(100% - 240px) !important;
+    }
+    .pagina {
+        padding: 1.25rem !important;
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    #pagina-configuracoes {
+        padding: 1.25rem !important;
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* Telas grandes */
+@media (min-width: 1921px) {
+    .main-content {
+        max-width: none !important;
+    }
+    .pagina {
+        padding: 2rem !important;
+        max-width: 1800px;
+        margin: 0 auto;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 280px !important;
+        z-index: 100 !important;
+    }
+    .sidebar.aberto {
+        transform: translateX(0);
+    }
+    .main-content,
+    .pagina,
+    #pagina-configuracoes {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .pagina {
+        padding: 1rem !important;
+        margin-left: 0 !important;
+    }
+    #pagina-configuracoes {
+        padding: 1rem !important;
+        margin-left: 0 !important;
+    }
+    .topbar {
+        padding: 0.75rem 1rem !important;
+    }
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem !important;
+    }
+    .stat-valor {
+        font-size: 1.4rem;
+    }
+    .card-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+    table {
+        min-width: 600px;
+        font-size: 0.8rem;
+    }
+    th, td {
+        padding: 0.5rem 0.4rem;
+    }
+    .modal-container {
+        margin: 1rem;
+        max-width: calc(100% - 2rem) !important;
+    }
+}
+
+/* Mobile muito pequeno */
+@media (max-width: 480px) {
+    .topbar {
+        padding: 0.5rem 0.75rem !important;
+    }
+    .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    .card-body {
+        padding: 0.75rem;
+    }
+    .card-header {
+        padding: 0.75rem;
+    }
+    table {
+        min-width: 500px;
+        font-size: 0.75rem;
+    }
+}
+
+/* ---------- 8. OVERLAY PARA MENU MOBILE ---------- */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 35;
+}
+
+.sidebar-overlay.visivel {
+    display: block;
+}
+
+/* ---------- 9. AJUSTES GERAIS ---------- */
+* {
+    box-sizing: border-box;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Remove conflitos de tamanho de fonte responsivo */
+html {
+    font-size: 16px;
+}
+
+@media (max-width: 1400px) { html { font-size: 15px; } }
+@media (max-width: 1024px) { html { font-size: 14px; } }
+@media (max-width: 768px)  { html { font-size: 13px; } }
+@media (max-width: 480px)  { html { font-size: 12px; } }
+
+/* ---------- 10. CORREÇÃO DO BOTÃO MENU MOBILE ---------- */
+.mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: #475569;
+    padding: 0.25rem;
+}
+
+.btn-menu-mobile {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #475569;
+    padding: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-btn {
+        display: block !important;
+    }
+    .btn-menu-mobile {
+        display: none !important;
+    }
+}
+
+/* ---------- 11. GRÁFICOS - ALTURA MÍNIMA ---------- */
+.grafico-card {
+    min-height: 300px;
+}
+
+.grafico-card > div:first-child {
+    height: 280px;
+}

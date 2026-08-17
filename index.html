@@ -20,6 +20,7 @@
     <!-- CSS Customizado -->
     <link rel="stylesheet" href="css/estilos.css">
     <link rel="stylesheet" href="css/estilos-aprimorados.css">
+    <link rel="stylesheet" href="css/correcoes-layout.css">
     
     <style>
 
@@ -1260,6 +1261,9 @@ button, .btn, .acao-btn {
      ============================================================ -->
 <div id="sistemaPrincipal" class="hidden">
     
+    <!-- OVERLAY MENU MOBILE -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
@@ -1341,11 +1345,10 @@ button, .btn, .acao-btn {
         <!-- TOPBAR -->
         <div class="topbar">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <button class="mobile-menu-btn" id="btnMobileMenu">
+                <button class="mobile-menu-btn" id="btnMobileMenu" onclick="toggleSidebar()">
                     <i class="fa-solid fa-bars"></i>
                 </button>
                 <div>
-                    <button class="btn-menu-mobile" onclick="toggleSidebar()" title="Menu"><i class="fas fa-bars"></i></button>
                     <h2 style="font-size: 1.05rem; font-weight: 600; color: #0f172a; margin: 0;" id="topbarTitulo">Dashboard</h2>
                     <p style="font-size: 0.75rem; color: #64748b; margin: 0;" id="topbarData"></p>
                 </div>
@@ -2869,6 +2872,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 300);
 });
 </script>
+
+    <!-- Correções de Layout -->
+    <script src="js/correcoes-layout.js"></script>
 
 </body>
 </html>
