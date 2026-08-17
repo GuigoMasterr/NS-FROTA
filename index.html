@@ -1126,6 +1126,81 @@ button, .btn, .acao-btn {
     margin-right: auto !important;
 }
 
+/* ======================================================
+   🎯 CENTRALIZAR EXCLUSIVAMENTE O DASHBOARD
+   ====================================================== */
+
+/* Container do Dashboard — CENTRALIZADO */
+#pagina-dashboard,
+.pagina-dashboard {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;    /* ✅ Centraliza horizontalmente */
+    width: 100% !important;
+    padding: 1.5rem !important;
+    padding-left: 1rem !important;
+    box-sizing: border-box !important;
+}
+
+/* Título do Dashboard — Alinhado com o conteúdo */
+#pagina-dashboard .titulo-pagina,
+#pagina-dashboard h1,
+#pagina-dashboard h2 {
+    width: 100% !important;
+    max-width: 1000px !important;  /* ← Largura máxima igual aos cards */
+    margin: 0 0 1.5rem 0 !important;
+}
+
+/* Cards e Painéis — Centralizados e com largura controlada */
+#pagina-dashboard .card,
+#pagina-dashboard .painel,
+#pagina-dashboard .stats-grid,
+#pagina-dashboard .graficos-container {
+    width: 100% !important;
+    max-width: 1000px !important;  /* ← Ajuste este valor se quiser mais largo/estreito */
+    margin-left: auto !important;   /* ✅ Centraliza */
+    margin-right: auto !important;  /* ✅ Centraliza */
+}
+
+/* Grid dos cards do topo — Centralizado */
+#pagina-dashboard .config-cards-topo,
+#pagina-dashboard .painel-controle {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 1rem !important;
+    width: 100% !important;
+    max-width: 1000px !important;
+    margin: 0 auto 1.5rem auto !important;
+}
+
+/* Gráficos e seções inferiores — Centralizados */
+#pagina-dashboard .secao-graficos {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.5rem !important;
+    width: 100% !important;
+    max-width: 1000px !important;
+    margin: 0 auto !important;
+}
+
+/* 📱 Telas menores — se ajusta sozinho */
+@media (max-width: 1024px) {
+    #pagina-dashboard .config-cards-topo,
+    #pagina-dashboard .painel-controle {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    #pagina-dashboard .secao-graficos {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #pagina-dashboard .config-cards-topo,
+    #pagina-dashboard .painel-controle {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
     </style>
 </head>
 <body>
