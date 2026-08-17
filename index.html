@@ -1034,7 +1034,7 @@ html, body {
     margin-left: 240px !important;
     width: calc(100% - 240px) !important; /* ← Tira o espaço do menu */
     max-width: calc(100% - 240px) !important;
-    padding: 0.75rem !important; /* ← Espaçamento das bordas */
+    padding: 1.5rem !important; /* ← Espaçamento das bordas */
     box-sizing: border-box !important;
     overflow-x: hidden !important; /* ❌ NADA passa para o lado */
 }
@@ -1082,6 +1082,48 @@ button, .btn, .acao-btn {
         width: 100% !important;
         max-width: 100% !important;
     }
+}
+
+    /* ======================================================
+   🎯 CENTRALIZAR TODO O CONTEÚDO DAS PÁGINAS
+   ====================================================== */
+
+/* Container principal — CENTRALIZA tudo */
+.main-content,
+.pagina,
+#pagina-configuracoes {
+    padding: 1.5rem !important;
+    padding-left: 1rem !important;   /* ← Mais próximo da esquerda */
+}
+
+/* Caixas, tabelas e cards — CENTRALIZADOS com largura limite */
+.pagina .card,
+.pagina .caixa-conteudo,
+.pagina .table-container,
+.config-secao,
+.config-cards-topo {
+    max-width: 1000px !important;     /* ← Largura máxima (não fica largo demais) */
+    width: 100% !important;
+    margin-left: auto !important;      /* ← CENTRALIZA esquerda */
+    margin-right: auto !important;     /* ← CENTRALIZA direita */
+}
+
+/* Título da página — Alinhado com o conteúdo */
+.pagina h1,
+.pagina h2,
+.titulo-pagina {
+    max-width: 1000px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 0 !important;
+}
+
+/* Ajuste das colunas do formulário de Configurações */
+.config-2col,
+.config-3col {
+    max-width: 1000px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
 }
 
     </style>
