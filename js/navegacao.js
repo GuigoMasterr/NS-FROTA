@@ -1,7 +1,6 @@
 // ==================================================
 // 🧭 NAVEGAÇÃO DO SISTEMA - VERSÃO CORRIGIDA
 // ==================================================
-
 if (!window.__navegacaoInicializada) {
     window.__navegacaoInicializada = true;
 
@@ -9,25 +8,40 @@ if (!window.__navegacaoInicializada) {
         try {
             console.log('🧭 Navegando para:', pagina);
             
+            // CASO ESPECIAL: Configurações abre em modal, não como página
+            if (pagina === 'configuracoes') {
+                if (typeof window.abrirModalConfiguracoes === 'function') {
+                    window.abrirModalConfiguracoes();
+                    console.log('✅ Modal de configurações aberto');
+                } else {
+                    console.error('❌ Função abrirModalConfiguracoes não encontrada');
+                }
+                // Atualiza visual do menu
+                document.querySelectorAll('.sidebar-link').forEach(botao => botao.classList.remove('ativo'));
+                const botaoAtivo = document.querySelector('.sidebar-link[data-pagina="' + pagina + '"]');
+                if (botaoAtivo) botaoAtivo.classList.add('ativo');
+                return;
+            }
+            
             const paginas = document.querySelectorAll('.pagina');
             const alvo = document.getElementById('pagina-' + pagina);
-
+            
             paginas.forEach(secao => {
                 secao.classList.remove('ativa');
             });
-
+            
             if (!alvo) {
                 console.warn('⚠️ Página não encontrada:', pagina);
                 return;
             }
-
+            
             alvo.classList.add('ativa');
-
+            
             // Atualiza links do sidebar
             document.querySelectorAll('.sidebar-link').forEach(botao => botao.classList.remove('ativo'));
             const botaoAtivo = document.querySelector('.sidebar-link[data-pagina="' + pagina + '"]');
             if (botaoAtivo) botaoAtivo.classList.add('ativo');
-
+            
             // Carrega dados específicos da página
             if (pagina === 'veiculos' && typeof carregarTabelaVeiculos === 'function') {
                 carregarTabelaVeiculos();
@@ -70,7 +84,6 @@ if (!window.__navegacaoInicializada) {
             console.error('❌ Erro ao navegar para', pagina, ':', e);
         }
     }
-
     window.mostrarPagina = mostrarPagina;
 
     // Listener global para links do sidebar
