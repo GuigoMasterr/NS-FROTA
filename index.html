@@ -17,10 +17,816 @@
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- CSS Unificado e Corrigido -->
-    <link rel="stylesheet" href="css/estilos-unificados.css">
+    <!-- CSS Customizado -->
+    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="css/estilos-aprimorados.css">
     
-
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 40;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-logo {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .sidebar-logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        .sidebar-menu { padding: 0.75rem 0; }
+        .sidebar-section {
+            padding: 0.75rem 1.25rem 0.25rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #64748b;
+            font-weight: 700;
+        }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1.25rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            margin: 0 0.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+        .sidebar-link:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+        .sidebar-link.ativo {
+            background: rgba(37, 99, 235, 0.2);
+            color: #60a5fa;
+            border-left-color: #2563eb;
+            font-weight: 600;
+        }
+        .sidebar-link i { width: 20px; text-align: center; font-size: 1rem; }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+        .topbar {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+        .topbar-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        
+        /* Pages */
+        .pagina { display: none; padding: 1.5rem; }
+        .pagina.ativa { display: block; }
+        
+        .page-header {
+            margin-bottom: 1.5rem;
+        }
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+        .page-subtitle {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+        }
+        .card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 1rem;
+        }
+        .card-body { padding: 1.25rem; }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .stat-titulo {
+            font-size: 0.8rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        .stat-valor {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 0.5rem;
+        }
+        .stat-detalhe {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+        .stat-icone {
+            float: right;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        /* Tables */
+        .table-container { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 700;
+        }
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9rem;
+            color: #334155;
+        }
+        tr:hover td { background: #f8fafc; }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .btn-primario {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+        }
+        .btn-primario:hover { background: linear-gradient(135deg, #1d4ed8, #1e40af); transform: translateY(-1px); }
+        .btn-secundario {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+        .btn-secundario:hover { background: #e2e8f0; }
+        .btn-sucesso { background: #10b981; color: white; }
+        .btn-sucesso:hover { background: #059669; }
+        .btn-perigo { background: #ef4444; color: white; }
+        .btn-perigo:hover { background: #dc2626; }
+        .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.75rem; }
+        
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        .badge-secondary { background: #f1f5f9; color: #475569; }
+        
+        /* Forms */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .form-grupo { margin-bottom: 0; }
+        .form-grupo label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 0.35rem;
+        }
+        .form-grupo input,
+        .form-grupo select,
+        .form-grupo textarea {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: white;
+        }
+        .form-grupo input:focus,
+        .form-grupo select:focus,
+        .form-grupo textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .obrigatorio { color: #ef4444; }
+        
+        /* Login */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
+            padding: 1rem;
+        }
+        .login-box {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        }
+        .login-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-logo-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.75rem;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+        }
+        .login-titulo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .login-subtitulo {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        .login-erro {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        /* Modais */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 1rem;
+            display: none;
+        }
+        .modal-overlay.aberto { display: flex; }
+        .modal-container {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        }
+        .modal-cabecalho {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-titulo {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+        .modal-fechar {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .modal-fechar:hover { background: #f1f5f9; }
+        .modal-corpo { padding: 1.5rem; }
+        .modal-rodape {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+        
+        /* Filtros */
+        .filtros-bar {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        .filtros-bar input,
+        .filtros-bar select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            min-width: 160px;
+        }
+        
+        /* Alertas */
+        .alerta {
+            padding: 0.85rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.9rem;
+        }
+        .alerta-perigo { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
+        .alerta-aviso { background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; }
+        .alerta-info { background: #dbeafe; color: #1e40af; border-left: 4px solid #3b82f6; }
+        .alerta-sucesso { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
+        
+        /* Gráficos */
+        .graficos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .grafico-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid #e2e8f0;
+        }
+        .grafico-titulo {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+        .grafico-subtitulo {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 1rem;
+        }
+        .grafico-container { height: 300px; }
+        
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .toast {
+            padding: 0.85rem 1.25rem;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            font-size: 0.9rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: toastEntrar 0.3s ease;
+            max-width: 350px;
+        }
+        @keyframes toastEntrar {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-sucesso { background: linear-gradient(90deg, #10b981, #059669); }
+        .toast-erro { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .toast-aviso { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .toast-info { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.aberta { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .graficos-grid { grid-template-columns: 1fr; }
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: #475569;
+            padding: 0.5rem;
+        }
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: block; }
+        }
+        
+        .hidden { display: none !important; }
+        
+        /* Estado vazio */
+        .estado-vazio {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #94a3b8;
+        }
+        .estado-vazio-icone {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        /* Cartões de Despesa de Viagem */
+        .cartao-despesa {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #e2e8f0;
+            transition: box-shadow 0.2s;
+        }
+        .cartao-despesa:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .cartao-despesa.pendente { border-left: 4px solid #f59e0b; }
+        .cartao-despesa.aprovado { border-left: 4px solid #10b981; }
+        .cartao-despesa.rejeitado { border-left: 4px solid #ef4444; }
+        
+        .despesa-cabecalho {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        .despesa-motorista {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 0.95rem;
+        }
+        .despesa-info {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 0.2rem;
+        }
+        .despesa-valor-total {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #2563eb;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+        .status-pendente { background: #fef3c7; color: #92400e; }
+        .status-aprovado { background: #d1fae5; color: #065f46; }
+        .status-rejeitado { background: #fee2e2; color: #991b1b; }
+        
+        .despesa-itens {
+            font-size: 0.8rem;
+            color: #64748b;
+            padding: 0.5rem 0;
+            border-top: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f1f5f9;
+            margin: 0.5rem 0;
+        }
+        .despesa-acoes {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-top: 0.75rem;
+        }
+        .btn-mini {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-mini:hover { background: #e2e8f0; }
+        .btn-aprovar { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+        .btn-aprovar:hover { background: #a7f3d0; }
+        .btn-rejeitar { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+        .btn-rejeitar:hover { background: #fecaca; }
+        .btn-comprovantes { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+        .btn-comprovantes:hover { background: #bfdbfe; }
+        
+        .adiantamento-resumo {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+        }
+        .adiantamento-resumo.saldo-zerado { background: #f8fafc; }
+        .adiantamento-resumo.saldo-positivo { background: #d1fae5; }
+        .adiantamento-resumo.saldo-negativo { background: #fee2e2; }
+        .adiantamento-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .adiantamento-item .label { color: #64748b; font-size: 0.7rem; }
+        .adiantamento-item .valor { font-weight: 600; color: #0f172a; }
+        .saldo-destaque { font-size: 0.9rem; }
+        
+        /* Modal de Despesas */
+        .modal-fundo {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .modal-fundo.ativo {
+            display: flex;
+        }
+        .modal-conteudo {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        /* Itens dinâmicos */
+        .item-linha {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            align-items: center;
+        }
+        .item-tipo {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+        .item-valor {
+            width: 140px;
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+        .btn-remover-item {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: #fee2e2;
+            color: #dc2626;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .btn-remover-item:hover { background: #fecaca; }
+        
+        /* Upload */
+        #areaUpload.drag-over {
+            border-color: #2563eb !important;
+            background: #eff6ff !important;
+        }
+        .comprovante-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            background: #f1f5f9;
+            border-radius: 6px;
+            margin: 0.25rem;
+            font-size: 0.8rem;
+        }
+        .comprovante-remover {
+            color: #dc2626;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        /* Saldo */
+        .saldo-positivo { background: #d1fae5 !important; color: #065f46; }
+        .saldo-negativo { background: #fee2e2 !important; color: #991b1b; }
+        .saldo-zerado { background: #f8fafc !important; }
+        
+        /* Abas */
+        .aba-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #64748b;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .aba-btn:hover { color: #2563eb; }
+        .aba-btn.ativo {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        
+        /* Cartão de Adiantamento */
+        .cartao-adiantamento {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #2563eb;
+            transition: box-shadow 0.2s;
+        }
+        .cartao-adiantamento:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .cartao-adiantamento.parcial { border-left-color: #f59e0b; }
+        .cartao-adiantamento.fechado { border-left-color: #10b981; opacity: 0.85; }
+        
+        .adiantamento-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
+        }
+        .adiantamento-motorista { font-weight: 700; font-size: 1.1rem; color: #0f172a; }
+        .adiantamento-info { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+        .adiantamento-valor { font-size: 1.5rem; font-weight: 800; color: #2563eb; }
+        
+        .adiantamento-progresso {
+            margin: 1rem 0;
+        }
+        .progresso-barra {
+            height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;
+        }
+        .progresso-preenchido {
+            height: 100%; background: linear-gradient(90deg, #10b981, #2563eb);
+            transition: width 0.5s ease;
+        }
+        .progresso-texto {
+            display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;
+        }
+        
+        .adiantamento-saldos {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+            padding: 0.75rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem;
+        }
+        .saldo-item { text-align: center; }
+        .saldo-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
+        .saldo-valor { font-weight: 700; font-size: 1rem; color: #0f172a; margin-top: 0.25rem; }
+        .saldo-valor.positivo { color: #10b981; }
+        .saldo-valor.negativo { color: #dc2626; }
+        
+        /* Cartão de Gasto */
+        .cartao-gasto {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.75rem 1rem; background: #f8fafc; border-radius: 8px;
+            margin-bottom: 0.5rem; border-left: 3px solid #8b5cf6;
+        }
+        .gasto-info { flex: 1; }
+        .gasto-tipo { font-weight: 600; color: #0f172a; }
+        .gasto-detalhes { font-size: 0.8rem; color: #64748b; margin-top: 0.15rem; }
+        .gasto-valor { font-weight: 700; color: #dc2626; margin-right: 1rem; }
+        
+        .status-adiantamento {
+            display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px;
+            font-size: 0.75rem; font-weight: 600;
+        }
+        .status-liberado { background: #dbeafe; color: #1e40af; }
+        .status-parcial { background: #fef3c7; color: #92400e; }
+        .status-fechado { background: #d1fae5; color: #065f46; }
+    </style>
 </head>
 <body>
 
@@ -29,120 +835,7 @@
 
 <!-- Container para Modais -->
 
-        
-                        <section class="pagina" id="pagina-configuracoes">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 class="page-title">⚙️ Configurações do Sistema</h1>
-                    <p class="page-subtitle">Personalize todos os parâmetros do sistema</p>
-                </div>
-                <button class="btn btn-primario" onclick="salvarConfiguracoesSimples()">
-                    <i class="fa-solid fa-save"></i> 💾 Salvar Todas as Configurações
-                </button>
-            </div>
-
-            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
-                <div class="stat-card">
-                    <div class="stat-titulo">🌐 Conexão Supabase</div>
-                    <div class="stat-valor" id="cfgStatusSupabase" style="font-size: 1rem;">Verificando...</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-titulo">🚛 Veículos</div>
-                    <div class="stat-valor" id="cfgStatusVeiculos">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-titulo">💰 Gastos</div>
-                    <div class="stat-valor" id="cfgStatusGastos">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-titulo">👥 Usuários</div>
-                    <div class="stat-valor" id="cfgStatusUsuarios">0</div>
-                </div>
-            </div>
-
-            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">📋 Dados Gerais</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                <div class="card">
-                    <div class="card-header"><div class="card-title">📍 Locais / Obras</div></div>
-                    <div class="card-body">
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                            <input type="text" id="cfgNovoLocal" placeholder="Novo local..." style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;">
-                            <button class="btn btn-primario" onclick="cfgAdicionar('locais','cfgNovoLocal','cfgListaLocais','cfgRemoverLocal')" style="padding: 0.5rem 0.75rem;">+</button>
-                        </div>
-                        <div id="cfgListaLocais" style="display: grid; gap: 0.4rem; max-height: 180px; overflow-y: auto;"></div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header"><div class="card-title">🚛 Categorias de Veículos</div></div>
-                    <div class="card-body">
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                            <input type="text" id="cfgNovaCategoria" placeholder="Nova categoria..." style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;">
-                            <button class="btn btn-primario" onclick="cfgAdicionar('categoriasVeiculo','cfgNovaCategoria','cfgListaCategorias','cfgRemoverCategoria')" style="padding: 0.5rem 0.75rem;">+</button>
-                        </div>
-                        <div id="cfgListaCategorias" style="display: grid; gap: 0.4rem; max-height: 180px; overflow-y: auto;"></div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header"><div class="card-title">💰 Tipos de Gastos</div></div>
-                    <div class="card-body">
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                            <input type="text" id="cfgNovoTipoGasto" placeholder="Novo tipo..." style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;">
-                            <button class="btn btn-primario" onclick="cfgAdicionar('tiposGasto','cfgNovoTipoGasto','cfgListaTiposGasto','cfgRemoverTipoGasto')" style="padding: 0.5rem 0.75rem;">+</button>
-                        </div>
-                        <div id="cfgListaTiposGasto" style="display: grid; gap: 0.4rem; max-height: 180px; overflow-y: auto;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">⚙️ Sistema</h2>
-            <div class="card" style="margin-bottom: 2rem;">
-                <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Nome da Empresa</label><input type="text" id="cfgNomeEmpresa" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">CNPJ</label><input type="text" id="cfgCNPJ" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">E-mail</label><input type="email" id="cfgEmail" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Telefone</label><input type="text" id="cfgTelefone" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Moeda</label><select id="cfgMoeda" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; background:white; box-sizing:border-box;"><option value="BRL">R$ - Real</option><option value="USD">US$ - Dólar</option><option value="EUR">€ - Euro</option></select></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Formato de Data</label><select id="cfgFormatoData" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; background:white; box-sizing:border-box;"><option value="pt-BR">DD/MM/AAAA</option><option value="en-US">MM/DD/AAAA</option></select></div>
-                </div>
-            </div>
-
-            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">🔔 Notificações e Alertas</h2>
-            <div class="card" style="margin-bottom: 2rem;">
-                <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">KM para aviso de manutenção</label><input type="number" id="cfgKmAviso" value="500" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Dias para aviso de vencimento</label><input type="number" id="cfgDiasAviso" value="15" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Limite KM para alerta</label><input type="number" id="cfgLimiteKm" value="200000" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Dias parado para alertar</label><input type="number" id="cfgDiasParado" value="30" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">E-mail para alertas</label><input type="email" id="cfgEmailAlerta" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                </div>
-            </div>
-
-            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">📜 Regras de Negócio</h2>
-            <div class="card" style="margin-bottom: 2rem;">
-                <div class="card-body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">% mínima aprovação check-list</label><input type="number" id="cfgPctAprovacao" value="70" min="0" max="100" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Valor máx adiantamento (R$)</label><input type="number" id="cfgValorMaxAdiantamento" value="500" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Dias limite prestação contas</label><input type="number" id="cfgDiasPrestacao" value="7" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tempo sessão (minutos)</label><input type="number" id="cfgTempoSessao" value="240" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tamanho mín senha</label><input type="number" id="cfgTamanhoMinSenha" value="4" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                    <div><label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Tentativas login</label><input type="number" id="cfgTentativasLogin" value="5" style="width:100%; padding:0.5rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;"></div>
-                </div>
-            </div>
-
-            <h2 style="font-size: 1.1rem; color: #0f172a; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;">🌐 Integrações e Backup</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-                <button class="btn btn-primario" onclick="sincronizarManualmente()" style="padding: 0.75rem;">🔄 Sincronizar com Supabase</button>
-                <button class="btn btn-secundario" onclick="enviarTodosDadosParaNuvem()" style="padding: 0.75rem;">☁️ Enviar para Nuvem</button>
-                <button class="btn btn-secundario" onclick="carregarDadosDaNuvem()" style="padding: 0.75rem;">⬇️ Baixar da Nuvem</button>
-                <button class="btn btn-secundario" onclick="exportarDadosJSON()" style="padding: 0.75rem;">📤 Exportar JSON</button>
-                <button class="btn" onclick="document.getElementById('cfgImportarArquivo').click()" style="padding: 0.75rem; background: #e0f2fe; color: #0369a1;">📥 Importar JSON</button>
-                <input type="file" id="cfgImportarArquivo" accept=".json" style="display:none;" onchange="importarDadosJSON(event)">
-                <button class="btn" onclick="recarregarDadosDemo()" style="padding: 0.75rem; background: #fef3c7; color: #92400e;">📦 Dados Demo</button>
-                <button class="btn" onclick="limparTodosDados()" style="padding: 0.75rem; background: #fee2e2; color: #991b1b;">🗑️ Limpar Dados</button>
-            </div>
-        </section>
-
-<div id="modais"></div>
+        <div id="modais"></div>
 
 <!-- ============================================================
      TELA DE LOGIN
@@ -187,9 +880,6 @@
      ============================================================ -->
 <div id="sistemaPrincipal" class="hidden">
     
-    <!-- OVERLAY MENU MOBILE -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
@@ -254,7 +944,7 @@
                 <i class="fas fa-chart-bar"></i>
                 <span>Relatórios</span>
             </div>
-            <div class="sidebar-link" data-pagina="configuracoes">
+            <div class="sidebar-link" onclick="abrirModalConfiguracoes()" style="cursor: pointer;">
                 <i class="fa-solid fa-gear"></i>
                 <span>Configurações</span>
             </div>
@@ -271,7 +961,7 @@
         <!-- TOPBAR -->
         <div class="topbar">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <button class="mobile-menu-btn" id="btnMobileMenu" onclick="toggleSidebar()">
+                <button class="mobile-menu-btn" id="btnMobileMenu">
                     <i class="fa-solid fa-bars"></i>
                 </button>
                 <div>
@@ -807,57 +1497,19 @@
         </section>
 
         <!-- ============================================================
-        <!-- ============================================================
-             PÁGINA: TRANSFERÊNCIAS DE RESPONSABILIDADE
+             PÁGINA: SOLICITAÇÕES DE TRANSFERÊNCIA
              ============================================================ -->
         <section class="pagina" id="pagina-solicitacoes">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                 <div>
-                    <h1 class="page-title">🔄 Transferências de Responsabilidade</h1>
-                    <p class="page-subtitle">Solicite, aprove e acompanhe transferências de veículos entre motoristas</p>
+                    <h1 class="page-title">🔄 Solicitações de Transferência</h1>
+                    <p class="page-subtitle">Gerencie transferências de responsabilidade entre motoristas</p>
                 </div>
             </div>
-
-            <div class="card" style="margin-bottom: 24px;">
-                <div class="card-header" style="border-bottom: 1px solid #e5e7eb;">
-                    <div class="card-title">📤 Solicitar Nova Transferência</div>
-                </div>
-                <div class="card-body">
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: end;">
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Veículo *</label>
-                            <select id="transfVeiculo" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: white;">
-                                <option value="">Selecione o veículo...</option>
-                            </select>
-                        </div>
-                        <div id="infoRespAtual" style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Responsável Atual</label>
-                            <div style="padding: 10px 12px; background: #f3f4f6; border-radius: 8px; font-size: 14px; color: #6b7280;">Selecione um veículo</div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 13px; font-weight: 500; color: #374151;">Novo Responsável *</label>
-                            <select id="transfNovoResp" style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: white;">
-                                <option value="">Selecione o motorista...</option>
-                            </select>
-                        </div>
-                        <div>
-                            <button onclick="solicitarTransferenciaDireta()" style="width: 100%; padding: 10px 16px; border: none; background: #f59e0b; color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                📤 Solicitar
-                            </button>
-                        </div>
-                    </div>
-                    <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 6px;">
-                        <label style="font-size: 13px; font-weight: 500; color: #374151;">Motivo/Observação</label>
-                        <textarea id="transfObsDireta" rows="2" placeholder="Informe o motivo..." style="padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div id="cardsTransf" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;"></div>
-
-            <div class="card" style="margin-bottom: 24px; overflow-x: auto;">
-                <div class="card-header" style="border-bottom: 1px solid #e5e7eb;">
-                    <div class="card-title">⏳ Solicitações Pendentes</div>
+            
+            <div class="card" style="overflow-x: auto;">
+                <div class="card-header">
+                    <div class="card-title">Todas as Solicitações</div>
                 </div>
                 <div class="card-body" style="padding: 0;">
                     <div class="table-container">
@@ -868,51 +1520,24 @@
                                     <th>Veículo</th>
                                     <th>De</th>
                                     <th>Para</th>
-                                    <th>Solicitado por</th>
                                     <th>Status</th>
+                                    <th>Observação</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabelaPendentes">
-                                <tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Carregando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" style="overflow-x: auto;">
-                <div class="card-header" style="border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                    <div class="card-title">📜 Histórico de Transferências</div>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <input type="date" id="filtroHistDataIni" style="padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" onchange="carregarHistoricoTransferencias()">
-                        <span style="color: #6b7280; font-size: 13px;">até</span>
-                        <input type="date" id="filtroHistDataFim" style="padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" onchange="carregarHistoricoTransferencias()">
-                    </div>
-                </div>
-                <div class="card-body" style="padding: 0;">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Data Solicitação</th>
-                                    <th>Data Conclusão</th>
-                                    <th>Veículo</th>
-                                    <th>De</th>
-                                    <th>Para</th>
-                                    <th>Check-list</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelaHistoricoTransf">
-                                <tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Carregando...</td></tr>
+                            <tbody id="tabelaSolicitacoes">
+                                <tr><td colspan="7" style="text-align:center;padding:40px;color:#64748b;">Carregando...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </section>
+        
 
+        <!-- ============================================================
+             PÁGINA: RELATÓRIOS
+             ============================================================ -->
         <section class="pagina" id="pagina-relatorios">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                 <div>
@@ -1004,19 +1629,7 @@
     let supabaseReal = null;
     try {
         supabaseReal = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-    // ============================================================
-    // TOGGLE SIDEBAR (MENU MOBILE)
-    // ============================================================
-    function toggleSidebar() {
-        var sidebar = document.querySelector('.sidebar');
-        var overlay = document.getElementById('sidebarOverlay');
-        if (sidebar) sidebar.classList.toggle('aberto');
-        if (overlay) overlay.classList.toggle('visivel');
-    }
-    window.toggleSidebar = toggleSidebar;
-
-console.log('✅ Supabase inicializado');
+        console.log('✅ Supabase inicializado');
     } catch(e) {
         console.warn('⚠️ Supabase não disponível, usando modo local:', e);
     }
@@ -1030,7 +1643,6 @@ console.log('✅ Supabase inicializado');
 
 <!-- 3. Supabase Wrapper -->
 <script src="js/supabase.js"></script>
-<script src="js/supabase-sync.js"></script>
 
 <!-- 4. Banco de Dados (local + Supabase) -->
 <script src="js/banco-dados.js"></script>
@@ -1113,134 +1725,59 @@ console.log('✅ Supabase inicializado');
     // MODAL DE CONFIGURAÇÕES
     // ============================================================
     window.abrirModalConfiguracoes = function() {
-        try {
-            var modaisAntigos = document.querySelectorAll('.modal-config-ns');
-            for (var i = 0; i < modaisAntigos.length; i++) {
-                modaisAntigos[i].remove();
-            }
-            
-            var fundo = document.createElement('div');
-            fundo.className = 'modal-config-ns';
-            fundo.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999999;padding:1rem;';
-            fundo.onclick = function(e) { 
-                if (e.target === fundo) fundo.remove(); 
-            };
-            
-            var modoSupabase = '⚠️ Apenas Local';
-            try {
-                if (window.supabase && window.supabase.temConexaoReal) {
-                    modoSupabase = '✅ Conectado';
-                }
-            } catch(e) {}
-            
-            var totalVeiculos = 0;
-            var totalGastos = 0;
-            var totalUsuarios = 0;
-            try {
-                if (window.BD) {
-                    totalVeiculos = window.BD.veiculos ? window.BD.veiculos.length : 0;
-                    totalGastos = window.BD.gastos ? window.BD.gastos.length : 0;
-                    totalUsuarios = window.BD.usuarios ? window.BD.usuarios.length : 0;
-                }
-            } catch(e) {}
-            
-            var container = document.createElement('div');
-            container.style.cssText = 'background:white;border-radius:16px;width:100%;max-width:550px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,0.25);';
-            
-            var cabecalho = document.createElement('div');
-            cabecalho.style.cssText = 'padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;';
-            var titulo = document.createElement('h3');
-            titulo.style.cssText = 'margin:0;font-size:1.15rem;font-weight:700;color:#0f172a;';
-            titulo.textContent = '⚙️ Configurações do Sistema';
-            var btnFechar = document.createElement('button');
-            btnFechar.style.cssText = 'background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;padding:0 0.5rem;';
-            btnFechar.innerHTML = '&times;';
-            btnFechar.onclick = function() { fundo.remove(); };
-            cabecalho.appendChild(titulo);
-            cabecalho.appendChild(btnFechar);
-            
-            var corpo = document.createElement('div');
-            corpo.style.cssText = 'padding:1.5rem;';
-            
-            var statusDiv = document.createElement('div');
-            statusDiv.style.cssText = 'padding:1rem;background:#f8fafc;border-radius:8px;margin-bottom:1rem;';
-            statusDiv.innerHTML = 
-                '<div style="font-weight:600;margin-bottom:0.5rem;">📊 Status do Sistema</div>' +
-                '<div style="font-size:0.875rem;color:#64748b;display:grid;gap:0.25rem;">' +
-                    '<div>Conexão Supabase: <strong>' + modoSupabase + '</strong></div>' +
-                    '<div>Veículos cadastrados: <strong>' + totalVeiculos + '</strong></div>' +
-                    '<div>Gastos registrados: <strong>' + totalGastos + '</strong></div>' +
-                    '<div>Usuários: <strong>' + totalUsuarios + '</strong></div>' +
-                '</div>';
-            corpo.appendChild(statusDiv);
-            
-            var botoesDiv = document.createElement('div');
-            botoesDiv.style.cssText = 'display:grid;gap:0.5rem;';
-            
-            function criarBotao(texto, bgColor, textColor, onclick) {
-                var btn = document.createElement('button');
-                btn.style.cssText = 'width:100%;padding:0.65rem 1rem;border:none;border-radius:8px;font-size:0.9rem;font-weight:500;cursor:pointer;transition:all 0.2s;background:' + bgColor + ';color:' + textColor + ';';
-                btn.onmouseover = function() { btn.style.opacity = '0.9'; };
-                btn.onmouseout = function() { btn.style.opacity = '1'; };
-                btn.textContent = texto;
-                btn.onclick = onclick;
-                return btn;
-            }
-            
-            var btnSync = criarBotao('🔄 Sincronizar com Supabase', '#2563eb', 'white', 
-                function() { if (window.sincronizarManualmente) window.sincronizarManualmente(); });
-            var btnExport = criarBotao('📤 Exportar Dados (JSON)', '#64748b', 'white',
-                function() { if (window.exportarDadosJSON) window.exportarDadosJSON(); });
-            var btnImport = criarBotao('📥 Importar Dados', '#64748b', 'white',
-                function() { 
-                    var input = document.getElementById('importarArquivoTemp');
-                    if (input) input.click(); 
-                });
-            var btnDemo = criarBotao('📦 Recarregar Dados de Demonstração', '#fef3c7', '#92400e',
-                function() { if (window.recarregarDadosDemo) window.recarregarDadosDemo(); });
-            var btnLimpar = criarBotao('🗑️ Limpar Todos os Dados Locais', '#fee2e2', '#991b1b',
-                function() { if (window.limparTodosDados) window.limparTodosDados(); });
-            
-            var inputImport = document.createElement('input');
-            inputImport.type = 'file';
-            inputImport.id = 'importarArquivoTemp';
-            inputImport.accept = '.json';
-            inputImport.style.display = 'none';
-            inputImport.onchange = function(e) { 
-                if (window.importarDadosJSON) window.importarDadosJSON(e); 
-            };
-            
-            botoesDiv.appendChild(btnSync);
-            botoesDiv.appendChild(btnExport);
-            botoesDiv.appendChild(btnImport);
-            botoesDiv.appendChild(inputImport);
-            botoesDiv.appendChild(btnDemo);
-            botoesDiv.appendChild(btnLimpar);
-            corpo.appendChild(botoesDiv);
-            
-            var rodape = document.createElement('div');
-            rodape.style.cssText = 'padding:1rem 1.5rem;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:0.5rem;';
-            var btnFecharRodape = document.createElement('button');
-            btnFecharRodape.style.cssText = 'padding:0.5rem 1rem;border:1px solid #e2e8f0;background:white;color:#475569;border-radius:8px;cursor:pointer;font-size:0.875rem;';
-            btnFecharRodape.textContent = 'Fechar';
-            btnFecharRodape.onclick = function() { fundo.remove(); };
-            rodape.appendChild(btnFecharRodape);
-            
-            container.appendChild(cabecalho);
-            container.appendChild(corpo);
-            container.appendChild(rodape);
-            fundo.appendChild(container);
-            
-            document.body.appendChild(fundo);
-            
-            console.log('✅ Modal de configurações aberto');
-            
-        } catch (e) {
-            console.error('❌ Erro ao abrir configurações:', e);
-            alert('Erro ao abrir configurações: ' + e.message);
-        }
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay aberto';
+        modal.onclick = (e) => { if (e.target === modal) fecharModal(); };
+        
+        const modoSupabase = window.supabase?.temConexaoReal ? '✅ Conectado' : '⚠️ Apenas Local';
+        const totalVeiculos = BD.veiculos?.length || 0;
+        const totalGastos = BD.gastos?.length || 0;
+        const totalUsuarios = BD.usuarios?.length || 0;
+        
+        modal.innerHTML = `
+            <div class="modal-container" style="max-width: 550px;">
+                <div class="modal-cabecalho">
+                    <h3 class="modal-titulo">⚙️ Configurações do Sistema</h3>
+                    <button type="button" class="modal-fechar" onclick="fecharModal()">&times;</button>
+                </div>
+                <div class="modal-corpo">
+                    <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem;">
+                        <div style="font-weight: 600; margin-bottom: 0.5rem;">📊 Status do Sistema</div>
+                        <div style="font-size: 0.875rem; color: #64748b; display: grid; gap: 0.25rem;">
+                            <div>Conexão Supabase: <strong>${modoSupabase}</strong></div>
+                            <div>Veículos cadastrados: <strong>${totalVeiculos}</strong></div>
+                            <div>Gastos registrados: <strong>${totalGastos}</strong></div>
+                            <div>Usuários: <strong>${totalUsuarios}</strong></div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; gap: 0.5rem;">
+                        <button class="btn btn-primario" onclick="sincronizarManualmente()" style="width: 100%;">
+                            <i class="fa-solid fa-sync"></i> 🔄 Sincronizar com Supabase
+                        </button>
+                        <button class="btn btn-secundario" onclick="exportarDadosJSON()" style="width: 100%;">
+                            <i class="fa-solid fa-download"></i> 📤 Exportar Dados (JSON)
+                        </button>
+                        <button class="btn btn-secundario" onclick="document.getElementById('importarArquivo').click()" style="width: 100%;">
+                            <i class="fa-solid fa-upload"></i> 📥 Importar Dados
+                        </button>
+                        <input type="file" id="importarArquivo" accept=".json" style="display: none;" onchange="importarDadosJSON(event)">
+                        <button class="btn" style="width: 100%; background: #fef3c7; color: #92400e;" onclick="recarregarDadosDemo()">
+                            <i class="fa-solid fa-database"></i> 📦 Recarregar Dados de Demonstração
+                        </button>
+                        <button class="btn" style="width: 100%; background: #fee2e2; color: #991b1b;" onclick="limparTodosDados()">
+                            <i class="fa-solid fa-trash"></i> 🗑️ Limpar Todos os Dados Locais
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-rodape">
+                    <button type="button" class="btn btn-secundario" onclick="fecharModal()">Fechar</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('modais').appendChild(modal);
     };
-
+    
     // Funções de configuração
     window.sincronizarManualmente = async function() {
         if (typeof sincronizarBD === 'function') {
@@ -1419,388 +1956,6 @@ console.log('✅ Supabase inicializado');
         setTimeout(inicializarSistemaInline, 50);
     }
 </script>
-
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-
-<script>
-function trocarAbaConfig(nomeAba) {
-    try {
-        var abas = document.querySelectorAll('.aba-config-conteudo');
-        for (var i = 0; i < abas.length; i++) { abas[i].style.display = 'none'; }
-        var sel = document.getElementById('aba-config-' + nomeAba);
-        if (sel) sel.style.display = 'block';
-        var botoes = document.querySelectorAll('.aba-config-btn');
-        for (var j = 0; j < botoes.length; j++) {
-            var btn = botoes[j];
-            if (btn.getAttribute('data-aba') === nomeAba) {
-                btn.style.color = '#2563eb'; btn.style.borderBottomColor = '#2563eb'; btn.style.fontWeight = '600';
-            } else {
-                btn.style.color = '#64748b'; btn.style.borderBottomColor = 'transparent'; btn.style.fontWeight = '500';
-            }
-        }
-        if (nomeAba === 'dados-gerais') carregarListasDadosGerais();
-        if (nomeAba === 'integracoes') atualizarStatusSupabase();
-    } catch (e) { console.error('Erro trocar aba:', e); }
-}
-window.trocarAbaConfig = trocarAbaConfig;
-
-function sv(id,v){var e=document.getElementById(id);if(e)e.value=v;}
-function sc(id,v){var e=document.getElementById(id);if(e)e.checked=v;}
-function gv(id){var e=document.getElementById(id);return e?e.value:'';}
-function gc(id){var e=document.getElementById(id);return e?e.checked:false;}
-
-function carregarConfiguracoes() {
-    try {
-        if(!window.BD||!window.BD.config)return;var c=window.BD.config;
-        sv('cfgNomeEmpresa',c.nomeEmpresa||'');sv('cfgCNPJ',c.cnpj||'');sv('cfgEmail',c.email||'');sv('cfgTelefone',c.telefone||'');sv('cfgLogo',c.logo||'');
-        sv('cfgMoeda',c.moeda||'BRL');sv('cfgDistancia',c.distancia||'km');sv('cfgFormatoData',c.formatoData||'pt-BR');sv('cfgFusoHorario',c.fusoHorario||'America/Sao_Paulo');
-        sv('cfgKmAviso',c.kmAviso||500);sv('cfgDiasAviso',c.diasAviso||15);sc('cfgAvisoManutencao',c.avisoManutencao!==false);
-        sc('cfgAlertaKm',c.alertaKm!==false);sv('cfgLimiteKm',c.limiteKm||200000);sc('cfgAlertaStatus',c.alertaStatus!==false);
-        sv('cfgDiasParado',c.diasParado||30);sv('cfgEmailAlerta',c.emailAlerta||'');
-        sc('cfgExigirChecklist',c.exigirChecklist!==false);sv('cfgPctAprovacao',c.pctAprovacao||70);
-        sc('cfgPermitirMotoristaAceitar',c.permitirMotoristaAceitar!==false);sc('cfgAtualizarResponsavelAuto',c.atualizarResponsavelAuto!==false);
-        sv('cfgValorMaxAdiantamento',c.valorMaxAdiantamento||500);sc('cfgExigirPrestacaoContas',c.exigirPrestacaoContas!==false);
-        sv('cfgDiasPrestacao',c.diasPrestacao||7);sc('cfgExigirChecklistAlocacao',c.exigirChecklistAlocacao||false);
-        sc('cfgBloquearVeiculoAlocado',c.bloquearVeiculoAlocado!==false);sc('cfgRegistrarHistorico',c.registrarHistorico!==false);
-        sv('cfgTempoSessao',c.tempoSessao||240);sc('cfgManterSessao',c.manterSessao!==false);
-        sv('cfgTentativasLogin',c.tentativasLogin||5);sv('cfgTamanhoMinSenha',c.tamanhoMinSenha||4);
-        sc('cfgSenhaNumero',c.senhaNumero||false);sc('cfgSenhaMaiuscula',c.senhaMaiuscula||false);
-        sc('cfgLogAcoes',c.logAcoes!==false);sc('cfgLogLogin',c.logLogin!==false);
-        var es=document.getElementById('cfgUltimoSalvamento');if(es)es.textContent=c.ultimaAtualizacao||'--';
-        var et=document.getElementById('cfgTamanhoDados');if(et&&window.BD)et.textContent=Math.round(JSON.stringify(window.BD).length/1024)+' KB';
-    } catch(e){console.error('Erro carregar cfg:',e);}
-}
-window.carregarConfiguracoes=carregarConfiguracoes;
-
-function salvarTodasConfiguracoes() {
-    try {
-        if(!window.BD)window.BD={};if(!window.BD.config)window.BD.config={};var c=window.BD.config;
-        c.nomeEmpresa=gv('cfgNomeEmpresa');c.cnpj=gv('cfgCNPJ');c.email=gv('cfgEmail');c.telefone=gv('cfgTelefone');c.logo=gv('cfgLogo');
-        c.moeda=gv('cfgMoeda');c.distancia=gv('cfgDistancia');c.formatoData=gv('cfgFormatoData');c.fusoHorario=gv('cfgFusoHorario');
-        c.kmAviso=Number(gv('cfgKmAviso'));c.diasAviso=Number(gv('cfgDiasAviso'));c.avisoManutencao=gc('cfgAvisoManutencao');
-        c.alertaKm=gc('cfgAlertaKm');c.limiteKm=Number(gv('cfgLimiteKm'));c.alertaStatus=gc('cfgAlertaStatus');
-        c.diasParado=Number(gv('cfgDiasParado'));c.emailAlerta=gv('cfgEmailAlerta');
-        c.exigirChecklist=gc('cfgExigirChecklist');c.pctAprovacao=Number(gv('cfgPctAprovacao'));
-        c.permitirMotoristaAceitar=gc('cfgPermitirMotoristaAceitar');c.atualizarResponsavelAuto=gc('cfgAtualizarResponsavelAuto');
-        c.valorMaxAdiantamento=Number(gv('cfgValorMaxAdiantamento'));c.exigirPrestacaoContas=gc('cfgExigirPrestacaoContas');
-        c.diasPrestacao=Number(gv('cfgDiasPrestacao'));c.exigirChecklistAlocacao=gc('cfgExigirChecklistAlocacao');
-        c.bloquearVeiculoAlocado=gc('cfgBloquearVeiculoAlocado');c.registrarHistorico=gc('cfgRegistrarHistorico');
-        c.tempoSessao=Number(gv('cfgTempoSessao'));c.manterSessao=gc('cfgManterSessao');
-        c.tentativasLogin=Number(gv('cfgTentativasLogin'));c.tamanhoMinSenha=Number(gv('cfgTamanhoMinSenha'));
-        c.senhaNumero=gc('cfgSenhaNumero');c.senhaMaiuscula=gc('cfgSenhaMaiuscula');
-        c.logAcoes=gc('cfgLogAcoes');c.logLogin=gc('cfgLogLogin');
-        c.ultimaAtualizacao=new Date().toLocaleString('pt-BR');
-        if(typeof salvarDados==='function')salvarDados();
-        if(c.nomeEmpresa){var el=document.querySelector('.sidebar-logo-text strong');if(el)el.textContent=c.nomeEmpresa;}
-        if(typeof mostrarToast==='function')mostrarToast('Configurações salvas!','sucesso');else alert('Salvo!');
-    } catch(e){console.error('Erro salvar:',e);alert('Erro: '+e.message);}
-}
-window.salvarTodasConfiguracoes=salvarTodasConfiguracoes;
-
-function carregarListaSimples(chave,containerId,funcRemover) {
-    try{
-        if(!window.BD.config)window.BD.config={};var lista=window.BD.config[chave]||[];
-        var padroes={'locais':['Patio Metalica','Patio Usina Conc.','Obra'],'categoriasVeiculo':['Caminhão','Carro Passeio','Utilitário','Máquina','Van','Ônibus','Moto'],'tiposGasto':['Combustível','Manutenção','Peças','Pneus','Seguro','IPVA','Pedágio','Multas','Serviços','Outros'],'origensDestinos':['Patio Metalica','Patio Usina Conc.','Obra']};
-        if(lista.length===0&&padroes[chave]){lista=padroes[chave];window.BD.config[chave]=lista;}
-        var c=document.getElementById(containerId);if(!c)return;c.innerHTML='';
-        for(var i=0;i<lista.length;i++){
-            var d=document.createElement('div');d.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.75rem;background:#f8fafc;border-radius:8px;font-size:0.875rem;';
-            d.innerHTML='<span style="color:#374151;">'+lista[i]+'</span><button onclick="'+funcRemover+'('+i+')" style="background:none;border:none;color:#dc2626;cursor:pointer;padding:4px 8px;border-radius:4px;"><i class="fa-solid fa-trash-can"></i></button>';
-            c.appendChild(d);
-        }
-        if(lista.length===0)c.innerHTML='<div style="text-align:center;padding:1rem;color:#94a3b8;font-size:0.875rem;">Nenhum item</div>';
-    }catch(e){console.error(e);}
-}
-
-function adicionarItemLista(chave,inputId,containerId,funcRemover){
-    try{
-        var inp=document.getElementById(inputId);if(!inp||!inp.value.trim())return;
-        if(!window.BD.config)window.BD.config={};if(!window.BD.config[chave])window.BD.config[chave]=[];
-        if(window.BD.config[chave].includes(inp.value.trim())){if(typeof mostrarToast==='function')mostrarToast('Já existe!','aviso');return;}
-        window.BD.config[chave].push(inp.value.trim());inp.value='';
-        if(typeof salvarDados==='function')salvarDados();carregarListaSimples(chave,containerId,funcRemover);
-        if(typeof mostrarToast==='function')mostrarToast('Adicionado!','sucesso');
-    }catch(e){console.error(e);}
-}
-
-function removerItemLista(chave,i,containerId,funcRemover){
-    try{if(!confirm('Remover?'))return;window.BD.config[chave].splice(i,1);if(typeof salvarDados==='function')salvarDados();carregarListaSimples(chave,containerId,funcRemover);}catch(e){console.error(e);}
-}
-
-function adicionarLocal(){adicionarItemLista('locais','novoLocal','listaLocais','removerLocal');}
-function removerLocal(i){removerItemLista('locais',i,'listaLocais','removerLocal');}
-function adicionarCategoria(){adicionarItemLista('categoriasVeiculo','novaCategoria','listaCategorias','removerCategoria');}
-function removerCategoria(i){removerItemLista('categoriasVeiculo',i,'listaCategorias','removerCategoria');}
-function adicionarTipoGasto(){adicionarItemLista('tiposGasto','novoTipoGasto','listaTiposGasto','removerTipoGasto');}
-function removerTipoGasto(i){removerItemLista('tiposGasto',i,'listaTiposGasto','removerTipoGasto');}
-function adicionarOrigemDestino(){adicionarItemLista('origensDestinos','novaOrigemDestino','listaOrigensDestinos','removerOrigemDestino');}
-function removerOrigemDestino(i){removerItemLista('origensDestinos',i,'listaOrigensDestinos','removerOrigemDestino');}
-window.adicionarLocal=adicionarLocal;window.removerLocal=removerLocal;
-window.adicionarCategoria=adicionarCategoria;window.removerCategoria=removerCategoria;
-window.adicionarTipoGasto=adicionarTipoGasto;window.removerTipoGasto=removerTipoGasto;
-window.adicionarOrigemDestino=adicionarOrigemDestino;window.removerOrigemDestino=removerOrigemDestino;
-
-function carregarListasDadosGerais(){
-    carregarListaSimples('locais','listaLocais','removerLocal');
-    carregarListaSimples('categoriasVeiculo','listaCategorias','removerCategoria');
-    carregarListaSimples('tiposGasto','listaTiposGasto','removerTipoGasto');
-    carregarListaSimples('origensDestinos','listaOrigensDestinos','removerOrigemDestino');
-}
-window.carregarListasDadosGerais=carregarListasDadosGerais;
-
-function atualizarStatusSupabase(){
-    try{var el=document.getElementById('statusConexaoSupabase');if(!el)return;
-    var ok=window.supabase&&window.supabase.temConexaoReal;
-    el.textContent=ok?'Conectado':'Apenas Local';el.style.color=ok?'#10b981':'#f59e0b';}catch(e){}
-}
-window.atualizarStatusSupabase=atualizarStatusSupabase;
-
-async function testarConexaoSupabase(){
-    try{if(!window.supabaseReal){alert('Não inicializado');return;}
-    var t=await window.supabaseReal.from('locais').select('count',{count:'exact',head:true});
-    alert(t.error?'Erro: '+t.error.message:'Conexão OK!');atualizarStatusSupabase();}catch(e){alert('Erro: '+e.message);}
-}
-window.testarConexaoSupabase=testarConexaoSupabase;
-
-function inicializarPaginaConfig(){
-    carregarConfiguracoes();carregarListasDadosGerais();atualizarStatusSupabase();
-    var b=document.querySelector('.aba-config-btn');
-    if(b){b.style.color='#2563eb';b.style.borderBottomColor='#2563eb';b.style.fontWeight='600';}
-}
-window.inicializarPaginaConfig=inicializarPaginaConfig;
-
-// Auto-inicializar se a página já estiver aberta
-document.addEventListener('DOMContentLoaded',function(){
-    if(document.getElementById('pagina-configuracoes')&&document.getElementById('pagina-configuracoes').classList.contains('ativa')){
-        setTimeout(inicializarPaginaConfig,200);
-    }
-});
-
-// ======================================================
-// CARREGAR USUÁRIOS DO SUPABASE
-// ======================================================
-async function carregarUsuarios() {
-    console.log("🔍 Buscando usuários...");
-
-    try {
-        if (!window.supabaseReal) {
-            console.log("❌ Supabase não inicializado");
-            return;
-        }
-
-        const { data, error } = await window.supabaseReal
-            .from('usuarios')
-            .select('*')
-            .order('nome', { ascending: true });
-
-        if (error) {
-            console.error("❌ Erro ao buscar usuários:", error);
-            return;
-        }
-
-        console.log("✅ Usuários encontrados:", data.length, "registro(s)");
-
-        // Exibir na tabela
-        const corpoTabela = document.querySelector('#pagina-usuarios tbody');
-        if (!corpoTabela) {
-            console.log("⚠️ Tabela de usuários não encontrada");
-            return;
-        }
-
-        corpoTabela.innerHTML = ""; // ← LIMPA a tabela sempre antes de recarregar
-
-        if (data.length === 0) {
-            corpoTabela.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:2rem;">Nenhum usuário cadastrado</td></tr>`;
-            return;
-        }
-
-        // Montar cada linha
-        data.forEach(usuario => {
-            const linha = document.createElement('tr');
-            linha.innerHTML = `
-                <td>${usuario.nome || ''}</td>
-                <td>${usuario.usuario || ''}</td>
-                <td>${usuario.perfil || 'Padrão'}</td>
-                <td><span style="color:green;">Ativo</span></td>
-                <td>
-                    <button class="btn btn-secundario">Editar</button>
-                    <button class="btn" style="background:#fee2e2; color:#991b1b;">Excluir</button>
-                </td>
-            `;
-            corpoTabela.appendChild(linha);
-        });
-
-    } catch (e) {
-        console.error("❌ Falha:", e.message);
-    }
-}
-
-window.carregarUsuarios = carregarUsuarios;
-
-
-// ======================================================
-// SEMPRE BUSCAR NOVAMENTE ao entrar na página
-// ======================================================
-const observadorPaginas = new MutationObserver(function() {
-    const paginaUsuarios = document.getElementById('pagina-usuarios');
-    if (paginaUsuarios && paginaUsuarios.classList.contains('ativa')) {
-        // ✅ REMOVIDA a marcação "já carregou" — BUSCA TODA VEZ!
-        setTimeout(carregarUsuarios, 150);
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const areaPaginas = document.getElementById('areaPaginas') || document.body;
-    observadorPaginas.observe(areaPaginas, { 
-        attributes: true, 
-        subtree: true, 
-        attributeFilter: ['class'] 
-    });
-
-    // Se já abriu na página de usuários
-    if (document.getElementById('pagina-usuarios')?.classList.contains('ativa')) {
-        setTimeout(carregarUsuarios, 300);
-    }
-});
-
-</script>
-
-
-<script>
-function cfgValor(id) { var e = document.getElementById(id); return e ? e.value : ''; }
-function cfgSetValor(id, v) { var e = document.getElementById(id); if (e) e.value = v || ''; }
-
-function cfgCarregarLista(chave, containerId, funcRemover) {
-    try {
-        if (!window.BD) return;
-        if (!window.BD.config) window.BD.config = {};
-        var lista = window.BD.config[chave] || [];
-        var padroes = {
-            'locais': ['Patio Metalica','Patio Usina Conc.','Obra'],
-            'categoriasVeiculo': ['Caminhão','Carro Passeio','Utilitário','Máquina','Van','Ônibus','Moto'],
-            'tiposGasto': ['Combustível','Manutenção','Peças','Pneus','Seguro','IPVA','Pedágio','Multas','Serviços','Outros']
-        };
-        if (lista.length === 0 && padroes[chave]) { lista = padroes[chave]; window.BD.config[chave] = lista; }
-        var container = document.getElementById(containerId);
-        if (!container) return;
-        container.innerHTML = '';
-        for (var i = 0; i < lista.length; i++) {
-            var d = document.createElement('div');
-            d.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.6rem;background:#f8fafc;border-radius:6px;font-size:0.85rem;';
-            d.innerHTML = '<span style="color:#374151;">' + lista[i] + '</span><button onclick="' + funcRemover + '(' + i + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;padding:2px 6px;border-radius:4px;font-size:0.8rem;">✕</button>';
-            container.appendChild(d);
-        }
-    } catch(e) { console.error(e); }
-}
-
-function cfgAdicionar(chave, inputId, containerId, funcRemover) {
-    try {
-        var inp = document.getElementById(inputId);
-        if (!inp || !inp.value.trim()) return;
-        if (!window.BD.config) window.BD.config = {};
-        if (!window.BD.config[chave]) window.BD.config[chave] = [];
-        if (window.BD.config[chave].includes(inp.value.trim())) return;
-        window.BD.config[chave].push(inp.value.trim());
-        inp.value = '';
-        if (typeof salvarDados === 'function') salvarDados();
-        cfgCarregarLista(chave, containerId, funcRemover);
-    } catch(e) { console.error(e); }
-}
-
-function cfgRemoverLocal(i) { window.BD.config.locais.splice(i,1); if(typeof salvarDados==='function')salvarDados(); cfgCarregarLista('locais','cfgListaLocais','cfgRemoverLocal'); }
-function cfgRemoverCategoria(i) { window.BD.config.categoriasVeiculo.splice(i,1); if(typeof salvarDados==='function')salvarDados(); cfgCarregarLista('categoriasVeiculo','cfgListaCategorias','cfgRemoverCategoria'); }
-function cfgRemoverTipoGasto(i) { window.BD.config.tiposGasto.splice(i,1); if(typeof salvarDados==='function')salvarDados(); cfgCarregarLista('tiposGasto','cfgListaTiposGasto','cfgRemoverTipoGasto'); }
-
-function cfgCarregarTudo() {
-    try {
-        if (!window.BD || !window.BD.config) return;
-        var c = window.BD.config;
-        cfgSetValor('cfgNomeEmpresa', c.nomeEmpresa);
-        cfgSetValor('cfgCNPJ', c.cnpj);
-        cfgSetValor('cfgEmail', c.email);
-        cfgSetValor('cfgTelefone', c.telefone);
-        cfgSetValor('cfgMoeda', c.moeda || 'BRL');
-        cfgSetValor('cfgFormatoData', c.formatoData || 'pt-BR');
-        cfgSetValor('cfgKmAviso', c.kmAviso || 500);
-        cfgSetValor('cfgDiasAviso', c.diasAviso || 15);
-        cfgSetValor('cfgLimiteKm', c.limiteKm || 200000);
-        cfgSetValor('cfgDiasParado', c.diasParado || 30);
-        cfgSetValor('cfgEmailAlerta', c.emailAlerta);
-        cfgSetValor('cfgPctAprovacao', c.pctAprovacao || 70);
-        cfgSetValor('cfgValorMaxAdiantamento', c.valorMaxAdiantamento || 500);
-        cfgSetValor('cfgDiasPrestacao', c.diasPrestacao || 7);
-        cfgSetValor('cfgTempoSessao', c.tempoSessao || 240);
-        cfgSetValor('cfgTamanhoMinSenha', c.tamanhoMinSenha || 4);
-        cfgSetValor('cfgTentativasLogin', c.tentativasLogin || 5);
-        cfgCarregarLista('locais', 'cfgListaLocais', 'cfgRemoverLocal');
-        cfgCarregarLista('categoriasVeiculo', 'cfgListaCategorias', 'cfgRemoverCategoria');
-        cfgCarregarLista('tiposGasto', 'cfgListaTiposGasto', 'cfgRemoverTipoGasto');
-        var el = document.getElementById('cfgStatusSupabase');
-        if (el) {
-            var ok = window.supabase && window.supabase.temConexaoReal;
-            el.textContent = ok ? '✅ Conectado' : '⚠️ Apenas Local';
-            el.style.color = ok ? '#10b981' : '#f59e0b';
-        }
-        if (document.getElementById('cfgStatusVeiculos') && window.BD.veiculos)
-            document.getElementById('cfgStatusVeiculos').textContent = window.BD.veiculos.length;
-        if (document.getElementById('cfgStatusGastos') && window.BD.gastos)
-            document.getElementById('cfgStatusGastos').textContent = window.BD.gastos.length;
-        if (document.getElementById('cfgStatusUsuarios') && window.BD.usuarios)
-            document.getElementById('cfgStatusUsuarios').textContent = window.BD.usuarios.length;
-    } catch(e) { console.error('Erro carregar cfg:', e); }
-}
-
-function salvarConfiguracoesSimples() {
-    try {
-        if (!window.BD) window.BD = {};
-        if (!window.BD.config) window.BD.config = {};
-        var c = window.BD.config;
-        c.nomeEmpresa = cfgValor('cfgNomeEmpresa');
-        c.cnpj = cfgValor('cfgCNPJ');
-        c.email = cfgValor('cfgEmail');
-        c.telefone = cfgValor('cfgTelefone');
-        c.moeda = cfgValor('cfgMoeda');
-        c.formatoData = cfgValor('cfgFormatoData');
-        c.kmAviso = Number(cfgValor('cfgKmAviso'));
-        c.diasAviso = Number(cfgValor('cfgDiasAviso'));
-        c.limiteKm = Number(cfgValor('cfgLimiteKm'));
-        c.diasParado = Number(cfgValor('cfgDiasParado'));
-        c.emailAlerta = cfgValor('cfgEmailAlerta');
-        c.pctAprovacao = Number(cfgValor('cfgPctAprovacao'));
-        c.valorMaxAdiantamento = Number(cfgValor('cfgValorMaxAdiantamento'));
-        c.diasPrestacao = Number(cfgValor('cfgDiasPrestacao'));
-        c.tempoSessao = Number(cfgValor('cfgTempoSessao'));
-        c.tamanhoMinSenha = Number(cfgValor('cfgTamanhoMinSenha'));
-        c.tentativasLogin = Number(cfgValor('cfgTentativasLogin'));
-        c.ultimaAtualizacao = new Date().toLocaleString('pt-BR');
-        if (typeof salvarDados === 'function') salvarDados();
-        if (c.nomeEmpresa) {
-            var el = document.querySelector('.sidebar-logo-text strong');
-            if (el) el.textContent = c.nomeEmpresa;
-        }
-        if (typeof mostrarToast === 'function') {
-            mostrarToast('✅ Configurações salvas!', 'sucesso');
-        } else {
-            alert('✅ Configurações salvas!');
-        }
-    } catch(e) {
-        console.error(e);
-        alert('❌ Erro: ' + e.message);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        var pg = document.getElementById('pagina-configuracoes');
-        if (pg && pg.classList.contains('ativa')) {
-            cfgCarregarTudo();
-        }
-    }, 300);
-});
-</script>
-
-    <!-- Correções de Layout -->
-    <script src="js/correcoes-layout.js"></script>
 
 </body>
 </html>
