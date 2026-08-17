@@ -1615,6 +1615,59 @@
                 </div>
             </div>
         </section>
+
+        <!-- ============================================================
+             PÁGINA: CONFIGURAÇÕES
+             ============================================================ -->
+        <section class="pagina" id="pagina-configuracoes">
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 class="page-title">⚙️ Configurações do Sistema</h1>
+                    <p class="page-subtitle">Gerencie dados, conexões e utilitários do sistema</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="card" style="padding: 1.25rem;">
+                    <div style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem;">Conexão Supabase</div>
+                    <div id="statusSupabase" style="font-size: 1.25rem; font-weight: 700; color: #0ea5e9;">Verificando...</div>
+                </div>
+                <div class="card" style="padding: 1.25rem;">
+                    <div style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem;">Veículos Cadastrados</div>
+                    <div id="statusVeiculos" style="font-size: 1.25rem; font-weight: 700; color: #0ea5e9;">0</div>
+                </div>
+                <div class="card" style="padding: 1.25rem;">
+                    <div style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem;">Gastos Registrados</div>
+                    <div id="statusGastos" style="font-size: 1.25rem; font-weight: 700; color: #0ea5e9;">0</div>
+                </div>
+                <div class="card" style="padding: 1.25rem;">
+                    <div style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem;">Usuários</div>
+                    <div id="statusUsuarios" style="font-size: 1.25rem; font-weight: 700; color: #0ea5e9;">0</div>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 1.5rem;">
+                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b;">🔧 Ações do Sistema</h3>
+                <div style="display: grid; gap: 0.75rem;">
+                    <button class="btn btn-primario" onclick="sincronizarManualmente()" style="width: 100%; padding: 0.875rem; font-size: 0.95rem;">
+                        <i class="fa-solid fa-sync"></i> 🔄 Sincronizar com Supabase
+                    </button>
+                    <button class="btn btn-secundario" onclick="exportarDadosJSON()" style="width: 100%; padding: 0.875rem; font-size: 0.95rem;">
+                        <i class="fa-solid fa-download"></i> 📤 Exportar Dados (JSON)
+                    </button>
+                    <button class="btn btn-secundario" onclick="document.getElementById('importarArquivoPagina').click()" style="width: 100%; padding: 0.875rem; font-size: 0.95rem;">
+                        <i class="fa-solid fa-upload"></i> 📥 Importar Dados
+                    </button>
+                    <input type="file" id="importarArquivoPagina" accept=".json" style="display: none;" onchange="importarDadosJSON(event)">
+                    <button class="btn" onclick="recarregarDadosDemo()" style="width: 100%; padding: 0.875rem; font-size: 0.95rem; background: #fef3c7; color: #92400e;">
+                        <i class="fa-solid fa-database"></i> 📦 Recarregar Dados de Demonstração
+                    </button>
+                    <button class="btn" onclick="limparTodosDados()" style="width: 100%; padding: 0.875rem; font-size: 0.95rem; background: #fee2e2; color: #991b1b;">
+                        <i class="fa-solid fa-trash"></i> 🗑️ Limpar Todos os Dados Locais
+                    </button>
+                </div>
+            </div>
+        </section>
     </main>
 </div>
 
@@ -1777,6 +1830,32 @@
             </div>
         `;
         document.getElementById('modais').appendChild(modal);
+    };
+    
+    // ============================================================
+    // ATUALIZAR PÁGINA DE CONFIGURAÇÕES
+    // ============================================================
+    window.atualizarPaginaConfiguracoes = function() {
+        try {
+            const modoSupabase = window.supabase?.temConexaoReal ? '✅ Conectado' : '⚠️ Apenas Local';
+            const totalVeiculos = BD.veiculos?.length || 0;
+            const totalGastos = BD.gastos?.length || 0;
+            const totalUsuarios = BD.usuarios?.length || 0;
+            
+            const elSupabase = document.getElementById('statusSupabase');
+            const elVeiculos = document.getElementById('statusVeiculos');
+            const elGastos = document.getElementById('statusGastos');
+            const elUsuarios = document.getElementById('statusUsuarios');
+            
+            if (elSupabase) elSupabase.textContent = modoSupabase;
+            if (elVeiculos) elVeiculos.textContent = totalVeiculos;
+            if (elGastos) elGastos.textContent = totalGastos;
+            if (elUsuarios) elUsuarios.textContent = totalUsuarios;
+            
+            console.log('✅ Página de configurações atualizada');
+        } catch (e) {
+            console.error('❌ Erro ao atualizar página de configurações:', e);
+        }
     };
     
     // Funções de configuração

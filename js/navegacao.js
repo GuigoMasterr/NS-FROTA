@@ -8,21 +8,6 @@ if (!window.__navegacaoInicializada) {
         try {
             console.log('🧭 Navegando para:', pagina);
             
-            // CASO ESPECIAL: Configurações abre em modal, não como página
-            if (pagina === 'configuracoes') {
-                if (typeof window.abrirModalConfiguracoes === 'function') {
-                    window.abrirModalConfiguracoes();
-                    console.log('✅ Modal de configurações aberto');
-                } else {
-                    console.error('❌ Função abrirModalConfiguracoes não encontrada');
-                }
-                // Atualiza visual do menu
-                document.querySelectorAll('.sidebar-link').forEach(botao => botao.classList.remove('ativo'));
-                const botaoAtivo = document.querySelector('.sidebar-link[data-pagina="' + pagina + '"]');
-                if (botaoAtivo) botaoAtivo.classList.add('ativo');
-                return;
-            }
-            
             const paginas = document.querySelectorAll('.pagina');
             const alvo = document.getElementById('pagina-' + pagina);
             
@@ -75,6 +60,9 @@ if (!window.__navegacaoInicializada) {
             }
             if (pagina === 'despesas-viagem' && typeof carregarListaDespesas === 'function') {
                 carregarListaDespesas();
+            }
+            if (pagina === 'configuracoes' && typeof atualizarPaginaConfiguracoes === 'function') {
+                atualizarPaginaConfiguracoes();
             }
             
             window.paginaAtual = pagina;
