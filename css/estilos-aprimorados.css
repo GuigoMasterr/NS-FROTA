@@ -58,7 +58,7 @@
   background: var(--bg-card);
   border: 1px solid var(--borda);
   border-radius: var(--raio-grande);
-  padding: 50px 20px;
+  padding: 16px 20px;
   margin: 16px 0;
   box-shadow: var(--sombra-suave);
 }
