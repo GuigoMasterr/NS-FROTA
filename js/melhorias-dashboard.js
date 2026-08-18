@@ -46,17 +46,17 @@ function formatarKM(km) {
   if (k >= 1000) return (k / 1000).toFixed(1).replace('.', ',') + 'K';
   return k.toLocaleString('pt-BR');
 }
-
-window.atualizarDashboardCompleto = function() {
   // ✅ Sempre recarrega BD do window (garante dados atualizados)
-const BD = window.BD || { veiculos: [], gastos: [], chamados: [], manutencoes: [], alocacoes: [], gastosViagem: [] };
+window.atualizarDashboardCompleto = function() {
+  const BD = window.BD || { veiculos: [], gastos: [], chamados: [], manutencoes: [], alocacoes: [], gastosViagem: [] };
   
-  if (!getBD() || !getBD().veiculos) {
+  if (!BD || !BD.veiculos || BD.veiculos.length === 0) {
     console.warn('⚠️ [DASHBOARD] BD ainda não disponível, tentando novamente...');
-    setTimeout(atualizarDashboardCompleto, 300);
+    setTimeout(atualizarDashboardCompleto, 500);
     return;
   }
   
+  console.log('📊 Dashboard carregando:', BD.veiculos.length, 'veículos');
   const dados = carregarDadosDoBD();
   atualizarCardsEstatisticos(dados);
   inicializarGraficos(dados);

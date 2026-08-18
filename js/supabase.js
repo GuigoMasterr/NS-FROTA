@@ -1,5 +1,5 @@
 // ==========================================
-// 🔄 SINCRONIZAÇÃO — ESPERA DADOS PRIMEIRO
+// 🔄 SINCRONIZAÇÃO COMPLETA — VEÍCULOS + DASHBOARD
 // ==========================================
 
 window.BD = {
@@ -19,19 +19,26 @@ function salvarDados() {
 }
 
 // ==========================================
-// 📥 BAIXAR DO SUPABASE
+// 📥 BAIXAR DO SUPABASE → ATUALIZAR BD → TELA
 // ==========================================
 async function baixarTodosDadosDoSupabase() {
-    if (!window.supabaseReal) return;
+    if (!window.supabaseReal) {
+        console.warn('⚠️ Supabase não conectado');
+        return;
+    }
 
     try {
-        console.log('🔄 Baixando veículos...');
-        const { data, error } = await window.supabaseReal.from('veiculos').select('*');
+        console.log('🔄 Baixando veículos do Supabase...');
+
+        const { data, error } = await window.supabaseReal
+            .from('veiculos')
+            .select('*');
+
         if (error) throw error;
 
-        console.log(`✅ ${data.length} veículos baixados`);
+        console.log(`✅ ${data.length} veículos baixados do Supabase`);
 
-        // Formatar dados
+        // ✅ Formatar e carregar no BD global
         window.BD.veiculos = data.map(v => ({
             id: v.id,
             placa: (v.placa || 'SEM PLACA').toUpperCase().trim(),
@@ -40,6 +47,9 @@ async function baixarTodosDadosDoSupabase() {
             modelo: v.modelo || '',
             ano: v.ano || '',
             km_atual: v.km_atual || 0,
+            horimetro_atual: v.horimetro_atual || 0,
+            exigir_km: v.exigir_km !== false,
+            exigir_horimetro: v.exigir_horimetro === true,
             obra_atual: '',
             responsavel: '',
             status: (v.status || 'Disponível').trim(),
@@ -47,70 +57,54 @@ async function baixarTodosDadosDoSupabase() {
         }));
 
         salvarDados();
-        console.log('✅ BD atualizado!');
+        console.log('✅ BD ATUALIZADO —', BD.veiculos.length, 'veículos prontos');
 
-        // ✅ SÓ AGORA — chamar exibição APÓS dados prontos
-        setTimeout(atualizarTela, 300);
+        // ==========================================
+        // 🎯 DISPARAR ATUALIZAÇÃO — DASHBOARD + TABELA
+        // ==========================================
+        dispararAtualizacaoTela();
 
     } catch (e) {
-        console.error('❌ Erro:', e);
+        console.error('❌ Erro na sincronização:', e);
     }
 }
 
 // ==========================================
-// 🎯 EXIBIR TABELA E DASHBOARD
+// 🎯 CHAMAR DASHBOARD E TABELA APÓS DADOS PRONTOS
 // ==========================================
-function atualizarTela() {
-    console.log('📊 Atualizando TABELA...');
-    if (typeof carregarTabelaVeiculos === 'function') {
-        carregarTabelaVeiculos();
-    } else {
-        desenharTabelaManual();
-    }
+function dispararAtualizacaoTela() {
+    console.log('🔔 Dados prontos! Chamando atualizações...');
 
-    console.log('📈 Atualizando DASHBOARD...');
-    if (typeof atualizarDashboardCompleto === 'function') {
-        atualizarDashboardCompleto();
-    }
+    let tentativas = 0;
+    const esperar = setInterval(() => {
+        tentativas++;
+
+        // ✅ 1. Atualizar DASHBOARD assim que a função existir
+        if (typeof atualizarDashboardCompleto === 'function') {
+            console.log('📈 Atualizando DASHBOARD com', BD.veiculos.length, 'veículos');
+            atualizarDashboardCompleto();
+        }
+
+        // ✅ 2. Atualizar TABELA de Veículos
+        if (typeof carregarTabelaVeiculos === 'function') {
+            console.log('📊 Atualizando TABELA de veículos');
+            carregarTabelaVeiculos();
+        }
+
+        // ✅ Parar após 3 segundos
+        if (tentativas > 30) {
+            clearInterval(esperar);
+            console.log('✅ TODAS AS ATUALIZAÇÕES CONCLUÍDAS!');
+        }
+    }, 100);
 }
 
 // ==========================================
-// 🎯 DESENHAR TABELA MANUALMENTE
-// ==========================================
-function desenharTabelaManual() {
-    const tabela = document.querySelector('#tabelaVeiculos tbody') || document.querySelector('table tbody');
-    if (!tabela) return;
-
-    tabela.innerHTML = '';
-
-    BD.veiculos.forEach(v => {
-        const linha = document.createElement('tr');
-        linha.innerHTML = `
-            <td>${v.placa}</td>
-            <td>${v.categoria}</td>
-            <td>${v.marca || ''}</td>
-            <td>${v.modelo || ''}</td>
-            <td>${v.ano || ''}</td>
-            <td>${v.km_atual}</td>
-            <td>—</td>
-            <td>—</td>
-            <td><span style="padding:2px 8px; border-radius:999px; background:#dcfce7; color:#166534; font-size:13px;">${v.status}</span></td>
-            <td>
-                <button style="padding:4px 8px; margin:0 2px; background:#3b82f6; color:white; border:none; border-radius:4px;">Editar</button>
-                <button style="padding:4px 8px; margin:0 2px; background:#f59e0b; color:white; border:none; border-radius:4px;">Histórico</button>
-                <button style="padding:4px 8px; margin:0 2px; background:#ef4444; color:white; border:none; border-radius:4px;">Excluir</button>
-            </td>
-        `;
-        tabela.appendChild(linha);
-    });
-
-    console.log(`✅ Tabela exibida: ${BD.veiculos.length} veículos`);
-}
-
-// ==========================================
-// 🚀 INICIAR
+// 🚀 INICIAR — SUPABASE PRIMEIRO
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 SISTEMA INICIADO');
+
     setTimeout(() => {
         if (window.supabaseReal) {
             baixarTodosDadosDoSupabase();
