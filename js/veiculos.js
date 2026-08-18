@@ -94,10 +94,8 @@ function abrirModalDocumentos(veiculoId) {
     try {
         inicializarDocumentos();
         
-        if (typeof ehAdmin === 'function' && !ehAdmin()) {
-            alert('Voce nao tem permissao!');
-            return;
-        }
+        // Verifica se é admin para poder adicionar/excluir
+        var isAdmin = typeof ehAdmin === 'function' ? ehAdmin() : true;
         
         var veiculo = null;
         if (BD.veiculos) {
@@ -129,7 +127,7 @@ function abrirModalDocumentos(veiculoId) {
         cabecalho.style.cssText = 'padding:16px 24px;background:#0ea5e9;color:white;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0;';
         var titulo = document.createElement('h3');
         titulo.style.cssText = 'margin:0;font-size:18px;';
-        titulo.innerHTML = '📄 Documentos do Veículo - <strong>' + veiculo.placa + '</strong>';
+        titulo.innerHTML = '📄 Documentos do Veículo - <strong>' + veiculo.placa + '</strong>' + (!isAdmin ? ' <span style="font-size:12px;font-weight:normal;opacity:0.8;">(Modo Visualização)</span>' : '');
         cabecalho.appendChild(titulo);
         var btnFechar = document.createElement('button');
         btnFechar.textContent = '×';
@@ -141,57 +139,86 @@ function abrirModalDocumentos(veiculoId) {
         corpo.style.cssText = 'padding:24px;';
         corpo.id = 'corpo-documentos';
         
-        // Formulário de adicionar documento
-        var formAdd = document.createElement('div');
-        formAdd.style.cssText = 'background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:20px;';
-        formAdd.innerHTML = 
-            '<div style="font-weight:600;color:#1e293b;margin-bottom:12px;font-size:15px;">➕ Adicionar Novo Documento</div>' +
-            '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">' +
-                '<div>' +
-                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Tipo *</label>' +
-                    '<select id="docTipo" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">' +
-                        '<option value="Licenciamento">Licenciamento</option>' +
-                        '<option value="IPVA">IPVA</option>' +
-                        '<option value="Multa">Multa</option>' +
-                        '<option value="Seguro">Seguro</option>' +
-                        '<option value="DPVAT">DPVAT</option>' +
-                        '<option value="CRLV">CRLV</option>' +
-                        '<option value="Inspecao">Inspeção Veicular</option>' +
-                        '<option value="Outro">Outro</option>' +
-                    '</select>' +
+        // Formulário de adicionar documento - SOMENTE PARA ADMINS
+        if (isAdmin) {
+            var formAdd = document.createElement('div');
+            formAdd.style.cssText = 'background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:20px;';
+            formAdd.innerHTML = 
+                '<div style="font-weight:600;color:#1e293b;margin-bottom:12px;font-size:15px;">➕ Adicionar Novo Documento</div>' +
+                '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">' +
+                    '<div>' +
+                        '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Tipo *</label>' +
+                        '<select id="docTipo" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">' +
+                            '<option value="Licenciamento">Licenciamento</option>' +
+                            '<option value="IPVA">IPVA</option>' +
+                            '<option value="Multa">Multa</option>' +
+                            '<option value="Seguro">Seguro</option>' +
+                            '<option value="DPVAT">DPVAT</option>' +
+                            '<option value="CRLV">CRLV</option>' +
+                            '<option value="Inspecao">Inspeção Veicular</option>' +
+                            '<option value="Outro">Outro</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div>' +
+                        '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Número/Processo</label>' +
+                        '<input type="text" id="docNumero" placeholder="Ex: 123456" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+                    '</div>' +
+                    '<div>' +
+                        '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Data Emissão</label>' +
+                        '<input type="date" id="docEmissao" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+                    '</div>' +
+                    '<div>' +
+                        '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Data Vencimento *</label>' +
+                        '<input type="date" id="docVencimento" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+                    '</div>' +
+                    '<div>' +
+                        '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Valor (R$)</label>' +
+                        '<input type="number" step="0.01" id="docValor" placeholder="0,00" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+                    '</div>' +
+                    '<div style="grid-column:span 2;">' +
+                        '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">📎 Anexar Arquivo (PDF, Imagem)</label>' +
+                        '<input type="file" id="docArquivo" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.doc,.docx" style="width:100%;padding:6px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;box-sizing:border-box;background:white;">' +
+                        '<div id="docArquivoInfo" style="font-size:11px;color:#64748b;margin-top:4px;"></div>' +
+                    '</div>' +
+                    '<div style="grid-column:span 2;">' +
+                        '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Observação</label>' +
+                        '<input type="text" id="docObs" placeholder="Detalhes adicionais..." style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+                    '</div>' +
                 '</div>' +
-                '<div>' +
-                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Número/Processo</label>' +
-                    '<input type="text" id="docNumero" placeholder="Ex: 123456" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
-                '</div>' +
-                '<div>' +
-                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Data Emissão</label>' +
-                    '<input type="date" id="docEmissao" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
-                '</div>' +
-                '<div>' +
-                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Data Vencimento *</label>' +
-                    '<input type="date" id="docVencimento" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
-                '</div>' +
-                '<div>' +
-                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Valor (R$)</label>' +
-                    '<input type="number" step="0.01" id="docValor" placeholder="0,00" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
-                '</div>' +
-                '<div style="grid-column:span 2;">' +
-                    '<label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;">Observação</label>' +
-                    '<input type="text" id="docObs" placeholder="Detalhes adicionais..." style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">' +
-                '</div>' +
-            '</div>' +
-            '<div style="margin-top:12px;text-align:right;">' +
-                '<button onclick="adicionarDocumento(' + veiculoId + ')" style="padding:8px 16px;border:none;background:#0ea5e9;color:white;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;">Adicionar Documento</button>' +
-            '</div>';
-        corpo.appendChild(formAdd);
+                '<div style="margin-top:12px;text-align:right;">' +
+                    '<button onclick="adicionarDocumento(' + veiculoId + ')" style="padding:8px 16px;border:none;background:#0ea5e9;color:white;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;">Adicionar Documento</button>' +
+                '</div>';
+            corpo.appendChild(formAdd);
+            
+            // Handler para mostrar info do arquivo selecionado
+            setTimeout(function() {
+                var inputArquivo = document.getElementById('docArquivo');
+                var infoArquivo = document.getElementById('docArquivoInfo');
+                if (inputArquivo && infoArquivo) {
+                    inputArquivo.addEventListener('change', function() {
+                        if (this.files && this.files[0]) {
+                            var arquivo = this.files[0];
+                            var tamanhoKB = (arquivo.size / 1024).toFixed(1);
+                            if (arquivo.size > 5 * 1024 * 1024) {
+                                infoArquivo.innerHTML = '<span style="color:#dc2626;">⚠️ Arquivo muito grande! Máximo 5MB.</span>';
+                                this.value = '';
+                            } else {
+                                infoArquivo.innerHTML = '✅ Arquivo selecionado: <strong>' + arquivo.name + '</strong> (' + tamanhoKB + ' KB)';
+                            }
+                        } else {
+                            infoArquivo.innerHTML = '';
+                        }
+                    });
+                }
+            }, 100);
+        }
         
         // Lista de documentos
         var listaContainer = document.createElement('div');
         listaContainer.id = 'lista-documentos-container';
         corpo.appendChild(listaContainer);
         
-        renderizarListaDocumentos(veiculoId, listaContainer);
+        renderizarListaDocumentos(veiculoId, listaContainer, isAdmin);
         
         caixa.appendChild(cabecalho);
         caixa.appendChild(corpo);
@@ -216,37 +243,85 @@ function adicionarDocumento(veiculoId) {
             return;
         }
         
-        var novoDoc = {
-            id: Date.now(),
-            veiculoId: veiculoId,
-            tipo: tipo,
-            numero: document.getElementById('docNumero')?.value.trim() || '',
-            dataEmissao: document.getElementById('docEmissao')?.value || '',
-            dataVencimento: vencimento,
-            valor: parseFloat(document.getElementById('docValor')?.value) || 0,
-            observacao: document.getElementById('docObs')?.value.trim() || '',
-            dataCadastro: new Date().toISOString().split('T')[0],
-            pago: false
-        };
+        // Função auxiliar para criar o documento (com ou sem arquivo)
+        function criarDoc(arquivoDados) {
+            var novoDoc = {
+                id: Date.now(),
+                veiculoId: veiculoId,
+                tipo: tipo,
+                numero: document.getElementById('docNumero')?.value.trim() || '',
+                dataEmissao: document.getElementById('docEmissao')?.value || '',
+                dataVencimento: vencimento,
+                valor: parseFloat(document.getElementById('docValor')?.value) || 0,
+                observacao: document.getElementById('docObs')?.value.trim() || '',
+                dataCadastro: new Date().toISOString().split('T')[0],
+                pago: false
+            };
+            
+            // Adiciona dados do arquivo se houver
+            if (arquivoDados) {
+                novoDoc.arquivoNome = arquivoDados.nome;
+                novoDoc.arquivoTipo = arquivoDados.tipo;
+                novoDoc.arquivoBase64 = arquivoDados.base64;
+                novoDoc.arquivoTamanho = arquivoDados.tamanho;
+            }
+            
+            BD.documentosVeiculos.push(novoDoc);
+            
+            if (typeof salvarDados === 'function') salvarDados();
+            window.BD = BD;
+            
+            // Limpar campos
+            document.getElementById('docNumero').value = '';
+            document.getElementById('docEmissao').value = '';
+            document.getElementById('docVencimento').value = '';
+            document.getElementById('docValor').value = '';
+            document.getElementById('docObs').value = '';
+            var inputArquivo = document.getElementById('docArquivo');
+            if (inputArquivo) inputArquivo.value = '';
+            var infoArquivo = document.getElementById('docArquivoInfo');
+            if (infoArquivo) infoArquivo.innerHTML = '';
+            
+            // Atualizar lista
+            var container = document.getElementById('lista-documentos-container');
+            if (container) renderizarListaDocumentos(veiculoId, container, true);
+            
+            if (typeof mostrarToast === 'function') {
+                mostrarToast('✅ Documento adicionado!', 'sucesso');
+            }
+        }
         
-        BD.documentosVeiculos.push(novoDoc);
-        
-        if (typeof salvarDados === 'function') salvarDados();
-        window.BD = BD;
-        
-        // Limpar campos
-        document.getElementById('docNumero').value = '';
-        document.getElementById('docEmissao').value = '';
-        document.getElementById('docVencimento').value = '';
-        document.getElementById('docValor').value = '';
-        document.getElementById('docObs').value = '';
-        
-        // Atualizar lista
-        var container = document.getElementById('lista-documentos-container');
-        if (container) renderizarListaDocumentos(veiculoId, container);
-        
-        if (typeof mostrarToast === 'function') {
-            mostrarToast('✅ Documento adicionado!', 'sucesso');
+        // Verifica se há arquivo para anexar
+        var inputArquivo = document.getElementById('docArquivo');
+        if (inputArquivo && inputArquivo.files && inputArquivo.files[0]) {
+            var arquivo = inputArquivo.files[0];
+            
+            if (arquivo.size > 5 * 1024 * 1024) {
+                alert('Arquivo muito grande! Máximo 5MB.');
+                return;
+            }
+            
+            var leitor = new FileReader();
+            leitor.onload = function(e) {
+                var base64Completo = e.target.result;
+                // Extrai apenas a parte base64 (sem o prefixo data:...)
+                var base64Apenas = base64Completo.split(',')[1] || base64Completo;
+                
+                criarDoc({
+                    nome: arquivo.name,
+                    tipo: arquivo.type,
+                    base64: base64Apenas,
+                    tamanho: arquivo.size
+                });
+            };
+            leitor.onerror = function() {
+                alert('Erro ao ler o arquivo!');
+                criarDoc(null); // Cria sem arquivo mesmo assim
+            };
+            leitor.readAsDataURL(arquivo);
+        } else {
+            // Sem arquivo, cria normalmente
+            criarDoc(null);
         }
         
     } catch (e) {
@@ -266,7 +341,7 @@ function excluirDocumento(veiculoId, docId) {
         window.BD = BD;
         
         var container = document.getElementById('lista-documentos-container');
-        if (container) renderizarListaDocumentos(veiculoId, container);
+        if (container) renderizarListaDocumentos(veiculoId, container, true);
         
         if (typeof mostrarToast === 'function') {
             mostrarToast('Documento excluído!', 'sucesso');
@@ -291,16 +366,18 @@ function togglePagamentoDocumento(veiculoId, docId) {
         window.BD = BD;
         
         var container = document.getElementById('lista-documentos-container');
-        if (container) renderizarListaDocumentos(veiculoId, container);
+        if (container) renderizarListaDocumentos(veiculoId, container, true);
         
     } catch (e) {
         console.error('Erro:', e);
     }
 }
 
-function renderizarListaDocumentos(veiculoId, container) {
+function renderizarListaDocumentos(veiculoId, container, isAdmin) {
     try {
         inicializarDocumentos();
+        
+        if (typeof isAdmin === 'undefined') isAdmin = true;
         
         var docs = BD.documentosVeiculos.filter(function(d) { return d.veiculoId === veiculoId; });
         
@@ -330,6 +407,14 @@ function renderizarListaDocumentos(veiculoId, container) {
             var icone = tipoIcone[doc.tipo] || '📎';
             var valorFormatado = doc.valor > 0 ? 'R$ ' + Number(doc.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '';
             
+            // Verifica se tem arquivo anexado
+            var temArquivo = doc.arquivoNome && doc.arquivoBase64;
+            var tamanhoArquivo = '';
+            if (temArquivo && doc.arquivoTamanho) {
+                var kb = doc.arquivoTamanho / 1024;
+                tamanhoArquivo = kb > 1024 ? (kb/1024).toFixed(2) + ' MB' : kb.toFixed(1) + ' KB';
+            }
+            
             html += 
                 '<div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:14px;display:flex;align-items:center;gap:14px;' + (doc.pago ? 'opacity:0.7;' : '') + '">' +
                     '<div style="font-size:28px;">' + icone + '</div>' +
@@ -339,6 +424,7 @@ function renderizarListaDocumentos(veiculoId, container) {
                             (doc.numero ? '<span style="font-size:12px;color:#64748b;">#' + doc.numero + '</span>' : '') +
                             '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:' + status.cor + '20;color:' + status.cor + ';font-weight:600;">' + status.texto + '</span>' +
                             (doc.pago ? '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#10b98120;color:#10b981;font-weight:600;">✓ Pago</span>' : '') +
+                            (temArquivo ? '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#0ea5e920;color:#0ea5e9;font-weight:600;">📎 ' + doc.arquivoNome + (tamanhoArquivo ? ' (' + tamanhoArquivo + ')' : '') + '</span>' : '') +
                         '</div>' +
                         '<div style="font-size:12px;color:#64748b;display:flex;gap:16px;flex-wrap:wrap;">' +
                             (doc.dataEmissao ? '<span>Emissão: <strong>' + doc.dataEmissao + '</strong></span>' : '') +
@@ -347,9 +433,10 @@ function renderizarListaDocumentos(veiculoId, container) {
                         '</div>' +
                         (doc.observacao ? '<div style="font-size:12px;color:#94a3b8;margin-top:4px;">📝 ' + doc.observacao + '</div>' : '') +
                     '</div>' +
-                    '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-                        '<button onclick="togglePagamentoDocumento(' + veiculoId + ',' + doc.id + ')" style="padding:6px 10px;border:1px solid #d1d5db;background:white;color:#374151;border-radius:6px;cursor:pointer;font-size:11px;" title="Marcar como pago">' + (doc.pago ? '↩️ Desfazer' : '✓ Pago') + '</button>' +
-                        '<button onclick="excluirDocumento(' + veiculoId + ',' + doc.id + ')" style="padding:6px 10px;border:none;background:#fee2e2;color:#991b1b;border-radius:6px;cursor:pointer;font-size:11px;">🗑️ Excluir</button>' +
+                    '<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">' +
+                        (temArquivo ? '<button onclick="visualizarArquivoDocumento(' + doc.id + ')" style="padding:6px 10px;border:none;background:#0ea5e9;color:white;border-radius:6px;cursor:pointer;font-size:11px;" title="Visualizar arquivo anexado">👁️ Ver Arquivo</button>' : '') +
+                        (isAdmin ? '<button onclick="togglePagamentoDocumento(' + veiculoId + ',' + doc.id + ')" style="padding:6px 10px;border:1px solid #d1d5db;background:white;color:#374151;border-radius:6px;cursor:pointer;font-size:11px;" title="Marcar como pago">' + (doc.pago ? '↩️ Desfazer' : '✓ Pago') + '</button>' : '') +
+                        (isAdmin ? '<button onclick="excluirDocumento(' + veiculoId + ',' + doc.id + ')" style="padding:6px 10px;border:none;background:#fee2e2;color:#991b1b;border-radius:6px;cursor:pointer;font-size:11px;">🗑️ Excluir</button>' : '') +
                     '</div>' +
                 '</div>';
         }
@@ -359,6 +446,82 @@ function renderizarListaDocumentos(veiculoId, container) {
         
     } catch (e) {
         console.error('Erro ao renderizar documentos:', e);
+    }
+}
+
+// ==================================================
+// 📎 VISUALIZAR ARQUIVO DO DOCUMENTO
+// ==================================================
+function visualizarArquivoDocumento(docId) {
+    try {
+        inicializarDocumentos();
+        
+        var doc = null;
+        for (var i = 0; i < BD.documentosVeiculos.length; i++) {
+            if (BD.documentosVeiculos[i].id === docId) {
+                doc = BD.documentosVeiculos[i];
+                break;
+            }
+        }
+        
+        if (!doc || !doc.arquivoBase64) {
+            alert('Documento não possui arquivo anexado!');
+            return;
+        }
+        
+        // Reconstrói a URL de dados completa
+        var mimeType = doc.arquivoTipo || 'application/octet-stream';
+        var dataUrl = 'data:' + mimeType + ';base64,' + doc.arquivoBase64;
+        
+        // Abre em nova aba para visualização
+        var novaAba = window.open();
+        if (novaAba) {
+            // Se for PDF ou imagem, mostra diretamente
+            if (mimeType.startsWith('image/') || mimeType === 'application/pdf') {
+                novaAba.document.write(
+                    '<!DOCTYPE html><html><head><title>' + doc.arquivoNome + '</title>' +
+                    '<style>body{margin:0;padding:20px;background:#f1f5f9;font-family:Arial,sans-serif;text-align:center;}' +
+                    'img,iframe{max-width:100%;max-height:90vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);}' +
+                    '.header{margin-bottom:20px;}' +
+                    '.btn-download{display:inline-block;padding:10px 20px;background:#0ea5e9;color:white;text-decoration:none;border-radius:6px;font-weight:500;}' +
+                    '</style></head><body>' +
+                    '<div class="header">' +
+                    '<h2>📄 ' + doc.tipo + ' - ' + doc.arquivoNome + '</h2>' +
+                    '<p><a class="btn-download" href="' + dataUrl + '" download="' + doc.arquivoNome + '">⬇️ Baixar Arquivo</a></p>' +
+                    '</div>' +
+                    (mimeType.startsWith('image/') 
+                        ? '<img src="' + dataUrl + '" alt="' + doc.arquivoNome + '">' 
+                        : '<iframe src="' + dataUrl + '" style="width:100%;height:85vh;border:none;"></iframe>') +
+                    '</body></html>'
+                );
+            } else {
+                // Para outros tipos, força download
+                novaAba.document.write(
+                    '<!DOCTYPE html><html><head><title>' + doc.arquivoNome + '</title>' +
+                    '<style>body{margin:0;padding:40px;background:#f1f5f9;font-family:Arial,sans-serif;text-align:center;}' +
+                    '.container{max-width:500px;margin:0 auto;background:white;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);}' +
+                    '.btn-download{display:inline-block;padding:12px 24px;background:#0ea5e9;color:white;text-decoration:none;border-radius:6px;font-weight:500;font-size:16px;}' +
+                    '</style></head><body>' +
+                    '<div class="container">' +
+                    '<div style="font-size:48px;margin-bottom:20px;">📎</div>' +
+                    '<h2>' + doc.arquivoNome + '</h2>' +
+                    '<p style="color:#64748b;margin-bottom:24px;">Tipo: ' + mimeType + '</p>' +
+                    '<a class="btn-download" href="' + dataUrl + '" download="' + doc.arquivoNome + '">⬇️ Baixar Arquivo</a>' +
+                    '</div></body></html>'
+                );
+            }
+            novaAba.document.close();
+        } else {
+            // Se não conseguir abrir aba, força download
+            var link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = doc.arquivoNome;
+            link.click();
+        }
+        
+    } catch (e) {
+        console.error('Erro ao visualizar arquivo:', e);
+        alert('Erro ao abrir o arquivo');
     }
 }
 

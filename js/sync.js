@@ -19,7 +19,8 @@
     const CONFIG = window.CONFIG || {};
     const TABELAS = CONFIG.TABELAS || [
         'locais', 'usuarios', 'veiculos', 'checklists', 'manutencoes',
-        'gastos', 'chamados', 'alocacoes', 'adiantamentos', 'gastosViagem'
+        'gastos', 'chamados', 'alocacoes', 'adiantamentos', 'gastosViagem',
+        'documentosVeiculos'
     ];
 
     // Armazena os dados na memória para acesso rápido
@@ -180,7 +181,8 @@
             chamados: bd.chamados || [],
             alocacoes: bd.alocacoes || [],
             adiantamentos: bd.adiantamentos || [],
-            gastosViagem: bd.gastosViagem || []
+            gastosViagem: bd.gastosViagem || [],
+            documentosVeiculos: bd.documentosVeiculos || []
         };
     }
 
@@ -203,6 +205,7 @@
         if (dados.alocacoes) window.BD.alocacoes = dados.alocacoes;
         if (dados.adiantamentos) window.BD.adiantamentos = dados.adiantamentos;
         if (dados.gastosViagem) window.BD.gastosViagem = dados.gastosViagem;
+        if (dados.documentosVeiculos) window.BD.documentosVeiculos = dados.documentosVeiculos;
 
         // Mantém campos que não vêm do Supabase
         if (!window.BD.origens) window.BD.origens = ['Pátio Metálica', 'Pátio Usina Conc.', 'Obra'];
