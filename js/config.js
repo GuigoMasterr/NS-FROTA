@@ -68,7 +68,8 @@ const CONFIG = {
         'alocacoes',
         'adiantamentos',
         'gastosViagem',
-        'documentosVeiculos'
+        'documentosVeiculos',
+        'pontosAbastecimento'
     ],
     // Perfis de Usuário
     PERFIS: {

@@ -1308,10 +1308,16 @@
                     <h1 class="page-title">Controle de Gastos</h1>
                     <p class="page-subtitle">Todos os lançamentos de despesas da frota</p>
                 </div>
-                <button class="btn btn-sucesso" onclick="abrirModalGasto()">
-                    <i class="fa-solid fa-plus"></i>
-                    Lançar Gasto
-                </button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-sucesso" onclick="abrirModalGasto()">
+                        <i class="fa-solid fa-plus"></i>
+                        Lançar Gasto
+                    </button>
+                    <button class="btn" style="background:#0ea5e9;color:white;" onclick="abrirModalPontosAbastecimento()">
+                        <i class="fa-solid fa-gas-pump"></i>
+                        Pontos de Abastecimento
+                    </button>
+                </div>
             </div>
             
             <div class="card">
@@ -1331,9 +1337,9 @@
                                     <th>Data</th>
                                     <th>Veículo</th>
                                     <th>Tipo</th>
-                                    <th>Obra / Local</th>
+                                    <th>KM</th>
+                                    <th>Local / Ponto</th>
                                     <th>Valor</th>
-                                    <th>Observação</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
