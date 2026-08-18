@@ -48,16 +48,18 @@ function formatarKM(km) {
 }
   // ✅ Sempre recarrega BD do window (garante dados atualizados)
 window.atualizarDashboardCompleto = function() {
-  const BD = window.BD || { veiculos: [], gastos: [], chamados: [], manutencoes: [], alocacoes: [], gastosViagem: [] };
+  // ✅ SEMPRE LER DO GLOBAL, NUNCA SALVAR EM VARIÁVEL LOCAL PERMANENTE
+  const BD = window.BD;
   
   if (!BD || !BD.veiculos || BD.veiculos.length === 0) {
-    console.warn('⚠️ [DASHBOARD] BD ainda não disponível, tentando novamente...');
+    console.warn('⚠️ [DASHBOARD] Aguardando veículos...', BD?.veiculos?.length || 0);
     setTimeout(atualizarDashboardCompleto, 500);
     return;
   }
   
   console.log('📊 Dashboard carregando:', BD.veiculos.length, 'veículos');
   const dados = carregarDadosDoBD();
+  atualizarCardsEstatisticos(dados);
   atualizarCardsEstatisticos(dados);
   inicializarGraficos(dados);
   verificarAlertas(dados);
