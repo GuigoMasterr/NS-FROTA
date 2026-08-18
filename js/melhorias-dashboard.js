@@ -94,37 +94,44 @@ function atualizarCardsEstatisticos(dados) {
   const emManutencao = veiculos.filter(v => 
     v.status === 'Em Manutenção' || v.status === 'manutencao'
   ).length;
-  const chamadosAbertos = (chamados || []).filter(c => c.status !== 'Resolvido' && c.status !== 'fechado').length;
+  const chamadosAbertos = (chamados || []).filter(c => 
+    c.status !== 'Resolvido' && c.status !== 'fechado'
+  ).length;
   const kmTotal = veiculos.reduce((s, v) => s + (Number(v.km_atual) || 0), 0);
 
-  console.log(`📊 ATUALIZANDO: Total=${total} | Op=${emOperacao} | Manut=${emManutencao} | KM=${kmTotal}`);
+  console.log(`📊 [DASHBOARD] Total=${total} | Op=${emOperacao} | Manut=${emManutencao} | KM=${kmTotal.toLocaleString('pt-BR')}`);
 
-  // ✅ BUSCAR PELO TEXTO ABAIXO DO NÚMERO (INFALÍVEL)
+  // ✅ CORRIGIDO: Buscar número dentro do MESMO card
   const todos = document.querySelectorAll('*');
   todos.forEach(el => {
     const txt = el.textContent?.trim() || '';
-    const numeroEl = el.previousElementSibling || el.parentElement?.firstElementChild;
-    if (!numeroEl || numeroEl.textContent === '') return;
+    if (!txt) return;
 
-    // Card 1: Total de Veículos
-    if (txt.includes('cadastrados') && numeroEl.textContent !== String(total)) {
+    const card = el.closest('div');
+    if (!card) return;
+
+    const numeroEl = card.firstElementChild;
+    if (!numeroEl || numeroEl.textContent === txt) return;
+
+    // Card 1
+    if (txt.includes('cadastrados')) {
       numeroEl.textContent = total;
     }
-    // Card 2: Em Operação
-    if (txt.includes('% da frota') && numeroEl.textContent !== String(emOperacao)) {
+    // Card 2
+    if (txt.includes('% da frota')) {
       numeroEl.textContent = emOperacao;
       el.textContent = `${total ? Math.round(emOperacao/total*100) : 0}% da frota`;
     }
-    // Card 3: Em Manutenção
-    if (txt.includes('precisam de atenção') && numeroEl.textContent !== String(emManutencao)) {
+    // Card 3
+    if (txt.includes('precisam de atenção')) {
       numeroEl.textContent = emManutencao;
     }
-    // Card 4: Chamados Abertos
-    if (txt.includes('pendentes') && numeroEl.textContent !== String(chamadosAbertos)) {
+    // Card 4
+    if (txt.includes('pendentes')) {
       numeroEl.textContent = chamadosAbertos;
     }
-    // Card 6: KM Rodados
-    if (txt.includes('total da frota') && numeroEl.textContent !== String(kmTotal.toLocaleString('pt-BR'))) {
+    // Card 6
+    if (txt.includes('total da frota')) {
       numeroEl.textContent = kmTotal.toLocaleString('pt-BR');
     }
   });
