@@ -206,8 +206,8 @@
         if (dados.alocacoes) window.BD.alocacoes = dados.alocacoes;
         if (dados.adiantamentos) window.BD.adiantamentos = dados.adiantamentos;
         if (dados.gastosViagem) window.BD.gastosViagem = dados.gastosViagem;
-        if (dados.documentosVeiculos) window.BD.documentosVeiculos = dados.documentosVeiculos;
-        if (dados.pontosAbastecimento) window.BD.pontosAbastecimento = dados.pontosAbastecimento;
+        if (dados.documentosVeiculos && dados.documentosVeiculos.length > 0) window.BD.documentosVeiculos = dados.documentosVeiculos;
+        if (dados.pontosAbastecimento && dados.pontosAbastecimento.length > 0) window.BD.pontosAbastecimento = dados.pontosAbastecimento;
 
         // Mantém campos que não vêm do Supabase
         if (!window.BD.origens) window.BD.origens = ['Pátio Metálica', 'Pátio Usina Conc.', 'Obra'];
