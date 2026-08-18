@@ -127,10 +127,26 @@ function atualizarCardsEstatisticos(dados) {
 
 function atualizarCard(id, valor, detalhe = '') {
   const el = document.getElementById(id);
-  if (!el) return;
-  const valorEl = el.querySelector('.stat-valor');
+  if (!el) {
+    console.warn(`⚠️ [DASHBOARD] Elemento não encontrado: #${id}`);
+    return;
+  }
+  
+  // Verifica se o próprio elemento já é o .stat-valor (IDs estão diretamente nele no HTML)
+  let valorEl = el;
+  if (!el.classList.contains('stat-valor')) {
+    valorEl = el.querySelector('.stat-valor');
+  }
+  
   const detalheEl = el.querySelector('.stat-detalhe');
-  if (valorEl) valorEl.textContent = valor;
+  
+  if (valorEl) {
+    valorEl.textContent = valor;
+    console.log(`✅ [DASHBOARD] Card #${id} atualizado para: ${valor}`);
+  } else {
+    console.warn(`⚠️ [DASHBOARD] Não foi possível atualizar #${id}`);
+  }
+  
   if (detalheEl && detalhe) detalheEl.textContent = detalhe;
 }
 
