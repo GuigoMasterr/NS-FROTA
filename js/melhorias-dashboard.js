@@ -86,58 +86,48 @@ function carregarDadosDoBD() {
 }
 
 function atualizarCardsEstatisticos(dados) {
-  const { veiculos, gastos, chamados } = dados;
-  const hoje = new Date();
-  const mesAtual = hoje.getMonth();
-  const anoAtual = hoje.getFullYear();
-
+  const { veiculos, chamados } = dados;
   const total = veiculos.length;
   const emOperacao = veiculos.filter(v => 
     v.status === 'Disponível' || v.status === 'Em Operação' || v.status === 'alocado'
   ).length;
   const emManutencao = veiculos.filter(v => 
-    v.status === 'manutencao' || v.status === 'Em Manutenção'
+    v.status === 'Em Manutenção' || v.status === 'manutencao'
   ).length;
   const chamadosAbertos = (chamados || []).filter(c => c.status !== 'Resolvido' && c.status !== 'fechado').length;
-
-  const gastosMes = gastos.filter(g => {
-    const d = new Date((g.data || '').replace('-', '/'));
-    return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
-  }).reduce((s, g) => s + (Number(g.valor) || 0), 0);
-
   const kmTotal = veiculos.reduce((s, v) => s + (Number(v.km_atual) || 0), 0);
 
-  console.log(`📊 ATUALIZANDO: Total=${total} | Op=${emOperacao} | Manut=${emManutencao}`);
+  console.log(`📊 ATUALIZANDO: Total=${total} | Op=${emOperacao} | Manut=${emManutencao} | KM=${kmTotal}`);
 
-  // ✅ NOVA FORMA: procurar por POSIÇÃO na tela, NÃO por ID
-  const cardsValores = document.querySelectorAll('.card-valor, .stat-valor, .valor');
-  
-  if (cardsValores.length >= 3) {
-    cardsValores[0].textContent = total;
-    cardsValores[1].textContent = emOperacao;
-    cardsValores[2].textContent = emManutencao;
-  } else {
-    // ✅ FALLBACK: procurar todos os números "0" e substituir em ordem
-    const todosElementos = document.body.querySelectorAll('*');
-    let indiceCard = 0;
-    for (let el of todosElementos) {
-      if (el.textContent === '0' && el.children.length === 0) {
-        if (indiceCard === 0) el.textContent = total;
-        if (indiceCard === 1) el.textContent = emOperacao;
-        if (indiceCard === 2) el.textContent = emManutencao;
-        if (indiceCard === 3) el.textContent = chamadosAbertos;
-        if (indiceCard === 5) el.textContent = formatarKM(kmTotal);
-        indiceCard++;
-        if (indiceCard >= 6) break;
-      }
+  // ✅ BUSCAR PELO TEXTO ABAIXO DO NÚMERO (INFALÍVEL)
+  const todos = document.querySelectorAll('*');
+  todos.forEach(el => {
+    const txt = el.textContent?.trim() || '';
+    const numeroEl = el.previousElementSibling || el.parentElement?.firstElementChild;
+    if (!numeroEl || numeroEl.textContent === '') return;
+
+    // Card 1: Total de Veículos
+    if (txt.includes('cadastrados') && numeroEl.textContent !== String(total)) {
+      numeroEl.textContent = total;
     }
-  }
-
-  // Atualizar detalhes (percentuais e textos)
-  const detalhes = document.querySelectorAll('.card-detalhe, .stat-detalhe');
-  if (detalhes[0]) detalhes[0].textContent = `${total} cadastrados`;
-  if (detalhes[1]) detalhes[1].textContent = total > 0 ? `${Math.round(emOperacao/total*100)}% da frota` : '0% da frota';
-  if (detalhes[2]) detalhes[2].textContent = 'precisam de atenção';
+    // Card 2: Em Operação
+    if (txt.includes('% da frota') && numeroEl.textContent !== String(emOperacao)) {
+      numeroEl.textContent = emOperacao;
+      el.textContent = `${total ? Math.round(emOperacao/total*100) : 0}% da frota`;
+    }
+    // Card 3: Em Manutenção
+    if (txt.includes('precisam de atenção') && numeroEl.textContent !== String(emManutencao)) {
+      numeroEl.textContent = emManutencao;
+    }
+    // Card 4: Chamados Abertos
+    if (txt.includes('pendentes') && numeroEl.textContent !== String(chamadosAbertos)) {
+      numeroEl.textContent = chamadosAbertos;
+    }
+    // Card 6: KM Rodados
+    if (txt.includes('total da frota') && numeroEl.textContent !== String(kmTotal.toLocaleString('pt-BR'))) {
+      numeroEl.textContent = kmTotal.toLocaleString('pt-BR');
+    }
+  });
 }
 
 function atualizarCard(id, valor, detalhe = '') {
