@@ -1,162 +1,303 @@
 // ============================================================
-// 🔄 SINCRONIZAÇÃO COM SUPABASE - VERSÃO ROBUSTA
-// ✅ Garante que dados LOCAIS sempre carreguem primeiro
-// ✅ Se Supabase falhar → dashboard continua funcionando
-// ✅ Tratamento de erros em cada etapa
+// 🔄 sync.js - Sistema de Sincronização Supabase ↔ localStorage
+// ============================================================
+// Funcionalidades:
+// ✅ Buscar dados do Supabase
+// ✅ Enviar dados para o Supabase
+// ✅ Backup automático no localStorage
+// ✅ Modo offline (usa dados locais se Supabase cair)
+// ✅ Fila de pendentes para sincronizar depois
 // ============================================================
 
-async function sincronizarBD() {
+import { supabase, CONFIG } from './supabase.js'
+
+const TABELAS = CONFIG.TABELAS
+
+// Armazena os dados na memória para acesso rápido
+window.dadosSistema = window.dadosSistema || {}
+
+// ============================================================
+// 📥 FUNÇÃO PRINCIPAL: Buscar todos os dados do Supabase
+// ============================================================
+export async function buscarDadosSupabase() {
+  console.log("\n🔄 [sync.js] Buscando dados do Supabase...")
+  
+  const todosDados = {}
+  let teveErro = false
+
+  for (const tabela of TABELAS) {
     try {
-        console.log('🔄 Iniciando sincronização...');
-        
-        // ==========================================
-        // PASSO 1: Garante que BD existe e tem dados
-        // ==========================================
-        if (!window.BD || !window.BD.veiculos) {
-            console.log('💾 Carregando/Inicializando banco de dados local...');
-            if (typeof inicializarBD === 'function') {
-                inicializarBD();
-            } else {
-                window.BD = {
-                    veiculos: [], gastos: [], manutencoes: [], chamados: [],
-                    usuarios: [], alocacoes: [], checklists: [], locais: []
-                };
-            }
-        }
-        
-        // ==========================================
-        // PASSO 2: Atualiza dashboard IMEDIATAMENTE com dados locais
-        // ==========================================
-        console.log('📊 Atualizando dashboard com dados locais...');
-        if (typeof atualizarDashboardCompleto === 'function') {
-            atualizarDashboardCompleto();
-        }
-        
-        // ==========================================
-        // PASSO 3: Verifica se deve tentar Supabase
-        // ==========================================
-        const supabaseDB = window.supabaseReal;
-        
-        if (!supabaseDB || !window.supabase?.temConexaoReal || typeof supabaseDB.from !== 'function') {
-            console.log('ℹ️ Modo local ativado. Dados:', {
-                veiculos: window.BD.veiculos?.length || 0,
-                gastos: window.BD.gastos?.length || 0
-            });
-            atualizarListasDependentes();
-            carregarTabelasModulos();
-            return;
-        }
-        
-        // ==========================================
-        // PASSO 4: Tenta sincronizar com Supabase
-        // ==========================================
-        console.log('🌐 Tentando sincronizar com Supabase...');
-        
-        const mapeamentoTabelas = [
-            { local: 'veiculos', nuvem: 'veiculos' },
-            { local: 'usuarios', nuvem: 'usuarios' },
-            { local: 'manutencoes', nuvem: 'manutencoes' },
-            { local: 'gastos', nuvem: 'gastos' },
-            { local: 'chamados', nuvem: 'chamados' },
-            { local: 'checklists', nuvem: 'checklists' },
-            { local: 'alocacoes', nuvem: 'alocacoes' },
-            { local: 'locais', nuvem: 'locais' }
-        ];
-        
-        let houveSucesso = false;
-        
-        for (const tabela of mapeamentoTabelas) {
-            try {
-                const { data, error } = await supabaseDB.from(tabela.nuvem).select('*');
-                
-                if (error) {
-                    console.warn(`   ⚠️ ${tabela.nuvem}: ${error.message}`);
-                    continue;
-                }
-                
-                if (data && data.length > 0) {
-                    window.BD[tabela.local] = data;
-                    console.log(`   ✅ ${tabela.nuvem}: ${data.length} registros`);
-                    houveSucesso = true;
-                } else {
-                    console.log(`   ℹ️ ${tabela.nuvem}: vazia na nuvem`);
-                }
-                
-            } catch (e) {
-                console.warn(`   ⚠️ Falha em ${tabela.nuvem}:`, e.message);
-            }
-        }
-        
-        // Salva os dados (sejam do Supabase ou locais)
-        if (typeof salvarDados === 'function') salvarDados();
-        
-        // ==========================================
-        // PASSO 5: Atualiza tela novamente
-        // ==========================================
-        if (houveSucesso) {
-            console.log('✅ Sincronização concluída! Atualizando tela...');
-            if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-        } else {
-            console.log('ℹ️ Nenhum dado novo da nuvem. Mantendo dados locais.');
-        }
-        
-        atualizarListasDependentes();
-        carregarTabelasModulos();
-        
-    } catch (e) {
-        console.error('❌ Erro na sincronização:', e);
-        // GARANTIA: mesmo com erro, atualiza a tela com dados locais
-        console.log('🔄 Fallback: atualizando com dados locais...');
-        try {
-            if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
-            atualizarListasDependentes();
-            carregarTabelasModulos();
-        } catch (e2) {
-            console.error('❌ Erro no fallback:', e2);
-        }
+      const { data, error } = await supabase
+        .from(tabela)
+        .select('*')
+        .order('id', { ascending: true })
+
+      if (error) throw error
+
+      todosDados[tabela] = data || []
+      console.log(`✅ ${tabela}: ${data.length} registros baixados`)
+
+      // 💾 Faz backup automático no localStorage
+      salvarBackupLocal(tabela, data)
+
+    } catch (erro) {
+      teveErro = true
+      console.error(`❌ Erro ao buscar ${tabela}:`, erro.message)
+      
+      // 🚨 Se falhar, usa os dados do backup local
+      const dadosLocais = carregarBackupLocal(tabela)
+      todosDados[tabela] = dadosLocais
+      
+      if (dadosLocais.length > 0) {
+        console.log(`⚠️ Usando backup local para ${tabela}: ${dadosLocais.length} registros`)
+      } else {
+        console.log(`ℹ️ Sem dados locais para ${tabela}`)
+      }
     }
+  }
+
+  // Atualiza a memória global
+  window.dadosSistema = todosDados
+  
+  // Dispara evento para o Dashboard atualizar
+  document.dispatchEvent(new CustomEvent('dadosCarregados', { 
+    detail: todosDados 
+  }))
+
+  console.log("\n📊 [sync.js] Resumo dos dados:", resumoDados(todosDados))
+  
+  return { 
+    sucesso: !teveErro, 
+    dados: todosDados,
+    usandoBackup: teveErro
+  }
 }
 
-function carregarTabelasModulos() {
-    try {
-        if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
-        if (typeof carregarTabelaManutencao === 'function') carregarTabelaManutencao('todos');
-        if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos('todos');
-        if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
-        if (typeof carregarTabelaChecklist === 'function') carregarTabelaChecklist();
-        if (typeof carregarTabelaAlocacoes === 'function') carregarTabelaAlocacoes();
-        if (typeof carregarTabelaUsuarios === 'function') carregarTabelaUsuarios();
-    } catch (e) {
-        console.warn('⚠️ Algumas tabelas não puderam ser carregadas:', e.message);
+// ============================================================
+// 📤 FUNÇÃO: Inserir ou Atualizar dados no Supabase
+// ============================================================
+export async function salvarNoSupabase(tabela, dados) {
+  console.log(`📤 [sync.js] Salvando em ${tabela}:`, dados)
+
+  try {
+    let resultado
+    
+    if (dados.id && dados.id !== null) {
+      // 🔄 Atualiza registro existente
+      const { data, error } = await supabase
+        .from(tabela)
+        .update(dados)
+        .eq('id', dados.id)
+        .select()
+      
+      if (error) throw error
+      resultado = data[0]
+      console.log(`✅ ${tabela} #${dados.id} atualizado no Supabase`)
+    } else {
+      // ➕ Insere novo registro
+      const { data, error } = await supabase
+        .from(tabela)
+        .insert([dados])
+        .select()
+      
+      if (error) throw error
+      resultado = data[0]
+      console.log(`✅ ${tabela} inserido no Supabase, ID: ${resultado?.id}`)
     }
+
+    // 💾 Atualiza o backup local
+    await atualizarBackupLocal(tabela)
+    
+    // 🔄 Atualiza os dados na memória
+    await buscarDadosSupabase()
+    
+    return { sucesso: true, dados: resultado }
+
+  } catch (erro) {
+    console.error(`❌ Erro ao salvar em ${tabela}:`, erro.message)
+    
+    // 🚨 Salva na fila de pendentes para sincronizar depois
+    adicionarPendente(tabela, dados)
+    
+    return { 
+      sucesso: false, 
+      erro: erro.message,
+      salvoLocalmente: true
+    }
+  }
 }
 
-async function sincronizarManualmente() {
-    try {
-        if (typeof mostrarToast === 'function') mostrarToast('Sincronizando...', 'info');
-        await sincronizarBD();
-        if (typeof mostrarToast === 'function') mostrarToast('Sincronização concluída!', 'sucesso');
-        if (typeof fecharModal === 'function') fecharModal();
-    } catch (e) {
-        console.error('❌ Erro na sincronização manual:', e);
-        if (typeof mostrarToast === 'function') mostrarToast('Erro ao sincronizar', 'erro');
-    }
+// ============================================================
+// 🗑️ FUNÇÃO: Excluir registro do Supabase
+// ============================================================
+export async function excluirDoSupabase(tabela, id) {
+  console.log(`🗑️ [sync.js] Excluindo ${tabela} #${id}`)
+
+  try {
+    const { error } = await supabase
+      .from(tabela)
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+    
+    console.log(`✅ ${tabela} #${id} excluído do Supabase`)
+    
+    // 💾 Atualiza backup local
+    await atualizarBackupLocal(tabela)
+    
+    // 🔄 Atualiza dados na memória
+    await buscarDadosSupabase()
+    
+    return { sucesso: true }
+  } catch (erro) {
+    console.error(`❌ Erro ao excluir:`, erro.message)
+    return { sucesso: false, erro: erro.message }
+  }
 }
 
-function atualizarListasDependentes() {
-    try {
-        if (typeof atualizarListaVeiculosNosFiltros === 'function') {
-            atualizarListaVeiculosNosFiltros();
-        }
-    } catch (e) {
-        console.error('❌ Erro ao atualizar listas:', e);
-    }
+// ============================================================
+// 💾 FUNÇÕES: Gerenciamento do Backup Local (localStorage)
+// ============================================================
+
+function salvarBackupLocal(tabela, dados) {
+  try {
+    localStorage.setItem(`backup_${tabela}`, JSON.stringify(dados))
+    localStorage.setItem(`backup_data_${tabela}`, new Date().toISOString())
+  } catch (e) {
+    console.warn(`⚠️ Não foi possível salvar backup de ${tabela}:`, e.message)
+  }
 }
 
-// Expõe funções globalmente
-window.sincronizarBD = sincronizarBD;
-window.sincronizarManualmente = sincronizarManualmente;
-window.atualizarListasDependentes = atualizarListasDependentes;
-window.carregarTabelasModulos = carregarTabelasModulos;
+function carregarBackupLocal(tabela) {
+  try {
+    const dados = localStorage.getItem(`backup_${tabela}`)
+    return dados ? JSON.parse(dados) : []
+  } catch {
+    return []
+  }
+}
 
-console.log('✅ js/sync.js carregado - versão robusta');
+async function atualizarBackupLocal(tabela) {
+  try {
+    const { data } = await supabase.from(tabela).select('*')
+    salvarBackupLocal(tabela, data || [])
+  } catch (e) {
+    console.warn(`⚠️ Erro ao atualizar backup de ${tabela}:`, e.message)
+  }
+}
+
+export function obterDataUltimoBackup(tabela) {
+  return localStorage.getItem(`backup_data_${tabela}`) || 'Nunca'
+}
+
+// ============================================================
+// 📋 FUNÇÕES: Fila de Pendentes (para quando estiver offline)
+// ============================================================
+
+function adicionarPendente(tabela, dados) {
+  try {
+    const pendentes = JSON.parse(localStorage.getItem('pendentes') || '[]')
+    pendentes.push({ 
+      tabela, 
+      dados, 
+      dataHora: new Date().toISOString(),
+      tentativas: 0
+    })
+    localStorage.setItem('pendentes', JSON.stringify(pendentes))
+    console.log(`💾 Salvo na fila de pendentes para sincronizar depois`)
+  } catch (e) {
+    console.error(`❌ Não foi possível salvar pendente:`, e.message)
+  }
+}
+
+export function listarPendentes() {
+  return JSON.parse(localStorage.getItem('pendentes') || '[]')
+}
+
+export async function sincronizarPendentes() {
+  const pendentes = listarPendentes()
+  
+  if (pendentes.length === 0) return { sincronizados: 0 }
+  
+  console.log(`\n🔄 [sync.js] Sincronizando ${pendentes.length} registros pendentes...`)
+  
+  let sincronizados = 0
+  const restantes = []
+
+  for (const item of pendentes) {
+    const resultado = await salvarNoSupabase(item.tabela, item.dados)
+    
+    if (resultado.sucesso) {
+      sincronizados++
+    } else {
+      item.tentativas = (item.tentativas || 0) + 1
+      if (item.tentativas < 5) {
+        restantes.push(item)
+      }
+    }
+  }
+  
+  localStorage.setItem('pendentes', JSON.stringify(restantes))
+  console.log(`✅ [sync.js] ${sincronizados} pendentes sincronizados!`)
+  
+  return { sincronizados, restantes: restantes.length }
+}
+
+// ============================================================
+// 🔍 FUNÇÕES AUXILIARES
+// ============================================================
+
+function resumoDados(dados) {
+  const resumo = {}
+  for (const tabela of TABELAS) {
+    resumo[tabela] = `${dados[tabela]?.length || 0} registros`
+  }
+  return resumo
+}
+
+export function obterDados(tabela) {
+  return window.dadosSistema[tabela] || carregarBackupLocal(tabela)
+}
+
+// ============================================================
+// 🚀 INICIALIZAÇÃO AUTOMÁTICA DO SISTEMA
+// ============================================================
+
+export async function inicializarSistema() {
+  console.log("\n🚀 [sync.js] Inicializando sistema de sincronização...")
+  
+  // 1. Primeiro carrega os dados locais (rápido, para mostrar algo na tela)
+  for (const tabela of TABELAS) {
+    const dadosLocais = carregarBackupLocal(tabela)
+    if (dadosLocais.length > 0) {
+      window.dadosSistema[tabela] = dadosLocais
+    }
+  }
+  
+  // Dispara evento inicial com dados locais
+  if (Object.keys(window.dadosSistema).length > 0) {
+    document.dispatchEvent(new CustomEvent('dadosCarregados', { 
+      detail: window.dadosSistema 
+    }))
+  }
+  
+  // 2. Depois busca do Supabase e atualiza tudo
+  const resultado = await buscarDadosSupabase()
+  
+  // 3. Tenta sincronizar o que estava pendente
+  await sincronizarPendentes()
+  
+  return resultado
+}
+
+// Inicializa automaticamente quando o script carrega
+inicializarSistema().then(() => {
+  console.log("\n🎉 [sync.js] Sistema de sincronização pronto!")
+})
+
+// Atualiza automaticamente a cada 30 segundos
+setInterval(async () => {
+  await buscarDadosSupabase()
+  await sincronizarPendentes()
+}, 30000) // 30.000ms = 30 segundos

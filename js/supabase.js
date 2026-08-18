@@ -1,76 +1,48 @@
 // ============================================================
-// 🔄 WRAPPER SUPABASE - VERSÃO SIMPLIFICADA
-// ✅ A sincronização principal agora é feita pelo sync.js
-// ✅ Este arquivo apenas garante que o BD existe e tenta
-//    um carregamento extra do Supabase em background
+// 🔧 supabase.js - Configuração do Cliente Supabase
+// ============================================================
+// Substitua os valores abaixo pelas suas credenciais reais
+// do painel do Supabase: Configurações → API
 // ============================================================
 
-// Garante que BD existe, mas NUNCA sobrescreve se já existir
-if (!window.BD) {
-    window.BD = {
-        veiculos: [], gastos: [], manutencoes: [], usuarios: [],
-        chamados: [], alocacoes: [], despesasViagem: [], checklist: [], configuracoes: {}
-    };
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+// 🔴 SUAS CREDENCIAIS AQUI:
+const SUPABASE_URL = "https://SEU-PROJETO.supabase.co"
+const SUPABASE_ANON_KEY = "SUA-CHAVE-ANONIMA-AQUI"
+
+// Validação básica
+if (!SUPABASE_URL || SUPABASE_URL.includes("SEU-PROJETO")) {
+  console.warn("⚠️ ATENÇÃO: Configure a URL do Supabase no arquivo supabase.js!")
 }
 
-function salvarDadosSupabase() {
-    if (typeof salvarDados === 'function') {
-        salvarDados();
-    } else {
-        try { localStorage.setItem('bd_frotas', JSON.stringify(window.BD)); } catch(e) {}
-    }
+if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("SUA-CHAVE")) {
+  console.warn("⚠️ ATENÇÃO: Configure a Chave Anônima do Supabase no arquivo supabase.js!")
 }
 
-// Tenta baixar dados do Supabase em background (não bloqueia o dashboard)
-async function baixarDadosSupabaseBackground() {
-    if (!window.supabaseReal || !window.supabase?.temConexaoReal) {
-        return;
-    }
-    
-    try {
-        console.log('🔄 [Background] Baixando veículos do Supabase...');
-        
-        const { data, error } = await window.supabaseReal.from('veiculos').select('*');
-        
-        if (error) {
-            console.log('ℹ️ [Background] Supabase retornou erro, mantendo dados locais');
-            return;
-        }
-        
-        if (data && data.length > 0) {
-            console.log(`✅ [Background] ${data.length} veículos baixados`);
-            window.BD.veiculos = data.map(v => ({
-                id: v.id,
-                placa: (v.placa || 'SEM PLACA').toUpperCase().trim(),
-                categoria: v.categoria || '',
-                marca: v.marca || '',
-                modelo: v.modelo || '',
-                ano: v.ano || '',
-                km_atual: v.km_atual || 0,
-                obra_atual: v.obra_atual || v.obra || '',
-                responsavel: v.responsavel || '',
-                status: (v.status || 'disponivel').trim(),
-                data_cadastro: v.data_cadastro || v.created_at || ''
-            }));
-            
-            salvarDadosSupabase();
-            
-            // Atualiza dashboard com os novos dados
-            if (typeof atualizarDashboardCompleto === 'function') {
-                atualizarDashboardCompleto();
-            }
-            if (typeof carregarTabelaVeiculos === 'function') {
-                carregarTabelaVeiculos();
-            }
-        }
-        
-    } catch (e) {
-        console.log('ℹ️ [Background] Não foi possível baixar do Supabase:', e.message);
-        // NÃO faz nada - os dados locais continuam valendo
-    }
+// Cria o cliente Supabase com configurações otimizadas
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+  global: {
+    headers: {
+      'X-Application': 'GestaoFrotas',
+    },
+  },
+})
+
+console.log("✅ [supabase.js] Cliente Supabase inicializado:", SUPABASE_URL)
+
+// Exporta as credenciais para referência (não exponha a chave em produção!)
+export const CONFIG = {
+  URL: SUPABASE_URL,
+  TABELAS: ['veiculos', 'gastos', 'manutencao', 'chamados', 'usuarios', 'alocacoes']
 }
-
-// Tenta após 2 segundos (em background, sem urgência)
-setTimeout(baixarDadosSupabaseBackground, 2000);
-
-console.log('✅ js/supabase.js carregado');
