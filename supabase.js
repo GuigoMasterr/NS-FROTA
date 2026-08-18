@@ -6,7 +6,7 @@
 (function() {
     // ⚠️ SUAS CREDENCIAIS DO SUPABASE
     // Para encontrar: Supabase Dashboard → Project Settings → API
-    const SUPABASE_URL = 'https://ccacecyqksenigmrvnap.supabase.co';
+    const SUPABASE_URL = 'https://ccacecyqkseniqmrvnap.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_aRQgU6fTTModcqdb4hSgHQ_bPKp2R3m';
     
     // Detecta se o SDK do Supabase foi carregado
