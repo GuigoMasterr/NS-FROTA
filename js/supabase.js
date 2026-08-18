@@ -1,5 +1,5 @@
 // ==========================================
-// 🔄 SINCRONIZAÇÃO — SUPABASE PRIORITÁRIO
+// 🔄 SINCRONIZAÇÃO — ESPERA DADOS PRIMEIRO
 // ==========================================
 
 window.BD = {
@@ -14,32 +14,24 @@ window.BD = {
     configuracoes: {}
 };
 
-// Salvar dados no localStorage
 function salvarDados() {
     localStorage.setItem('NS_FROTA_DADOS', JSON.stringify(window.BD));
 }
 
 // ==========================================
-// 📥 BAIXAR DO SUPABASE — PRIMEIRO, ANTES DE TUDO
+// 📥 BAIXAR DO SUPABASE
 // ==========================================
 async function baixarTodosDadosDoSupabase() {
-    if (!window.supabaseReal) {
-        console.warn('⚠️ Supabase não conectado');
-        return false;
-    }
+    if (!window.supabaseReal) return;
 
     try {
-        console.log('🔄 BAIXANDO veículos do Supabase...');
-
-        const { data, error } = await window.supabaseReal
-            .from('veiculos')
-            .select('*');
-
+        console.log('🔄 Baixando veículos...');
+        const { data, error } = await window.supabaseReal.from('veiculos').select('*');
         if (error) throw error;
 
-        console.log(`✅ ${data.length} VEÍCULOS BAIXADOS DO SUPABASE`);
+        console.log(`✅ ${data.length} veículos baixados`);
 
-        // ✅ FORMATAR E COLOCAR NO BD (sobrescreve qualquer dado antigo)
+        // Formatar dados
         window.BD.veiculos = data.map(v => ({
             id: v.id,
             placa: (v.placa || 'SEM PLACA').toUpperCase().trim(),
@@ -54,57 +46,71 @@ async function baixarTodosDadosDoSupabase() {
             data_cadastro: v.data_cadastro || v.created_at || ''
         }));
 
-        // Salvar dados NOVOS no localStorage
         salvarDados();
-        console.log('✅ BD ATUALIZADO —', BD.veiculos.length, 'veículos prontos');
+        console.log('✅ BD atualizado!');
 
-        // ✅ AGORA SIM — atualizar TABELA e DASHBOARD
-        dispararAtualizacaoTela();
-        return true;
+        // ✅ SÓ AGORA — chamar exibição APÓS dados prontos
+        setTimeout(atualizarTela, 300);
 
     } catch (e) {
-        console.error('❌ Erro ao baixar:', e);
-        return false;
+        console.error('❌ Erro:', e);
     }
 }
 
 // ==========================================
-// 🎯 DISPARAR ATUALIZAÇÃO DA TELA
+// 🎯 EXIBIR TABELA E DASHBOARD
 // ==========================================
-function dispararAtualizacaoTela() {
-    let tentativas = 0;
-    const esperar = setInterval(() => {
-        tentativas++;
+function atualizarTela() {
+    console.log('📊 Atualizando TABELA...');
+    if (typeof carregarTabelaVeiculos === 'function') {
+        carregarTabelaVeiculos();
+    } else {
+        desenharTabelaManual();
+    }
 
-        // 1. Atualizar Tabela de Veículos
-        if (typeof carregarTabelaVeiculos === 'function') {
-            console.log('📊 Atualizando TABELA de veículos...');
-            carregarTabelaVeiculos();
-        }
-
-        // 2. Atualizar Dashboard
-        if (typeof atualizarDashboardCompleto === 'function') {
-            console.log('📈 Atualizando DASHBOARD...');
-            atualizarDashboardCompleto();
-        }
-
-        // Parar após 3 segundos
-        if (tentativas > 30) {
-            clearInterval(esperar);
-            console.log('✅ Atualização concluída!');
-        }
-    }, 100);
+    console.log('📈 Atualizando DASHBOARD...');
+    if (typeof atualizarDashboardCompleto === 'function') {
+        atualizarDashboardCompleto();
+    }
 }
 
 // ==========================================
-// 🚀 INICIAR — SUPABASE PRIMEIRO
+// 🎯 DESENHAR TABELA MANUALMENTE
+// ==========================================
+function desenharTabelaManual() {
+    const tabela = document.querySelector('#tabelaVeiculos tbody') || document.querySelector('table tbody');
+    if (!tabela) return;
+
+    tabela.innerHTML = '';
+
+    BD.veiculos.forEach(v => {
+        const linha = document.createElement('tr');
+        linha.innerHTML = `
+            <td>${v.placa}</td>
+            <td>${v.categoria}</td>
+            <td>${v.marca || ''}</td>
+            <td>${v.modelo || ''}</td>
+            <td>${v.ano || ''}</td>
+            <td>${v.km_atual}</td>
+            <td>—</td>
+            <td>—</td>
+            <td><span style="padding:2px 8px; border-radius:999px; background:#dcfce7; color:#166534; font-size:13px;">${v.status}</span></td>
+            <td>
+                <button style="padding:4px 8px; margin:0 2px; background:#3b82f6; color:white; border:none; border-radius:4px;">Editar</button>
+                <button style="padding:4px 8px; margin:0 2px; background:#f59e0b; color:white; border:none; border-radius:4px;">Histórico</button>
+                <button style="padding:4px 8px; margin:0 2px; background:#ef4444; color:white; border:none; border-radius:4px;">Excluir</button>
+            </td>
+        `;
+        tabela.appendChild(linha);
+    });
+
+    console.log(`✅ Tabela exibida: ${BD.veiculos.length} veículos`);
+}
+
+// ==========================================
+// 🚀 INICIAR
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 SISTEMA INICIADO');
-
-    // ❌ NÃO carregar dados antigos do localStorage — usar SOMENTE do Supabase
-
-    // ✅ BAIXAR DO SUPABASE PRIMEIRO
     setTimeout(() => {
         if (window.supabaseReal) {
             baixarTodosDadosDoSupabase();
@@ -113,5 +119,5 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.supabaseReal) baixarTodosDadosDoSupabase();
             }, 1000);
         }
-    }, 300);
+    }, 500);
 });
