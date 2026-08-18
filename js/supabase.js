@@ -1,8 +1,8 @@
 // ==========================================
-// 🔄 SINCRONIZAÇÃO AUTOMÁTICA — VERSÃO CORRIGIDA
+// 🔄 SINCRONIZAÇÃO COMPLETA — Dashboard + Tabela
 // ==========================================
 
-window.BD = {
+window.BD = window.BD || {
     veiculos: [],
     gastos: [],
     manutencoes: [],
@@ -21,7 +21,7 @@ function carregarDadosLocais() {
         if (dados) {
             const parsed = JSON.parse(dados);
             Object.assign(window.BD, parsed);
-            console.log('✅ Dados locais carregados');
+            console.log('✅ Dados locais carregados:', BD.veiculos.length, 'veículos');
         }
     } catch (e) {
         console.warn('⚠️ Erro ao carregar dados locais:', e);
@@ -34,7 +34,7 @@ function salvarDados() {
 }
 
 // ==========================================
-// 📥 BAIXAR DO SUPABASE E EXIBIR
+// 📥 BAIXAR DO SUPABASE → ATUALIZAR BD → TELA
 // ==========================================
 async function baixarTodosDadosDoSupabase() {
     if (!window.supabaseReal) {
@@ -51,9 +51,9 @@ async function baixarTodosDadosDoSupabase() {
 
         if (error) throw error;
 
-        console.log(`✅ ${data.length} veículos baixados`);
+        console.log(`✅ ${data.length} veículos baixados do Supabase`);
 
-        // Formatar dados
+        // ✅ COLOCAR DADOS NO BD QUE O SISTEMA USA
         window.BD.veiculos = data.map(v => ({
             id: v.id,
             placa: (v.placa || 'SEM PLACA').toUpperCase().trim(),
@@ -64,18 +64,19 @@ async function baixarTodosDadosDoSupabase() {
             km_atual: v.km_atual || 0,
             obra_atual: '',
             responsavel: '',
-            status: v.status || 'Disponível',
+            status: (v.status || 'Disponível').trim(),
             data_cadastro: v.data_cadastro || v.created_at || ''
         }));
 
+        // Salvar no localStorage
         salvarDados();
+        console.log('✅ BD atualizado com', BD.veiculos.length, 'veículos');
 
-        // 🎯 Chamar função de exibição ou desenhar diretamente
-        if (typeof carregarTabelaVeiculos === 'function') {
-            carregarTabelaVeiculos();
-        } else {
-            desenharTabelaManualmente();
-        }
+        // ✅ ATUALIZAR TABELA DE VEÍCULOS
+        await atualizarTabelaVeiculos();
+
+        // ✅ ATUALIZAR DASHBOARD
+        await atualizarDashboard();
 
     } catch (e) {
         console.error('❌ Erro na sincronização:', e);
@@ -83,33 +84,38 @@ async function baixarTodosDadosDoSupabase() {
 }
 
 // ==========================================
-// 🎯 DESENHAR TABELA (FUNCIONA SEM DEPENDER DE OUTROS ARQUIVOS)
+// 📊 ATUALIZAR TABELA DE VEÍCULOS
 // ==========================================
-function desenharTabelaManualmente() {
-    // Procurar a área da tabela de forma inteligente
-    let corpoTabela = document.querySelector('#tabelaVeiculos tbody') ||
-                       document.querySelector('table tbody') ||
-                       document.querySelector('.conteudo-pagina:has(th) tbody');
-
-    // Se não achou pelo seletor, procurar pelo texto "Carregando"
-    if (!corpoTabela) {
-        const todos = document.querySelectorAll('div, table');
-        for (let el of todos) {
-            if (el.textContent.includes('Carregando')) {
-                el.innerHTML = '';
-                corpoTabela = el;
-                break;
-            }
+async function atualizarTabelaVeiculos() {
+    // Esperar a função do sistema estar pronta
+    let tentativas = 0;
+    const esperar = setInterval(() => {
+        tentativas++;
+        if (typeof carregarTabelaVeiculos === 'function') {
+            clearInterval(esperar);
+            console.log('📊 Chamando carregarTabelaVeiculos()...');
+            carregarTabelaVeiculos();
+        } else if (tentativas > 30) {
+            clearInterval(esperar);
+            console.log('⚠️ Função não encontrada — desenhando tabela manualmente');
+            desenharTabelaManual();
         }
-    }
+    }, 100);
+}
 
-    if (!corpoTabela) {
-        console.warn('⚠️ Área da tabela não encontrada');
+// ==========================================
+// 🎯 DESENHAR TABELA MANUALMENTE
+// ==========================================
+function desenharTabelaManual() {
+    const tabela = document.querySelector('#tabelaVeiculos tbody') ||
+                   document.querySelector('table tbody');
+    
+    if (!tabela) {
+        console.warn('⚠️ Tabela não encontrada');
         return;
     }
 
-    // Limpar e desenhar
-    corpoTabela.innerHTML = '';
+    tabela.innerHTML = '';
 
     BD.veiculos.forEach(v => {
         const linha = document.createElement('tr');
@@ -122,7 +128,7 @@ function desenharTabelaManualmente() {
             <td>${v.km_atual}</td>
             <td>—</td>
             <td>—</td>
-            <td><span style="padding:2px 8px; border-radius:999px; background:#dcfce7; color:#166534; font-size:13px;">${v.status}</span></td>
+            <td><span class="tag-status ${v.status === 'Disponível' ? 'disponivel' : 'em-uso'}">${v.status}</span></td>
             <td class="acoes">
                 <button class="btn-editar" data-id="${v.id}">Editar</button>
                 <button class="btn-historico" data-id="${v.id}">Histórico</button>
@@ -130,10 +136,46 @@ function desenharTabelaManualmente() {
                 <button class="btn-documentos" data-id="${v.id}">📄 Doc</button>
             </td>
         `;
-        corpoTabela.appendChild(linha);
+        tabela.appendChild(linha);
     });
 
-    console.log('✅ Tabela desenhada com sucesso!');
+    console.log('✅ Tabela desenhada com', BD.veiculos.length, 'veículos');
+}
+
+// ==========================================
+// 📈 ATUALIZAR DASHBOARD
+// ==========================================
+async function atualizarDashboard() {
+    // Esperar a função do sistema
+    let tentativas = 0;
+    const esperar = setInterval(() => {
+        tentativas++;
+        if (typeof atualizarDashboardCompleto === 'function') {
+            clearInterval(esperar);
+            console.log('📈 Chamando atualizarDashboardCompleto()...');
+            atualizarDashboardCompleto();
+        } else if (tentativas > 30) {
+            clearInterval(esperar);
+            console.log('⚠️ Função do Dashboard não encontrada — atualizando manualmente');
+            atualizarDashboardManual();
+        }
+    }, 100);
+}
+
+// ==========================================
+// 🎯 ATUALIZAR DASHBOARD MANUALMENTE
+// ==========================================
+function atualizarDashboardManual() {
+    const total = BD.veiculos.length;
+    const emOperacao = BD.veiculos.filter(v => v.status === 'Em Operação').length;
+    const emManutencao = BD.veiculos.filter(v => v.status === 'Em Manutenção').length;
+
+    const cards = document.querySelectorAll('.card-valor');
+    if (cards[0]) cards[0].textContent = total;
+    if (cards[1]) cards[1].textContent = emOperacao;
+    if (cards[2]) cards[2].textContent = emManutencao;
+
+    console.log(`✅ Dashboard: Total=${total} | Em Operação=${emOperacao} | Manutenção=${emManutencao}`);
 }
 
 // ==========================================
@@ -143,12 +185,10 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Sistema iniciado');
     carregarDadosLocais();
 
-    // Aguardar conexão e baixar
     setTimeout(() => {
         if (window.supabaseReal) {
             baixarTodosDadosDoSupabase();
         } else {
-            // Tentar novamente após 1 segundo
             setTimeout(() => {
                 if (window.supabaseReal) baixarTodosDadosDoSupabase();
             }, 1000);
