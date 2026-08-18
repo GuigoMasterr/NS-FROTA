@@ -475,7 +475,10 @@
         const conectou = await esperarSupabasePronto(8000);
         
         if (conectou) {
-            console.log('✅ [sync.js] Supabase confirmado, buscando dados...');
+            console.log('✅ [sync.js] Supabase confirmado, sincronizando dados...');
+            // 1. Primeiro envia dados locais para o Supabase
+            await sincronizarLocalParaSupabase();
+            // 2. Depois busca dados atualizados do Supabase
             await buscarDadosSupabase();
             await sincronizarPendentes();
         } else {
@@ -485,11 +488,81 @@
             // Tenta novamente depois
             setTimeout(async () => {
                 if (supabasePronto()) {
+                    await sincronizarLocalParaSupabase();
                     await buscarDadosSupabase();
                     await sincronizarPendentes();
                 }
             }, 5000);
         }
+    }
+
+    // ============================================================
+    // 📤 SINCRONIZAÇÃO EM MASSA: Local → Supabase
+    // Envia todos os dados do localStorage para o Supabase
+    // ============================================================
+    async function sincronizarLocalParaSupabase() {
+        if (!supabasePronto()) {
+            console.warn('⚠️ [sync.js] Sem conexão com Supabase. Dados serão sincronizados depois.');
+            return { sucesso: false, erro: 'Sem conexão' };
+        }
+        
+        if (!window.BD) {
+            console.warn('⚠️ [sync.js] window.BD não existe. Nada para sincronizar.');
+            return { sucesso: false, erro: 'Sem dados locais' };
+        }
+        
+        const supabase = window.supabase;
+        console.log('\n📤 [sync.js] Sincronizando dados locais → Supabase...');
+        
+        let totalSincronizados = 0;
+        let tabelasComErro = [];
+        
+        for (const tabela of TABELAS) {
+            try {
+                const dadosLocais = window.BD[tabela];
+                
+                if (!dadosLocais || !Array.isArray(dadosLocais) || dadosLocais.length === 0) {
+                    console.log(`ℹ️ ${tabela}: sem dados locais para sincronizar`);
+                    continue;
+                }
+                
+                // Prepara os dados (remove campos que não devem ir para o banco)
+                const dadosParaEnviar = dadosLocais.map(item => {
+                    const copia = { ...item };
+                    // Garante que o ID seja número ou null
+                    if (copia.id !== undefined && copia.id !== null) {
+                        copia.id = Number(copia.id);
+                    }
+                    return copia;
+                });
+                
+                // Faz upsert em massa (insere ou atualiza)
+                const { data, error } = await supabase
+                    .from(tabela)
+                    .upsert(dadosParaEnviar, { onConflict: 'id', ignoreDuplicates: false })
+                    .select();
+                
+                if (error) throw error;
+                
+                console.log(`✅ ${tabela}: ${dadosParaEnviar.length} registros sincronizados`);
+                totalSincronizados += dadosParaEnviar.length;
+                
+            } catch (erro) {
+                console.error(`❌ Erro ao sincronizar ${tabela}:`, erro.message);
+                tabelasComErro.push(tabela);
+            }
+        }
+        
+        console.log(`\n📊 [sync.js] Sincronização concluída: ${totalSincronizados} registros enviados`);
+        if (tabelasComErro.length > 0) {
+            console.warn(`⚠️ Tabelas com erro: ${tabelasComErro.join(', ')}`);
+        }
+        
+        return {
+            sucesso: tabelasComErro.length === 0,
+            totalSincronizados,
+            tabelasComErro
+        };
     }
 
     // ============================================================
@@ -503,6 +576,7 @@
     window.obterDataUltimoBackup = obterDataUltimoBackup;
     window.listarPendentes = listarPendentes;
     window.sincronizarPendentes = sincronizarPendentes;
+    window.sincronizarLocalParaSupabase = sincronizarLocalParaSupabase;
     window.supabasePronto = supabasePronto;
 
     // ============================================================
@@ -522,6 +596,7 @@
     // Atualiza automaticamente a cada 30 segundos
     setInterval(async () => {
         if (supabasePronto()) {
+            await sincronizarLocalParaSupabase();
             await buscarDadosSupabase();
             await sincronizarPendentes();
         }

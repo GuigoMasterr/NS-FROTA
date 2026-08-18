@@ -149,6 +149,18 @@ function salvarDados() {
             return;
         }
         localStorage.setItem(BD_CHAVE_LOCALSTORAGE, JSON.stringify(window.BD));
+        
+        // 🔄 Sincroniza com o Supabase em segundo plano
+        if (typeof sincronizarLocalParaSupabase === 'function' && typeof supabasePronto === 'function') {
+            if (supabasePronto()) {
+                // Usa setTimeout para não travar a interface
+                setTimeout(() => {
+                    sincronizarLocalParaSupabase().catch(err => {
+                        console.warn('⚠️ [BD] Erro ao sincronizar com Supabase:', err);
+                    });
+                }, 100);
+            }
+        }
     } catch (e) {
         console.error('❌ [BD] Erro ao salvar:', e);
     }
