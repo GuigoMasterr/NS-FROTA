@@ -367,4 +367,60 @@ window.exportarDashboardPDF = function() {
   setTimeout(() => window.print(), 300);
 };
 
+// ==================================================
+// 🔄 SISTEMA DE ATUALIZAÇÃO AUTOMÁTICA
+// Verifica a cada 1.5s se há dados novos e atualiza os cards
+// ==================================================
+let _ultimaContagemVeiculos = -1;
+
+function verificarEAtualizar() {
+  try {
+    const bd = window.BD;
+    if (!bd || !bd.veiculos) return;
+    
+    const contagemAtual = bd.veiculos.length;
+    
+    // Só atualiza se a contagem mudou
+    if (contagemAtual !== _ultimaContagemVeiculos) {
+      if (contagemAtual > 0) {
+        console.log(`🔄 [DASHBOARD] Dados detectados: ${contagemAtual} veículos. Atualizando cards...`);
+      }
+      _ultimaContagemVeiculos = contagemAtual;
+      atualizarDashboardCompleto();
+    }
+  } catch (e) {
+    console.warn('⚠️ [DASHBOARD] Erro na verificação automática:', e.message);
+  }
+}
+
+// Inicia a verificação periódica
+setInterval(verificarEAtualizar, 1500);
+
+// Também escuta eventos de dados carregados
+document.addEventListener('dadosCarregados', () => {
+  console.log('📢 [DASHBOARD] Evento dadosCarregados recebido!');
+  setTimeout(verificarEAtualizar, 100);
+});
+
+document.addEventListener('bdAtualizado', () => {
+  console.log('📢 [DASHBOARD] Evento bdAtualizado recebido!');
+  setTimeout(verificarEAtualizar, 100);
+});
+
+// Verificação final após 5 segundos
+setTimeout(() => {
+  console.log('🔍 [DASHBOARD] Verificação final após carregamento...');
+  if (window.BD && window.BD.veiculos && window.BD.veiculos.length > 0) {
+    console.log(`✅ [DASHBOARD] Encontrados ${window.BD.veiculos.length} veículos no window.BD`);
+    _ultimaContagemVeiculos = window.BD.veiculos.length;
+    atualizarDashboardCompleto();
+  } else {
+    console.warn('⚠️ [DASHBOARD] window.BD.veiculos ainda vazio.');
+    if (typeof window.buscarDadosSupabase === 'function') {
+      console.log('🔄 [DASHBOARD] Chamando buscarDadosSupabase manualmente...');
+      window.buscarDadosSupabase();
+    }
+  }
+}, 5000);
+
 console.log('✅ melhorias-dashboard.js carregado');

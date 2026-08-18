@@ -130,6 +130,15 @@
         // 💾 Salva no localStorage a estrutura completa do BD
         salvarBDCompleto();
 
+        // 📢 Dispara evento para notificar o dashboard
+        try {
+            document.dispatchEvent(new CustomEvent('bdAtualizado', {
+                detail: todosDados
+            }));
+        } catch (e) {
+            console.warn('⚠️ Erro ao disparar evento bdAtualizado:', e.message);
+        }
+
         // Dispara evento para componentes antigos
         try {
             document.dispatchEvent(new CustomEvent('dadosCarregados', {
