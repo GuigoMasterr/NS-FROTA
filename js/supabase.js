@@ -1,105 +1,115 @@
-// ==================================================
-// 🔌 SUPABASE - URL CORRIGIDA
-// ==================================================
-const SUPABASE_CONFIG = {
-  url: 'https://ccacecyqkseniqmrvnap.supabase.co',
-  anonKey: 'sb_publishable_aRQgU6fTTModcqdb4hSgHQ_bPKp2R3m'
+// ==========================================
+// 🔄 SINCRONIZAÇÃO: BAIXA DO SUPABASE AO ABRIR
+// ==========================================
+
+window.BD = {
+    veiculos: [],
+    gastos: [],
+    manutencoes: [],
+    usuarios: [],
+    chamados: [],
+    alocacoes: [],
+    despesasViagem: [],
+    checklist: [],
+    configuracoes: {}
 };
 
-let _supabaseClienteReal = null;
-try {
-  if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
-    _supabaseClienteReal = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-    console.log('✅ Cliente Supabase inicializado - URL CORRIGIDA');
-    
-    _supabaseClienteReal.from('locais').select('count', { count: 'exact', head: true })
-      .then(() => console.log('✅ Conexão Supabase OK'))
-      .catch(e => console.warn('⚠️ Supabase:', e.message));
-      
-  } else {
-    console.warn('⚠️ SDK do Supabase não carregado');
-  }
-} catch (e) {
-  console.warn('⚠️ Erro ao inicializar Supabase:', e.message);
-  _supabaseClienteReal = null;
+// Inicializar BD do localStorage primeiro
+function carregarDadosLocais() {
+    const dados = localStorage.getItem('NS_FROTA_DADOS');
+    if (dados) {
+        try {
+            const parsed = JSON.parse(dados);
+            Object.assign(window.BD, parsed);
+            console.log('✅ Dados locais carregados');
+        } catch (e) {
+            console.warn('⚠️ Erro ao carregar dados locais:', e);
+        }
+    }
 }
-window.supabaseReal = _supabaseClienteReal;
 
-class SupabaseWrapper {
-  constructor() {
-    this._tabela = '';
-    this._filtros = [];
-    this._ordem = null;
-    this._limite = null;
-    this._unico = false;
-    this._clienteReal = window.supabaseReal || null;
-  }
-  get temConexaoReal() {
-    return this._clienteReal !== null;
-  }
-  from(tabela) {
-    this._tabela = tabela;
-    this._filtros = [];
-    this._ordem = null;
-    this._limite = null;
-    this._unico = false;
-    return this;
-  }
-  select(colunas = '*') {
-    if (this.temConexaoReal) {
-      try {
-        let query = this._clienteReal.from(this._tabela).select(colunas);
-        this._filtros.forEach(f => { query = query.eq(f.c, f.v); });
-        if (this._ordem) query = query.order(this._ordem.coluna, this._ordem.opcoes || {});
-        if (this._limite) query = query.limit(this._limite);
-        if (this._unico) return query.single();
-        return query;
-      } catch (e) {
-        console.warn('Erro query [' + this._tabela + ']:', e.message);
-      }
-    }
-    return Promise.resolve({ data: this._unico ? null : [], error: { message: 'Modo local' } });
-  }
-  eq(coluna, valor) { this._filtros.push({ c: coluna, v: valor }); return this; }
-  order(coluna, opcoes = {}) { this._ordem = { coluna, opcoes }; return this; }
-  limit(n) { this._limite = n; return this; }
-  single() { this._unico = true; return this; }
-  async upsert(dados, opcoes = {}) {
-    if (this.temConexaoReal) {
-      try { return await this._clienteReal.from(this._tabela).upsert(dados, opcoes).select(); }
-      catch (e) { console.warn('Erro upsert:', e.message); }
-    }
-    return Promise.resolve({ data: [], error: { message: 'Modo local' } });
-  }
-  async insert(dados) {
-    if (this.temConexaoReal) {
-      try { return await this._clienteReal.from(this._tabela).insert(dados).select(); }
-      catch (e) { console.warn('Erro insert:', e.message); }
-    }
-    return Promise.resolve({ data: [], error: { message: 'Modo local' } });
-  }
-  async update(dados) {
-    if (this.temConexaoReal) {
-      try {
-        let query = this._clienteReal.from(this._tabela).update(dados);
-        this._filtros.forEach(f => { query = query.eq(f.c, f.v); });
-        return await query.select();
-      } catch (e) { console.warn('Erro update:', e.message); }
-    }
-    return Promise.resolve({ data: [], error: { message: 'Modo local' } });
-  }
-  async delete() {
-    if (this.temConexaoReal) {
-      try {
-        let query = this._clienteReal.from(this._tabela).delete();
-        this._filtros.forEach(f => { query = query.eq(f.c, f.v); });
-        return await query;
-      } catch (e) { console.warn('Erro delete:', e.message); }
-    }
-    return Promise.resolve({ data: [], error: { message: 'Modo local' } });
-  }
+// Salvar dados no localStorage
+function salvarDados() {
+    localStorage.setItem('NS_FROTA_DADOS', JSON.stringify(window.BD));
+    console.log('💾 Dados salvos localmente');
 }
-const supabaseInstancia = new SupabaseWrapper();
-window.supabase = supabaseInstancia;
-console.log('✅ js/supabase.js carregado - Modo:', 
-  supabaseInstancia.temConexaoReal ? '🌐 Supabase Real' : '💾 Apenas Local');
+
+// ==========================================
+// 📥 BAIXAR TUDO DO SUPABASE
+// ==========================================
+async function baixarTodosDadosDoSupabase() {
+    if (!window.supabaseReal) {
+        console.warn('⚠️ Supabase não conectado');
+        return false;
+    }
+
+    try {
+        console.log('🔄 Baixando dados do Supabase...');
+
+        // BAIXAR VEÍCULOS
+        const { data: veiculos, error: eVeiculos } = await window.supabaseReal
+            .from('veiculos')
+            .select('*');
+
+        if (eVeiculos) throw eVeiculos;
+        console.log(`🚛 ${veiculos.length} veículos baixados`);
+
+        // Normalizar dados baixados
+        window.BD.veiculos = veiculos.map(v => ({
+            id: v.id,
+            placa: v.placa || 'SEM PLACA',
+            categoria: v.categoria || '',
+            marca: v.marca || '',
+            modelo: v.modelo || '',
+            ano: v.ano || '',
+            km_atual: v.km_atual || 0,
+            obra_atual: v.obra_atual || '',
+            responsavel: v.responsavel || '',
+            status: v.status || 'Disponível',
+            data_cadastro: v.data_cadastro || v.created_at || new Date().toISOString().split('T')[0]
+        }));
+
+        // Aqui você pode adicionar as outras tabelas depois...
+        // window.BD.gastos = ...
+        // window.BD.manutencoes = ...
+
+        // Salvar tudo baixado no localStorage
+        salvarDados();
+
+        console.log('✅ TODOS os dados baixados e sincronizados!');
+        return true;
+
+    } catch (e) {
+        console.error('❌ Erro ao baixar do Supabase:', e);
+        alert('❌ Erro ao sincronizar: ' + e.message);
+        return false;
+    }
+}
+
+// ==========================================
+// 🚀 INICIALIZAÇÃO AUTOMÁTICA
+// ==========================================
+async function inicializarSincronizacao() {
+    console.log('🔄 Inicializando sistema...');
+    
+    // 1. Carregar dados locais primeiro (para aparecer rápido)
+    carregarDadosLocais();
+
+    // 2. Depois baixar do Supabase e substituir
+    if (window.supabaseReal) {
+        await baixarTodosDadosDoSupabase();
+        
+        // Recarregar a tela de veículos se estiver aberta
+        if (typeof carregarTabelaVeiculos === 'function') {
+            carregarTabelaVeiculos();
+        }
+    }
+}
+
+// Executar automaticamente quando a página carregar
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(inicializarSincronizacao, 300); // Espera conexão carregar
+});
+
+// Disponível globalmente para botão manual
+window.baixarTodosDadosDoSupabase = baixarTodosDadosDoSupabase;
