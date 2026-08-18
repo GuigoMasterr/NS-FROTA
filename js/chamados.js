@@ -111,6 +111,49 @@ function abrirModalChamado() {
     form.appendChild(addCampo('Título/Assunto', 'text', 'cTitulo', true));
     form.appendChild(addCampo('Prioridade', 'text', 'cPrioridade', true, prioridades));
     
+    // Container para campos de KM e Horímetro (atualizados dinamicamente)
+    const containerMedidores = document.createElement('div');
+    containerMedidores.id = 'containerMedidoresChamado';
+    containerMedidores.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;';
+    form.appendChild(containerMedidores);
+    
+    // Função para atualizar campos de KM/Horímetro baseado no veículo selecionado
+    function atualizarCamposMedidores() {
+        const veiculoId = document.getElementById('cVeiculo')?.value;
+        containerMedidores.innerHTML = '';
+        
+        if (!veiculoId) return;
+        
+        const usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(veiculoId) : true;
+        const usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(veiculoId) : false;
+        
+        if (usaKm) {
+            containerMedidores.appendChild(addCampo('🛣️ KM Atual', 'number', 'cKm', true));
+        } else {
+            const info = document.createElement('div');
+            info.style.cssText = 'padding:10px 12px;background:#fef3c7;border:1px dashed #f59e0b;border-radius:8px;font-size:12px;color:#92400e;display:flex;align-items:center;';
+            info.innerHTML = '🛣️ <strong style="margin-left:6px;">KM:</strong> Isento para este veículo';
+            containerMedidores.appendChild(info);
+            const hiddenKm = document.createElement('input');
+            hiddenKm.type = 'hidden';
+            hiddenKm.id = 'cKm';
+            hiddenKm.value = '0';
+            containerMedidores.appendChild(hiddenKm);
+        }
+        
+        if (usaHorimetro) {
+            containerMedidores.appendChild(addCampo('⏱️ Horímetro', 'number', 'cHorimetro', true));
+        }
+    }
+    
+    // Listener para quando o veículo mudar
+    setTimeout(function() {
+        const selectVeiculo = document.getElementById('cVeiculo');
+        if (selectVeiculo) {
+            selectVeiculo.addEventListener('change', atualizarCamposMedidores);
+        }
+    }, 100);
+    
     const grupoDesc = document.createElement('div');
     grupoDesc.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
     const lblDesc = document.createElement('label');
@@ -160,11 +203,37 @@ function salvarChamadoForm() {
             return;
         }
         
+        // Validação condicional de KM e Horímetro
+        const usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(veiculoId) : true;
+        const usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(veiculoId) : false;
+        
+        const kmEl = document.getElementById('cKm');
+        const horimetroEl = document.getElementById('cHorimetro');
+        
+        const km = usaKm ? parseFloat(kmEl?.value) : 0;
+        const horimetro = usaHorimetro ? parseFloat(horimetroEl?.value) : null;
+        
+        if (usaKm && kmEl && kmEl.type !== 'hidden' && (isNaN(km) || km <= 0)) {
+            alert('⚠️ KM é obrigatório para este veículo!');
+            kmEl?.focus();
+            return;
+        }
+        
+        if (usaHorimetro && horimetroEl && (isNaN(horimetro) || horimetro < 0)) {
+            alert('⚠️ Horímetro é obrigatório para este veículo!');
+            horimetroEl?.focus();
+            return;
+        }
+        
         const dados = {
             id: Date.now(),
             veiculoId: Number(veiculoId),
             titulo: titulo,
             descricao: descricao,
+            km: km,
+            horimetro: horimetro,
+            usaKm: usaKm,
+            usaHorimetro: usaHorimetro,
             prioridade: document.getElementById('cPrioridade')?.value || 'Média',
             status: 'Aberto',
             data: new Date().toISOString().split('T')[0],

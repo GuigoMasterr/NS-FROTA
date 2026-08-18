@@ -28,7 +28,7 @@ function carregarTabelaVeiculos() {
         }
         
         if (veiculos.length === 0) {
-            tabela.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#64748b;">Nenhum veiculo cadastrado</td></tr>';
+            tabela.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:40px;color:#64748b;">Nenhum veiculo cadastrado</td></tr>';
             return;
         }
         
@@ -52,10 +52,12 @@ function carregarTabelaVeiculos() {
                 '<td>' + responsavel + '</td>' +
                 '<td><span style="display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;color:white;background:' + cor + ';">' + status + '</span></td>' +
                 '<td>' +
-                    '<button onclick="abrirModalVeiculo(' + v.id + ')" style="padding:6px 10px;border:none;background:#3b82f6;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">Editar</button>' +
-                    '<button onclick="verHistoricoCondutores(' + v.id + ')" style="padding:6px 10px;border:none;background:#7c3aed;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">Historico</button>' +
-                    '<button onclick="abrirModalDocumentos(' + v.id + ')" style="padding:6px 10px;border:none;background:#0ea5e9;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;">📄 Doc</button>' +
-                    '<button onclick="excluirVeiculo(' + v.id + ')" style="padding:6px 10px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;font-size:12px;">Excluir</button>' +
+                    '<button onclick="abrirModalVeiculo(' + v.id + ')" style="padding:6px 10px;border:none;background:#3b82f6;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;margin-bottom:2px;">Editar</button>' +
+                    '<button onclick="verHistoricoCondutores(' + v.id + ')" style="padding:6px 10px;border:none;background:#7c3aed;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;margin-bottom:2px;">Historico</button>' +
+                    '<button onclick="abrirModalDocumentos(' + v.id + ')" style="padding:6px 10px;border:none;background:#0ea5e9;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-right:4px;margin-bottom:2px;">📄 Doc</button>' +
+                    '<button onclick="toggleKmVeiculo(' + v.id + ')" style="padding:6px 8px;border:none;background:' + (v.usaKm !== false ? '#10b981' : '#94a3b8') + ';color:white;border-radius:6px;cursor:pointer;font-size:11px;margin-right:4px;margin-bottom:2px;" title="' + (v.usaKm !== false ? 'Clique para DESABILITAR KM' : 'Clique para HABILITAR KM') + '">🛣️ KM ' + (v.usaKm !== false ? 'ON' : 'OFF') + '</button>' +
+                    '<button onclick="toggleHorimetroVeiculo(' + v.id + ')" style="padding:6px 8px;border:none;background:' + (v.usaHorimetro === true ? '#10b981' : '#94a3b8') + ';color:white;border-radius:6px;cursor:pointer;font-size:11px;margin-right:4px;margin-bottom:2px;" title="' + (v.usaHorimetro === true ? 'Clique para DESABILITAR Horímetro' : 'Clique para HABILITAR Horímetro') + '">⏱️ HR ' + (v.usaHorimetro === true ? 'ON' : 'OFF') + '</button>' +
+                    '<button onclick="excluirVeiculo(' + v.id + ')" style="padding:6px 10px;border:none;background:#ef4444;color:white;border-radius:6px;cursor:pointer;font-size:12px;margin-bottom:2px;">Excluir</button>' +
                 '</td>' +
                 '</tr>';
         }
@@ -707,6 +709,54 @@ function abrirModalVeiculo(id) {
     form.appendChild(criarCampo('Local/Obra', 'text', 'vObra', veiculo ? veiculo.obra_atual : '', '', false, opcoesLocais));
     form.appendChild(criarCampo('Status', 'text', 'vStatus', veiculo ? veiculo.status : 'disponivel', '', false, opcoesStatus));
     
+    // Campos de configuração: KM e Horímetro
+    var configContainer = document.createElement('div');
+    configContainer.style.cssText = 'grid-column:span 2;background:#f8fafc;border-radius:8px;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;';
+    
+    // Toggle KM
+    var usaKm = veiculo ? (veiculo.usaKm !== false) : true;
+    var toggleKm = document.createElement('div');
+    toggleKm.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:white;border-radius:6px;border:1px solid #e2e8f0;';
+    toggleKm.innerHTML = '<div><strong style="color:#1e293b;font-size:14px;">🛣️ Usar KM</strong><div style="font-size:11px;color:#64748b;">Quando habilitado, KM é obrigatório nos registros</div></div>';
+    var btnToggleKm = document.createElement('button');
+    btnToggleKm.type = 'button';
+    btnToggleKm.id = 'vUsaKm';
+    btnToggleKm.style.cssText = 'padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:white;background:' + (usaKm ? '#10b981' : '#94a3b8') + ';';
+    btnToggleKm.textContent = usaKm ? '✅ HABILITADO' : '❌ DESABILITADO';
+    btnToggleKm.onclick = function() {
+        var atual = this.textContent.includes('HABILITADO');
+        var novo = !atual;
+        this.textContent = novo ? '✅ HABILITADO' : '❌ DESABILITADO';
+        this.style.background = novo ? '#10b981' : '#94a3b8';
+        this.dataset.valor = novo;
+    };
+    btnToggleKm.dataset.valor = usaKm;
+    toggleKm.appendChild(btnToggleKm);
+    configContainer.appendChild(toggleKm);
+    
+    // Toggle Horímetro
+    var usaHorimetro = veiculo ? (veiculo.usaHorimetro === true) : false;
+    var toggleHr = document.createElement('div');
+    toggleHr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:white;border-radius:6px;border:1px solid #e2e8f0;';
+    toggleHr.innerHTML = '<div><strong style="color:#1e293b;font-size:14px;">⏱️ Usar Horímetro</strong><div style="font-size:11px;color:#64748b;">Quando habilitado, Horímetro é obrigatório nos registros</div></div>';
+    var btnToggleHr = document.createElement('button');
+    btnToggleHr.type = 'button';
+    btnToggleHr.id = 'vUsaHorimetro';
+    btnToggleHr.style.cssText = 'padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:white;background:' + (usaHorimetro ? '#10b981' : '#94a3b8') + ';';
+    btnToggleHr.textContent = usaHorimetro ? '✅ HABILITADO' : '❌ DESABILITADO';
+    btnToggleHr.onclick = function() {
+        var atual = this.textContent.includes('HABILITADO');
+        var novo = !atual;
+        this.textContent = novo ? '✅ HABILITADO' : '❌ DESABILITADO';
+        this.style.background = novo ? '#10b981' : '#94a3b8';
+        this.dataset.valor = novo;
+    };
+    btnToggleHr.dataset.valor = usaHorimetro;
+    toggleHr.appendChild(btnToggleHr);
+    configContainer.appendChild(toggleHr);
+    
+    form.appendChild(configContainer);
+    
     var rodape = document.createElement('div');
     rodape.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;grid-column:span 2;';
     
@@ -753,7 +803,9 @@ function salvarVeiculoForm(id) {
             km_atual: parseFloat(document.getElementById('vKm')?.value) || 0,
             obra_atual: document.getElementById('vObra')?.value || '',
             status: document.getElementById('vStatus')?.value || 'disponivel',
-            responsavel: ''
+            responsavel: '',
+            usaKm: document.getElementById('vUsaKm') ? document.getElementById('vUsaKm').dataset.valor !== 'false' : true,
+            usaHorimetro: document.getElementById('vUsaHorimetro') ? document.getElementById('vUsaHorimetro').dataset.valor === 'true' : false
         };
         
         var veiculoAntigo = null;
@@ -989,6 +1041,70 @@ window.excluirDocumento = excluirDocumento;
 window.togglePagamentoDocumento = togglePagamentoDocumento;
 window.renderizarListaDocumentos = renderizarListaDocumentos;
 window.inicializarDocumentos = inicializarDocumentos;
+
+// ==================================================
+// 🔧 FUNÇÕES AUXILIARES - KM E HORÍMETRO
+// ==================================================
+function getVeiculoById(veiculoId) {
+    if (typeof BD === 'undefined' || !BD.veiculos) return null;
+    for (var i = 0; i < BD.veiculos.length; i++) {
+        if (String(BD.veiculos[i].id) === String(veiculoId)) {
+            return BD.veiculos[i];
+        }
+    }
+    return null;
+}
+
+function veiculoUsaKm(veiculoId) {
+    var v = getVeiculoById(veiculoId);
+    if (!v) return true; // Padrão: usa KM se não encontrar
+    return v.usaKm !== false; // Padrão: true
+}
+
+function veiculoUsaHorimetro(veiculoId) {
+    var v = getVeiculoById(veiculoId);
+    if (!v) return false; // Padrão: NÃO usa horímetro
+    return v.usaHorimetro === true;
+}
+
+function toggleKmVeiculo(veiculoId) {
+    try {
+        var v = getVeiculoById(veiculoId);
+        if (!v) return;
+        v.usaKm = v.usaKm === false ? true : false;
+        if (typeof salvarDados === 'function') salvarDados();
+        window.BD = BD;
+        carregarTabelaVeiculos();
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('KM ' + (v.usaKm ? '✅ HABILITADO' : '❌ DESABILITADO') + ' para ' + v.placa, v.usaKm ? 'sucesso' : 'aviso');
+        }
+    } catch (e) {
+        console.error('Erro ao toggle KM:', e);
+    }
+}
+
+function toggleHorimetroVeiculo(veiculoId) {
+    try {
+        var v = getVeiculoById(veiculoId);
+        if (!v) return;
+        v.usaHorimetro = v.usaHorimetro === true ? false : true;
+        if (typeof salvarDados === 'function') salvarDados();
+        window.BD = BD;
+        carregarTabelaVeiculos();
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('Horímetro ' + (v.usaHorimetro ? '✅ HABILITADO' : '❌ DESABILITADO') + ' para ' + v.placa, v.usaHorimetro ? 'sucesso' : 'aviso');
+        }
+    } catch (e) {
+        console.error('Erro ao toggle Horímetro:', e);
+    }
+}
+
+// Expõe globalmente
+window.getVeiculoById = getVeiculoById;
+window.veiculoUsaKm = veiculoUsaKm;
+window.veiculoUsaHorimetro = veiculoUsaHorimetro;
+window.toggleKmVeiculo = toggleKmVeiculo;
+window.toggleHorimetroVeiculo = toggleHorimetroVeiculo;
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', inicializarVeiculos);

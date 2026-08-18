@@ -114,7 +114,51 @@ function abrirModalChecklist() {
     
     form.appendChild(addCampo('Veículo', 'text', 'clVeiculo', true, veiculosOpts));
     form.appendChild(addCampo('Motorista/Responsável', 'text', 'clMotorista', true));
-    form.appendChild(addCampo('KM Atual', 'number', 'clKm', true));
+    
+    // Container para campos de KM e Horímetro (atualizados dinamicamente)
+    const containerMedidores = document.createElement('div');
+    containerMedidores.id = 'containerMedidoresChecklist';
+    containerMedidores.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;';
+    form.appendChild(containerMedidores);
+    
+    // Função para atualizar campos de KM/Horímetro baseado no veículo selecionado
+    function atualizarCamposMedidores() {
+        const veiculoId = document.getElementById('clVeiculo')?.value;
+        containerMedidores.innerHTML = '';
+        
+        if (!veiculoId) return;
+        
+        const usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(veiculoId) : true;
+        const usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(veiculoId) : false;
+        
+        if (usaKm) {
+            containerMedidores.appendChild(addCampo('🛣️ KM Atual', 'number', 'clKm', true));
+        } else {
+            // Campo informativo: isento
+            const info = document.createElement('div');
+            info.style.cssText = 'padding:10px 12px;background:#fef3c7;border:1px dashed #f59e0b;border-radius:8px;font-size:12px;color:#92400e;display:flex;align-items:center;';
+            info.innerHTML = '🛣️ <strong style="margin-left:6px;">KM:</strong> Isento para este veículo';
+            containerMedidores.appendChild(info);
+            // Cria input hidden para evitar erros
+            const hiddenKm = document.createElement('input');
+            hiddenKm.type = 'hidden';
+            hiddenKm.id = 'clKm';
+            hiddenKm.value = '0';
+            containerMedidores.appendChild(hiddenKm);
+        }
+        
+        if (usaHorimetro) {
+            containerMedidores.appendChild(addCampo('⏱️ Horímetro', 'number', 'clHorimetro', true));
+        }
+    }
+    
+    // Listener para quando o veículo mudar
+    setTimeout(function() {
+        const selectVeiculo = document.getElementById('clVeiculo');
+        if (selectVeiculo) {
+            selectVeiculo.addEventListener('change', atualizarCamposMedidores);
+        }
+    }, 100);
     
     // Itens do checklist
     const divItens = document.createElement('div');
@@ -162,10 +206,31 @@ function salvarChecklistForm() {
     try {
         const veiculoId = document.getElementById('clVeiculo')?.value;
         const motorista = document.getElementById('clMotorista')?.value.trim();
-        const km = parseFloat(document.getElementById('clKm')?.value);
         
-        if (!veiculoId || !motorista || !km) {
+        // Validação condicional de KM e Horímetro
+        const usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(veiculoId) : true;
+        const usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(veiculoId) : false;
+        
+        const kmEl = document.getElementById('clKm');
+        const horimetroEl = document.getElementById('clHorimetro');
+        
+        const km = usaKm ? parseFloat(kmEl?.value) : 0;
+        const horimetro = usaHorimetro ? parseFloat(horimetroEl?.value) : null;
+        
+        if (!veiculoId || !motorista) {
             alert('⚠️ Preencha os campos obrigatórios!');
+            return;
+        }
+        
+        if (usaKm && (!kmEl || isNaN(km) || km <= 0)) {
+            alert('⚠️ KM é obrigatório para este veículo!');
+            kmEl?.focus();
+            return;
+        }
+        
+        if (usaHorimetro && (!horimetroEl || isNaN(horimetro) || horimetro < 0)) {
+            alert('⚠️ Horímetro é obrigatório para este veículo!');
+            horimetroEl?.focus();
             return;
         }
         
@@ -187,6 +252,9 @@ function salvarChecklistForm() {
             veiculoId: Number(veiculoId),
             motorista: motorista,
             km: km,
+            horimetro: horimetro,
+            usaKm: usaKm,
+            usaHorimetro: usaHorimetro,
             itens: itens,
             resultado: resultado,
             data: new Date().toISOString().split('T')[0],
@@ -249,7 +317,8 @@ function verDetalhesChecklist(id) {
             '<p style="margin:8px 0;"><strong>Veículo:</strong> ' + (veiculo?.placa || '-') + '</p>' +
             '<p style="margin:8px 0;"><strong>Motorista:</strong> ' + (c.motorista || '-') + '</p>' +
             '<p style="margin:8px 0;"><strong>Data:</strong> ' + (c.data || '-') + '</p>' +
-            '<p style="margin:8px 0;"><strong>KM:</strong> ' + (c.km || 0) + '</p>' +
+            '<p style="margin:8px 0;"><strong>KM:</strong> ' + (c.usaKm === false ? 'Isento' : (c.km || 0)) + '</p>' +
+            (c.usaHorimetro ? '<p style="margin:8px 0;"><strong>⏱️ Horímetro:</strong> ' + (c.horimetro || 0) + '</p>' : '') +
             '<p style="margin:8px 0;"><strong>Resultado:</strong> <span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;color:white;background:' + (statusCor[c.resultado] || '#6b7280') + '">' + (c.resultado || '-') + '</span></p>' +
             '<h4 style="margin:20px 0 10px;font-size:15px;">Itens:</h4>' +
             '<div style="display:flex;flex-direction:column;gap:6px;">' + itensHtml + '</div>' +

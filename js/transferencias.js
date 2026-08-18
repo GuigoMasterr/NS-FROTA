@@ -422,6 +422,67 @@ function abrirModalAceitarTransf(solicitacaoId) {
         }
         corpo.appendChild(checkDiv);
         
+        // Container para campos de KM e Horímetro (condicionais)
+        var containerMedidores = document.createElement('div');
+        containerMedidores.id = 'containerMedidoresTransf';
+        containerMedidores.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;';
+        
+        var usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(solicitacao.veiculoId) : true;
+        var usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(solicitacao.veiculoId) : false;
+        
+        if (usaKm) {
+            var grupoKm = document.createElement('div');
+            grupoKm.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+            var lblKm = document.createElement('label');
+            lblKm.style.cssText = 'font-size:14px;font-weight:500;color:#374151;';
+            lblKm.innerHTML = '🛣️ KM Atual <span style="color:#dc2626;">*</span>';
+            grupoKm.appendChild(lblKm);
+            var inputKm = document.createElement('input');
+            inputKm.type = 'number';
+            inputKm.id = 'transfKm';
+            inputKm.required = true;
+            inputKm.style.cssText = 'padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;background:white;';
+            // Preenche com KM atual do veículo
+            if (BD.veiculos) {
+                for (var vk = 0; vk < BD.veiculos.length; vk++) {
+                    if (BD.veiculos[vk].id === solicitacao.veiculoId) {
+                        inputKm.value = BD.veiculos[vk].km_atual || 0;
+                        break;
+                    }
+                }
+            }
+            grupoKm.appendChild(inputKm);
+            containerMedidores.appendChild(grupoKm);
+        } else {
+            var infoKm = document.createElement('div');
+            infoKm.style.cssText = 'padding:10px 12px;background:#fef3c7;border:1px dashed #f59e0b;border-radius:8px;font-size:12px;color:#92400e;display:flex;align-items:center;';
+            infoKm.innerHTML = '🛣️ <strong style="margin-left:6px;">KM:</strong> Isento para este veículo';
+            containerMedidores.appendChild(infoKm);
+            var hiddenKm = document.createElement('input');
+            hiddenKm.type = 'hidden';
+            hiddenKm.id = 'transfKm';
+            hiddenKm.value = '0';
+            containerMedidores.appendChild(hiddenKm);
+        }
+        
+        if (usaHorimetro) {
+            var grupoHr = document.createElement('div');
+            grupoHr.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+            var lblHr = document.createElement('label');
+            lblHr.style.cssText = 'font-size:14px;font-weight:500;color:#374151;';
+            lblHr.innerHTML = '⏱️ Horímetro <span style="color:#dc2626;">*</span>';
+            grupoHr.appendChild(lblHr);
+            var inputHr = document.createElement('input');
+            inputHr.type = 'number';
+            inputHr.id = 'transfHorimetro';
+            inputHr.required = true;
+            inputHr.style.cssText = 'padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;background:white;';
+            grupoHr.appendChild(inputHr);
+            containerMedidores.appendChild(grupoHr);
+        }
+        
+        corpo.appendChild(containerMedidores);
+        
         var rodape = document.createElement('div');
         rodape.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;';
         var btnRejeitar = document.createElement('button');
@@ -458,6 +519,38 @@ function abrirModalAceitarTransf(solicitacaoId) {
 
 function confirmarAceiteTransf(solicitacaoId, itensChecklist) {
     try {
+        // Busca a solicitação para obter o veículo
+        var solicitacao = null;
+        for (var si = 0; si < BD.solicitacoesTransferencia.length; si++) {
+            if (BD.solicitacoesTransferencia[si].id === solicitacaoId) {
+                solicitacao = BD.solicitacoesTransferencia[si];
+                break;
+            }
+        }
+        
+        var veiculoId = solicitacao ? solicitacao.veiculoId : null;
+        var usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(veiculoId) : true;
+        var usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(veiculoId) : false;
+        
+        // Validação condicional de KM e Horímetro
+        var kmEl = document.getElementById('transfKm');
+        var horimetroEl = document.getElementById('transfHorimetro');
+        
+        var km = usaKm && kmEl ? parseFloat(kmEl.value) : 0;
+        var horimetro = usaHorimetro && horimetroEl ? parseFloat(horimetroEl.value) : null;
+        
+        if (usaKm && kmEl && kmEl.type !== 'hidden' && (isNaN(km) || km <= 0)) {
+            alert('⚠️ KM é obrigatório para este veículo!');
+            kmEl.focus();
+            return;
+        }
+        
+        if (usaHorimetro && horimetroEl && (isNaN(horimetro) || horimetro < 0)) {
+            alert('⚠️ Horímetro é obrigatório para este veículo!');
+            horimetroEl.focus();
+            return;
+        }
+        
         var itens = {};
         var aprovados = 0;
         for (var c = 0; c < itensChecklist.length; c++) {
@@ -480,7 +573,10 @@ function confirmarAceiteTransf(solicitacaoId, itensChecklist) {
             id: Date.now(),
             veiculoId: null,
             motorista: null,
-            km: 0,
+            km: km,
+            horimetro: horimetro,
+            usaKm: usaKm,
+            usaHorimetro: usaHorimetro,
             itens: itens,
             resultado: resultado,
             data: new Date().toISOString().split('T')[0],
@@ -507,7 +603,10 @@ function confirmarAceiteTransf(solicitacaoId, itensChecklist) {
                     for (var v = 0; v < BD.veiculos.length; v++) {
                         if (BD.veiculos[v].id === sol.veiculoId) {
                             BD.veiculos[v].responsavel = sol.motoristaDestino;
-                            checklist.km = BD.veiculos[v].km_atual || 0;
+                            // Atualiza KM do veículo se foi informado
+                            if (usaKm && km > 0) {
+                                BD.veiculos[v].km_atual = km;
+                            }
                             break;
                         }
                     }

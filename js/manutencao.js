@@ -149,9 +149,59 @@ function abrirModalManutencao(tipo) {
     form.appendChild(addCampo('Descrição', 'text', 'mDescricao', true));
     form.appendChild(addCampo('Data', 'date', 'mData', true));
     
-    if (tipo === 'preventiva') {
-        form.appendChild(addCampo('KM da Próxima Revisão', 'number', 'mProximaKm'));
+    // Container para campos de KM e Horímetro (atualizados dinamicamente)
+    const containerMedidores = document.createElement('div');
+    containerMedidores.id = 'containerMedidoresManutencao';
+    containerMedidores.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;';
+    form.appendChild(containerMedidores);
+    
+    // Função para atualizar campos de KM/Horímetro baseado no veículo selecionado
+    function atualizarCamposMedidores() {
+        const veiculoId = document.getElementById('mVeiculo')?.value;
+        containerMedidores.innerHTML = '';
+        
+        if (!veiculoId) return;
+        
+        const usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(veiculoId) : true;
+        const usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(veiculoId) : false;
+        
+        if (usaKm) {
+            if (tipo === 'preventiva') {
+                containerMedidores.appendChild(addCampo('🛣️ KM da Próxima Revisão', 'number', 'mProximaKm', true));
+            } else {
+                containerMedidores.appendChild(addCampo('🛣️ KM Atual', 'number', 'mKm'));
+            }
+        } else {
+            const info = document.createElement('div');
+            info.style.cssText = 'padding:10px 12px;background:#fef3c7;border:1px dashed #f59e0b;border-radius:8px;font-size:12px;color:#92400e;display:flex;align-items:center;';
+            info.innerHTML = '🛣️ <strong style="margin-left:6px;">KM:</strong> Isento para este veículo';
+            containerMedidores.appendChild(info);
+            const hiddenKm = document.createElement('input');
+            hiddenKm.type = 'hidden';
+            hiddenKm.id = 'mKm';
+            hiddenKm.value = '';
+            containerMedidores.appendChild(hiddenKm);
+            if (tipo === 'preventiva') {
+                const hiddenProx = document.createElement('input');
+                hiddenProx.type = 'hidden';
+                hiddenProx.id = 'mProximaKm';
+                hiddenProx.value = '';
+                containerMedidores.appendChild(hiddenProx);
+            }
+        }
+        
+        if (usaHorimetro) {
+            containerMedidores.appendChild(addCampo('⏱️ Horímetro', 'number', 'mHorimetro', true));
+        }
     }
+    
+    // Listener para quando o veículo mudar
+    setTimeout(function() {
+        const selectVeiculo = document.getElementById('mVeiculo');
+        if (selectVeiculo) {
+            selectVeiculo.addEventListener('change', atualizarCamposMedidores);
+        }
+    }, 100);
     
     form.appendChild(addCampo('Valor (R$)', 'number', 'mValor'));
     
@@ -294,7 +344,7 @@ function abrirModalManutencaoEditar(id) {
 function salvarManutencaoForm(tipo) {
     try {
         const veiculoId = document.getElementById('mVeiculo')?.value;
-        const servico = document.getElementById('mServico')?.value.trim();
+        const servico = document.getElementById('mDescricao')?.value.trim() || document.getElementById('mServico')?.value.trim();
         
         if (!veiculoId || !servico) {
             if (typeof mostrarToast === 'function') mostrarToast('Preencha os campos obrigatórios!', 'aviso');
@@ -302,13 +352,47 @@ function salvarManutencaoForm(tipo) {
             return;
         }
         
+        // Validação condicional de KM e Horímetro
+        const usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(veiculoId) : true;
+        const usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(veiculoId) : false;
+        
+        const kmEl = tipo === 'preventiva' ? document.getElementById('mProximaKm') : document.getElementById('mKm');
+        const horimetroEl = document.getElementById('mHorimetro');
+        
+        if (usaKm && kmEl && kmEl.type !== 'hidden') {
+            const kmVal = parseFloat(kmEl.value);
+            if (isNaN(kmVal) || kmVal <= 0) {
+                const msg = tipo === 'preventiva' ? 'KM da Próxima Revisão é obrigatório!' : 'KM é obrigatório para este veículo!';
+                if (typeof mostrarToast === 'function') mostrarToast(msg, 'aviso');
+                else alert('⚠️ ' + msg);
+                kmEl.focus();
+                return;
+            }
+        }
+        
+        if (usaHorimetro && horimetroEl) {
+            const hrVal = parseFloat(horimetroEl.value);
+            if (isNaN(hrVal) || hrVal < 0) {
+                if (typeof mostrarToast === 'function') mostrarToast('Horímetro é obrigatório!', 'aviso');
+                else alert('⚠️ Horímetro é obrigatório para este veículo!');
+                horimetroEl.focus();
+                return;
+            }
+        }
+        
+        const kmPrevisto = tipo === 'preventiva' && kmEl ? parseFloat(kmEl.value) || null : null;
+        const horimetro = usaHorimetro && horimetroEl ? parseFloat(horimetroEl.value) : null;
+        
         const dados = {
             veiculoId: parseInt(veiculoId),
             tipo: tipo,
             dataPrevista: document.getElementById('mData').value,
             servico: servico,
-            kmPrevisto: parseFloat(document.getElementById('mKm')?.value) || null,
-            custo: parseFloat(document.getElementById('mCusto')?.value) || 0,
+            kmPrevisto: kmPrevisto,
+            horimetro: horimetro,
+            usaKm: usaKm,
+            usaHorimetro: usaHorimetro,
+            custo: parseFloat(document.getElementById('mValor')?.value) || 0,
             status: 'Pendente',
             criadoPor: window.usuarioAtual?.nome || 'Sistema',
             dataCriacao: new Date().toISOString()

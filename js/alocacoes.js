@@ -143,7 +143,54 @@ function abrirModalAlocacao() {
     form.appendChild(addCampo('Origem', 'text', 'alOrigem', true, locais.map(function(l) { return { valor: l, texto: l }; })));
     form.appendChild(addCampo('Destino', 'text', 'alDestino', true, locais.map(function(l) { return { valor: l, texto: l }; })));
     form.appendChild(addCampo('Data Saida', 'date', 'alDataSaida', true));
-    form.appendChild(addCampo('KM Saida', 'number', 'alKmSaida', true));
+    
+    // Container para campos de KM e Horímetro (atualizados dinamicamente)
+    var containerMedidores = document.createElement('div');
+    containerMedidores.id = 'containerMedidoresAlocacao';
+    containerMedidores.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;';
+    form.appendChild(containerMedidores);
+    
+    // Função para atualizar campos de KM/Horímetro baseado no veículo selecionado
+    function atualizarCamposMedidores() {
+        var veiculoId = document.getElementById('alVeiculo')?.value;
+        containerMedidores.innerHTML = '';
+        
+        if (!veiculoId) return;
+        
+        var usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(veiculoId) : true;
+        var usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(veiculoId) : false;
+        var v = BD.veiculos.find(function(x) { return String(x.id) === String(veiculoId); });
+        
+        if (usaKm) {
+            var campoKm = addCampo('🛣️ KM Saida', 'number', 'alKmSaida', true);
+            var inputKm = campoKm.querySelector('input');
+            if (inputKm && v) inputKm.value = v.km_atual || 0;
+            containerMedidores.appendChild(campoKm);
+        } else {
+            var info = document.createElement('div');
+            info.style.cssText = 'padding:10px 12px;background:#fef3c7;border:1px dashed #f59e0b;border-radius:8px;font-size:12px;color:#92400e;display:flex;align-items:center;';
+            info.innerHTML = '🛣️ <strong style="margin-left:6px;">KM:</strong> Isento para este veículo';
+            containerMedidores.appendChild(info);
+            var hiddenKm = document.createElement('input');
+            hiddenKm.type = 'hidden';
+            hiddenKm.id = 'alKmSaida';
+            hiddenKm.value = '0';
+            containerMedidores.appendChild(hiddenKm);
+        }
+        
+        if (usaHorimetro) {
+            var campoHr = addCampo('⏱️ Horímetro Saída', 'number', 'alHorimetroSaida', true);
+            containerMedidores.appendChild(campoHr);
+        }
+    }
+    
+    // Listener para quando o veículo mudar
+    var selectVeiculo = document.getElementById('alVeiculo');
+    if (selectVeiculo) {
+        selectVeiculo.addEventListener('change', atualizarCamposMedidores);
+        // Atualiza inicialmente
+        if (selectVeiculo.value) atualizarCamposMedidores();
+    }
     
     var grupoObs = document.createElement('div');
     grupoObs.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
@@ -181,11 +228,6 @@ function abrirModalAlocacao() {
     
     document.getElementById('alDataSaida').value = new Date().toISOString().split('T')[0];
     
-    document.getElementById('alVeiculo').addEventListener('change', function() {
-        var v = BD.veiculos.find(function(x) { return String(x.id) === String(this.value); }.bind(this));
-        if (v) document.getElementById('alKmSaida').value = v.km_atual || 0;
-    });
-    
     console.log('Modal alocacao aberto!');
 }
 
@@ -195,10 +237,31 @@ function salvarAlocacaoForm() {
         var motorista = document.getElementById('alMotorista')?.value.trim();
         var origem = document.getElementById('alOrigem')?.value;
         var destino = document.getElementById('alDestino')?.value;
-        var kmSaida = parseFloat(document.getElementById('alKmSaida')?.value);
         
-        if (!veiculoId || !motorista || !origem || !destino || !kmSaida) {
+        // Validação condicional de KM e Horímetro
+        var usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(veiculoId) : true;
+        var usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(veiculoId) : false;
+        
+        var kmSaidaEl = document.getElementById('alKmSaida');
+        var horimetroSaidaEl = document.getElementById('alHorimetroSaida');
+        
+        var kmSaida = usaKm && kmSaidaEl ? parseFloat(kmSaidaEl.value) : 0;
+        var horimetroSaida = usaHorimetro && horimetroSaidaEl ? parseFloat(horimetroSaidaEl.value) : null;
+        
+        if (!veiculoId || !motorista || !origem || !destino) {
             alert('Preencha os campos obrigatorios!');
+            return;
+        }
+        
+        if (usaKm && kmSaidaEl && kmSaidaEl.type !== 'hidden' && (isNaN(kmSaida) || kmSaida <= 0)) {
+            alert('KM de Saída é obrigatório para este veículo!');
+            kmSaidaEl.focus();
+            return;
+        }
+        
+        if (usaHorimetro && horimetroSaidaEl && (isNaN(horimetroSaida) || horimetroSaida < 0)) {
+            alert('Horímetro de Saída é obrigatório para este veículo!');
+            horimetroSaidaEl.focus();
             return;
         }
         
@@ -210,6 +273,9 @@ function salvarAlocacaoForm() {
             destino: destino,
             dataSaida: document.getElementById('alDataSaida')?.value || new Date().toISOString().split('T')[0],
             kmSaida: kmSaida,
+            horimetroSaida: horimetroSaida,
+            usaKm: usaKm,
+            usaHorimetro: usaHorimetro,
             observacao: document.getElementById('alObservacao')?.value.trim() || '',
             status: 'Ativa',
             criadoPor: window.usuarioAtual?.nome || 'Sistema'
@@ -252,22 +318,52 @@ function salvarAlocacaoForm() {
 
 function encerrarAlocacao(id) {
     try {
-        var kmRetorno = prompt('Informe o KM de retorno:');
-        if (kmRetorno === null) return;
+        var a = BD.alocacoes.find(function(x) { return x.id === id; });
+        if (!a) return;
         
-        var km = parseFloat(kmRetorno);
-        if (isNaN(km) || km <= 0) {
-            alert('Informe um KM valido!');
-            return;
+        var veiculoId = a.veiculoId;
+        var usaKm = typeof veiculoUsaKm === 'function' ? veiculoUsaKm(veiculoId) : true;
+        var usaHorimetro = typeof veiculoUsaHorimetro === 'function' ? veiculoUsaHorimetro(veiculoId) : false;
+        
+        var km = 0;
+        var horimetro = null;
+        
+        if (usaKm) {
+            var kmRetorno = prompt('Informe o KM de retorno:');
+            if (kmRetorno === null) return;
+            
+            km = parseFloat(kmRetorno);
+            if (isNaN(km) || km <= 0) {
+                alert('Informe um KM valido!');
+                return;
+            }
+        } else {
+            if (!confirm('Este veículo não usa KM. Deseja realmente encerrar a alocação?')) return;
+        }
+        
+        if (usaHorimetro) {
+            var hrRetorno = prompt('Informe o Horímetro de retorno:');
+            if (hrRetorno === null) return;
+            
+            horimetro = parseFloat(hrRetorno);
+            if (isNaN(horimetro) || horimetro < 0) {
+                alert('Informe um Horímetro valido!');
+                return;
+            }
         }
         
         if (typeof BD !== 'undefined' && BD.alocacoes) {
-            var a = BD.alocacoes.find(function(x) { return x.id === id; });
             if (a) {
                 a.status = 'Encerrada';
-                a.kmRetorno = km;
+                if (usaKm) {
+                    a.kmRetorno = km;
+                    a.kmRodado = km - (a.kmSaida || 0);
+                }
+                if (usaHorimetro) {
+                    a.horimetroRetorno = horimetro;
+                    a.horimetroRodado = horimetro - (a.horimetroSaida || 0);
+                }
                 a.dataRetorno = new Date().toISOString().split('T')[0];
-                a.kmRodado = km - (a.kmSaida || 0);
                 
                 // Fecha historico de condutor da alocacao
                 if (BD.historicoCondutores) {
@@ -285,7 +381,7 @@ function encerrarAlocacao(id) {
                     var v = BD.veiculos.find(function(x) { return String(x.id) === String(a.veiculoId); });
                     if (v) {
                         v.status = 'disponivel';
-                        v.km_atual = km;
+                        if (usaKm) v.km_atual = km;
                     }
                 }
             }
