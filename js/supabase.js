@@ -1,5 +1,5 @@
 // ==========================================
-// 🔄 SINCRONIZAÇÃO: BAIXA DO SUPABASE AO ABRIR
+// 🔄 SINCRONIZAÇÃO CORRIGIDA
 // ==========================================
 
 window.BD = {
@@ -14,28 +14,27 @@ window.BD = {
     configuracoes: {}
 };
 
-// Inicializar BD do localStorage primeiro
+// Carregar dados locais
 function carregarDadosLocais() {
-    const dados = localStorage.getItem('NS_FROTA_DADOS');
-    if (dados) {
-        try {
+    try {
+        const dados = localStorage.getItem('NS_FROTA_DADOS');
+        if (dados) {
             const parsed = JSON.parse(dados);
             Object.assign(window.BD, parsed);
-            console.log('✅ Dados locais carregados');
-        } catch (e) {
-            console.warn('⚠️ Erro ao carregar dados locais:', e);
+            console.log('✅ Dados locais carregados:', BD.veiculos.length, 'veículos');
         }
+    } catch (e) {
+        console.warn('⚠️ Erro ao carregar dados locais:', e);
     }
 }
 
-// Salvar dados no localStorage
+// Salvar dados locais
 function salvarDados() {
     localStorage.setItem('NS_FROTA_DADOS', JSON.stringify(window.BD));
-    console.log('💾 Dados salvos localmente');
 }
 
 // ==========================================
-// 📥 BAIXAR TUDO DO SUPABASE
+// 📥 BAIXAR DO SUPABASE E FORMATAR CORRETAMENTE
 // ==========================================
 async function baixarTodosDadosDoSupabase() {
     if (!window.supabaseReal) {
@@ -44,72 +43,72 @@ async function baixarTodosDadosDoSupabase() {
     }
 
     try {
-        console.log('🔄 Baixando dados do Supabase...');
+        console.log('🔄 Baixando veículos do Supabase...');
 
-        // BAIXAR VEÍCULOS
-        const { data: veiculos, error: eVeiculos } = await window.supabaseReal
+        const { data, error } = await window.supabaseReal
             .from('veiculos')
             .select('*');
 
-        if (eVeiculos) throw eVeiculos;
-        console.log(`🚛 ${veiculos.length} veículos baixados`);
+        if (error) throw error;
 
-        // Normalizar dados baixados
-        window.BD.veiculos = veiculos.map(v => ({
+        console.log(`📥 ${data.length} veículos recebidos do Supabase`);
+        console.log('Amostra:', data[0]);
+
+        // ✅ Converter formato do Supabase → formato do sistema
+        window.BD.veiculos = data.map(v => ({
             id: v.id,
-            placa: v.placa || 'SEM PLACA',
+            placa: (v.placa || 'SEM PLACA').toUpperCase().trim(),
             categoria: v.categoria || '',
             marca: v.marca || '',
             modelo: v.modelo || '',
             ano: v.ano || '',
             km_atual: v.km_atual || 0,
-            obra_atual: v.obra_atual || '',
-            responsavel: v.responsavel || '',
+            obra_atual: '',
+            responsavel: '',
             status: v.status || 'Disponível',
             data_cadastro: v.data_cadastro || v.created_at || new Date().toISOString().split('T')[0]
         }));
 
-        // Aqui você pode adicionar as outras tabelas depois...
-        // window.BD.gastos = ...
-        // window.BD.manutencoes = ...
-
-        // Salvar tudo baixado no localStorage
+        // Salvar no localStorage
         salvarDados();
 
-        console.log('✅ TODOS os dados baixados e sincronizados!');
+        // ✅ Recarregar TABELA na TELA com os dados já prontos
+        if (typeof carregarTabelaVeiculos === 'function') {
+            console.log('🔄 Atualizando tabela...');
+            carregarTabelaVeiculos();
+        } else {
+            console.warn('⚠️ Função carregarTabelaVeiculos não encontrada!');
+            // Recarregar página como garantia
+            setTimeout(() => location.reload(), 500);
+        }
+
+        console.log('✅ Sincronização CONCLUÍDA!');
         return true;
 
     } catch (e) {
-        console.error('❌ Erro ao baixar do Supabase:', e);
-        alert('❌ Erro ao sincronizar: ' + e.message);
+        console.error('❌ Erro ao baixar:', e);
+        alert('Erro na sincronização: ' + e.message);
         return false;
     }
 }
 
 // ==========================================
-// 🚀 INICIALIZAÇÃO AUTOMÁTICA
+// 🚀 INICIAR AUTOMATICAMENTE
 // ==========================================
-async function inicializarSincronizacao() {
-    console.log('🔄 Inicializando sistema...');
-    
-    // 1. Carregar dados locais primeiro (para aparecer rápido)
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Sistema pronto!');
     carregarDadosLocais();
 
-    // 2. Depois baixar do Supabase e substituir
-    if (window.supabaseReal) {
-        await baixarTodosDadosDoSupabase();
-        
-        // Recarregar a tela de veículos se estiver aberta
-        if (typeof carregarTabelaVeiculos === 'function') {
-            carregarTabelaVeiculos();
+    // Baixar do Supabase após conexão estar pronta
+    setTimeout(() => {
+        if (window.supabaseReal) {
+            baixarTodosDadosDoSupabase();
+        } else {
+            console.warn('⚠️ Supabase ainda não conectado');
+            // Tentar novamente após 1 segundo
+            setTimeout(() => {
+                if (window.supabaseReal) baixarTodosDadosDoSupabase();
+            }, 1000);
         }
-    }
-}
-
-// Executar automaticamente quando a página carregar
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(inicializarSincronizacao, 300); // Espera conexão carregar
+    }, 500);
 });
-
-// Disponível globalmente para botão manual
-window.baixarTodosDadosDoSupabase = baixarTodosDadosDoSupabase;
