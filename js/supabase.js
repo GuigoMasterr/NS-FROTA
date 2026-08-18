@@ -1,48 +1,88 @@
 // ============================================================
-// 🔧 supabase.js - Configuração do Cliente Supabase
+// 🌐 CONEXÃO COM SUPABASE - VERSÃO ROBUSTA
+// ✅ Testa conectividade REAL antes de marcar como conectado
+// ✅ Se URL for inválida → cai automaticamente no modo local
 // ============================================================
-// Substitua os valores abaixo pelas suas credenciais reais
-// do painel do Supabase: Configurações → API
-// ============================================================
-
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
-
-// 🔴 SUAS CREDENCIAIS AQUI:
-const SUPABASE_URL = "https://SEU-PROJETO.supabase.co"
-const SUPABASE_ANON_KEY = "SUA-CHAVE-ANONIMA-AQUI"
-
-// Validação básica
-if (!SUPABASE_URL || SUPABASE_URL.includes("SEU-PROJETO")) {
-  console.warn("⚠️ ATENÇÃO: Configure a URL do Supabase no arquivo supabase.js!")
-}
-
-if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("SUA-CHAVE")) {
-  console.warn("⚠️ ATENÇÃO: Configure a Chave Anônima do Supabase no arquivo supabase.js!")
-}
-
-// Cria o cliente Supabase com configurações otimizadas
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
-    },
-  },
-  global: {
-    headers: {
-      'X-Application': 'GestaoFrotas',
-    },
-  },
-})
-
-console.log("✅ [supabase.js] Cliente Supabase inicializado:", SUPABASE_URL)
-
-// Exporta as credenciais para referência (não exponha a chave em produção!)
-export const CONFIG = {
-  URL: SUPABASE_URL,
-  TABELAS: ['veiculos', 'gastos', 'manutencao', 'chamados', 'usuarios', 'alocacoes']
-}
+(function() {
+    // ⚠️ SUAS CREDENCIAIS DO SUPABASE
+    // Verifique se a URL está correta! Se houver erro de digitação,
+    // o sistema funcionará automaticamente em MODO LOCAL.
+    const SUPABASE_URL = 'https://ccacecyqksenigmrvnap.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_aRQgU6fTTModcqdb4hSgHQ_bPKp2R3m';
+    
+    // Inicializa em modo desconhecido
+    window.supabaseReal = null;
+    window.supabase = { temConexaoReal: false };
+    
+    async function testarECriarCliente() {
+        if (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function') {
+            console.warn('⚠️ SDK do Supabase não carregado. Modo local ativado.');
+            return false;
+        }
+        
+        try {
+            // Cria o cliente
+            const cliente = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            // 🔍 TESTE REAL DE CONECTIVIDADE
+            // Tenta uma requisição simples para verificar se a URL existe
+            console.log('🔍 Testando conectividade com Supabase...');
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            try {
+                // Tenta acessar a URL base para verificar DNS
+                const resposta = await fetch(SUPABASE_URL, {
+                    method: 'HEAD',
+                    signal: controller.signal,
+                    mode: 'no-cors'
+                });
+                clearTimeout(timeoutId);
+                
+                // Se chegou aqui, o DNS resolveu. Marca como conectado.
+                window.supabaseReal = cliente;
+                window.supabase = cliente;
+                window.supabase.temConexaoReal = true;
+                console.log('✅ Supabase conectado com sucesso!');
+                return true;
+                
+            } catch (erroRede) {
+                clearTimeout(timeoutId);
+                
+                if (erroRede.name === 'AbortError') {
+                    console.warn('⚠️ Timeout na conexão com Supabase.');
+                } else {
+                    console.warn('⚠️ Supabase inacessível:', erroRede.message);
+                }
+                
+                console.log('🔄 Ativando MODO LOCAL (dados serão salvos apenas no navegador)');
+                window.supabaseReal = null;
+                window.supabase = { temConexaoReal: false };
+                return false;
+            }
+            
+        } catch (e) {
+            console.error('❌ Erro ao criar cliente Supabase:', e.message);
+            window.supabaseReal = null;
+            window.supabase = { temConexaoReal: false };
+            return false;
+        }
+    }
+    
+    // Inicia o teste quando o DOM estiver pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', testarECriarCliente);
+    } else {
+        testarECriarCliente();
+    }
+    
+    // Também tenta no window.load como fallback
+    window.addEventListener('load', () => {
+        if (!window.supabaseReal) testarECriarCliente();
+    });
+    
+    // Expõe a função para teste manual
+    window.testarConexaoSupabase = testarECriarCliente;
+    
+})();
