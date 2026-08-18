@@ -1,11 +1,9 @@
 // ============================================================
-// 🔐 AUTENTICAÇÃO - CORRIGIDA
-// ✅ Login funcional
-// ✅ Inicialização correta do sistema após login
-// ✅ Sessão persistente
+// 🔐 AUTENTICAÇÃO - VERSÃO ROBUSTA
+// ✅ Garante que BD existe ANTES de qualquer operação
+// ✅ Atualiza dashboard imediatamente após login
 // ============================================================
 
-// Usuários padrão (fallback)
 window.USUARIOS_PADRAO = [
     { usuario: 'admin', senha: 'admin123', nome: 'Administrador', perfil: 'admin' },
     { usuario: 'operador', senha: '1234', nome: 'Operador', perfil: 'operacional' }
@@ -13,17 +11,25 @@ window.USUARIOS_PADRAO = [
 
 async function verificarSessao() {
     try {
+        // 🔥 GARANTE QUE O BD EXISTE
+        if (!window.BD || !window.BD.veiculos) {
+            console.log('💾 [Auth] BD não encontrado, inicializando...');
+            if (typeof inicializarBD === 'function') {
+                inicializarBD();
+            }
+        }
+        
         const sessao = localStorage.getItem('sessaoUsuario');
         if (sessao) {
             window.usuarioAtual = JSON.parse(sessao);
-            console.log('✅ Sessão restaurada para:', window.usuarioAtual.nome);
+            console.log('✅ Sessão restaurada:', window.usuarioAtual.nome);
             mostrarSistema();
         } else {
-            console.log('ℹ️ Nenhuma sessão ativa, mostrando login');
+            console.log('ℹ️ Nenhuma sessão ativa');
             mostrarLogin();
         }
     } catch (e) {
-        console.error('❌ Sessão corrompida:', e);
+        console.error('❌ Erro verificarSessao:', e);
         localStorage.removeItem('sessaoUsuario');
         mostrarLogin();
     }
@@ -32,68 +38,59 @@ async function verificarSessao() {
 function mostrarLogin() {
     const telaLogin = document.getElementById('telaLogin');
     const telaSistema = document.getElementById('sistemaPrincipal');
-    
-    if (telaLogin) {
-        telaLogin.style.display = 'flex';
-        telaLogin.classList.remove('hidden');
-    }
-    if (telaSistema) {
-        telaSistema.style.display = 'none';
-        telaSistema.classList.add('hidden');
-    }
+    if (telaLogin) { telaLogin.style.display = 'flex'; telaLogin.classList.remove('hidden'); }
+    if (telaSistema) { telaSistema.style.display = 'none'; telaSistema.classList.add('hidden'); }
 }
 
 async function mostrarSistema() {
     const telaLogin = document.getElementById('telaLogin');
     const telaSistema = document.getElementById('sistemaPrincipal');
     
-    if (telaLogin) {
-        telaLogin.style.display = 'none';
-        telaLogin.classList.add('hidden');
-    }
-    if (telaSistema) {
-        telaSistema.style.display = '';
-        telaSistema.classList.remove('hidden');
-    }
+    if (telaLogin) { telaLogin.style.display = 'none'; telaLogin.classList.add('hidden'); }
+    if (telaSistema) { telaSistema.style.display = ''; telaSistema.classList.remove('hidden'); }
     
     sincronizarUsuarioNaTela();
     
-    // Sincroniza dados (Supabase ou local)
+    // 🔥 GARANTE QUE O BD EXISTE
+    if (!window.BD && typeof inicializarBD === 'function') {
+        inicializarBD();
+    }
+    
+    console.log('📊 Estado do BD antes da sincronização:', {
+        veiculos: window.BD?.veiculos?.length || 0,
+        gastos: window.BD?.gastos?.length || 0
+    });
+    
+    // Sincroniza (Supabase ou local)
     try {
         if (typeof sincronizarBD === 'function') {
             await sincronizarBD();
+        } else {
+            console.warn('⚠️ sincronizarBD não existe, inicializando páginas diretamente');
+            inicializarPaginas();
         }
     } catch (e) {
-        console.warn('⚠️ Erro ao sincronizar, usando dados locais:', e.message);
+        console.warn('⚠️ Erro sincronização, inicializando diretamente:', e.message);
+        inicializarPaginas();
     }
     
-    // Inicializa todas as páginas
-    inicializarPaginas();
-    
-    console.log('🏠 Sistema principal exibido e dados carregados!');
+    console.log('🏠 Sistema exibido!');
 }
 
 function inicializarPaginas() {
     try {
-        console.log('📊 Inicializando páginas...');
+        console.log('📊 Inicializando páginas. BD.veiculos =', window.BD?.veiculos?.length || 0);
         
-        // Atualiza o dashboard (O MAIS IMPORTANTE!)
+        // DASHBOARD PRIMEIRO!
         if (typeof atualizarDashboardCompleto === 'function') {
             atualizarDashboardCompleto();
-            console.log('✅ Dashboard atualizado');
-        } else if (typeof atualizarDashboard === 'function') {
-            atualizarDashboard();
-            console.log('✅ Dashboard atualizado (legado)');
+            console.log('✅ Dashboard atualizado!');
         } else {
-            console.warn('⚠️ Nenhuma função de atualizar dashboard encontrada!');
+            console.error('❌ atualizarDashboardCompleto NÃO EXISTE!');
         }
         
-        // Atualiza listas de filtros
-        if (typeof atualizarListaVeiculosNosFiltros === 'function') {
-            atualizarListaVeiculosNosFiltros();
-        }
-        
-        // Carrega tabelas
+        // Listas e tabelas
+        if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
         if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
         if (typeof carregarTabelaManutencao === 'function') carregarTabelaManutencao('todos');
         if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos('todos');
@@ -102,16 +99,12 @@ function inicializarPaginas() {
         if (typeof carregarTabelaAlocacoes === 'function') carregarTabelaAlocacoes();
         if (typeof carregarTabelaUsuarios === 'function') carregarTabelaUsuarios();
         
-        console.log('✅ Todas as páginas inicializadas!');
-        
     } catch (e) {
-        console.error('❌ Erro em inicializarPaginas:', e);
+        console.error('❌ Erro inicializarPaginas:', e);
     }
 }
 
 async function entrarNoSistema() {
-    console.log('🔑 Tentativa de login...');
-    
     try {
         const userInput = document.getElementById('loginUsuario');
         const passInput = document.getElementById('loginSenha');
@@ -120,28 +113,25 @@ async function entrarNoSistema() {
         const user = userInput ? userInput.value.trim() : '';
         const pass = passInput ? passInput.value : '';
         
-        if (erroEl) {
-            erroEl.style.display = 'none';
-            erroEl.textContent = '';
-        }
+        if (erroEl) { erroEl.style.display = 'none'; erroEl.textContent = ''; }
         
         if (!user || !pass) {
             const msg = '⚠️ Preencha usuário e senha!';
             if (erroEl) { erroEl.style.display = 'block'; erroEl.textContent = msg; }
-            else alert(msg);
             return;
         }
         
-        // Busca usuário no BD local
+        // Garante que BD existe
+        if (!window.BD && typeof inicializarBD === 'function') inicializarBD();
+        
         let encontrado = null;
         
-        if (window.BD && window.BD.usuarios && Array.isArray(window.BD.usuarios)) {
+        if (window.BD?.usuarios) {
             encontrado = window.BD.usuarios.find(u => 
                 u.usuario === user && u.senha === pass && u.ativo !== false
             );
         }
         
-        // Fallback: usuários padrão
         if (!encontrado) {
             encontrado = window.USUARIOS_PADRAO.find(u => u.usuario === user && u.senha === pass);
         }
@@ -149,12 +139,10 @@ async function entrarNoSistema() {
         if (!encontrado) {
             const msg = '❌ Usuário ou senha incorretos.';
             if (erroEl) { erroEl.style.display = 'block'; erroEl.textContent = msg; }
-            else alert(msg);
             return;
         }
         
-        // Login bem-sucedido!
-        console.log('✅ Usuário autenticado:', encontrado.nome);
+        console.log('✅ Login:', encontrado.nome);
         
         window.usuarioAtual = {
             nome: encontrado.nome,
@@ -171,7 +159,7 @@ async function entrarNoSistema() {
         mostrarSistema();
         
     } catch (e) {
-        console.error('❌ ERRO no login:', e);
+        console.error('❌ ERRO login:', e);
         alert('❌ Erro interno. Tente novamente.');
     }
 }
@@ -179,12 +167,7 @@ async function entrarNoSistema() {
 function sairDoSistema() {
     localStorage.removeItem('sessaoUsuario');
     window.usuarioAtual = null;
-    console.log('👋 Logout realizado');
-    
-    if (typeof mostrarToast === 'function') {
-        mostrarToast('Sessão encerrada', 'info');
-    }
-    
+    if (typeof mostrarToast === 'function') mostrarToast('Sessão encerrada', 'info');
     mostrarLogin();
 }
 
@@ -197,36 +180,22 @@ function sincronizarUsuarioNaTela() {
         
         const elPerfil = document.getElementById('perfilUsuario');
         if (elPerfil) {
-            const perfis = {
-                'admin': 'Administrador',
-                'operador': 'Operacional',
-                'operacional': 'Operacional',
-                'motorista': 'Motorista',
-                'supervisor': 'Supervisor'
-            };
+            const perfis = { 'admin': 'Administrador', 'operador': 'Operacional', 'operacional': 'Operacional', 'motorista': 'Motorista' };
             elPerfil.textContent = perfis[window.usuarioAtual.perfil] || window.usuarioAtual.perfil;
         }
         
         const elAvatar = document.getElementById('userAvatar');
-        if (elAvatar) {
-            elAvatar.textContent = window.usuarioAtual.nome.charAt(0).toUpperCase();
-        }
+        if (elAvatar) elAvatar.textContent = window.usuarioAtual.nome.charAt(0).toUpperCase();
         
-        // Atualiza data no topbar
         const elData = document.getElementById('topbarData');
         if (elData) {
-            const opcoes = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            elData.textContent = new Date().toLocaleDateString('pt-BR', opcoes);
+            elData.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
         }
-        
     } catch (e) {
-        console.error('❌ Erro ao sincronizar usuário na tela:', e);
+        console.error('❌ Erro sincronizarUsuarioNaTela:', e);
     }
 }
 
-// ============================================================
-// 🚀 INICIALIZAÇÃO
-// ============================================================
 function inicializarAuth() {
     console.log('⚙️ Inicializando autenticação...');
     
@@ -239,36 +208,25 @@ function inicializarAuth() {
             e.preventDefault();
             entrarNoSistema();
         });
+        form.__authInicializado = true;
     }
     
-    if (btnSair) {
-        btnSair.addEventListener('click', sairDoSistema);
-    }
+    if (btnSair) btnSair.addEventListener('click', sairDoSistema);
+    if (btnSairSidebar) btnSairSidebar.addEventListener('click', sairDoSistema);
     
-    if (btnSairSidebar) {
-        btnSairSidebar.addEventListener('click', sairDoSistema);
-    }
-    
-    // Verifica sessão
     verificarSessao();
-    
     console.log('✅ Autenticação inicializada!');
 }
 
-// Inicia quando o DOM estiver pronto
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', inicializarAuth);
 } else {
     inicializarAuth();
 }
 
-// Fallback de segurança
 setTimeout(() => {
     const form = document.getElementById('formLogin');
-    if (form && !form.__authInicializado) {
-        form.__authInicializado = true;
-        inicializarAuth();
-    }
+    if (form && !form.__authInicializado) inicializarAuth();
 }, 1000);
 
 console.log('✅ js/auth.js carregado');

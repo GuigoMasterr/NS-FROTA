@@ -1,47 +1,57 @@
 // ============================================================
-// 🔄 SINCRONIZAÇÃO COM SUPABASE - CORRIGIDA E UNIFICADA
-// ✅ Funciona com Supabase OU modo local
-// ✅ Usa window.BD consistente
+// 🔄 SINCRONIZAÇÃO COM SUPABASE - VERSÃO ROBUSTA
+// ✅ Garante que dados LOCAIS sempre carreguem primeiro
+// ✅ Se Supabase falhar → dashboard continua funcionando
+// ✅ Tratamento de erros em cada etapa
 // ============================================================
 
 async function sincronizarBD() {
     try {
         console.log('🔄 Iniciando sincronização...');
         
-        // Garante que o BD existe
-        if (!window.BD) {
+        // ==========================================
+        // PASSO 1: Garante que BD existe e tem dados
+        // ==========================================
+        if (!window.BD || !window.BD.veiculos) {
+            console.log('💾 Carregando/Inicializando banco de dados local...');
             if (typeof inicializarBD === 'function') {
                 inicializarBD();
             } else {
-                window.BD = { veiculos: [], gastos: [], manutencoes: [], chamados: [], usuarios: [], alocacoes: [], checklists: [] };
+                window.BD = {
+                    veiculos: [], gastos: [], manutencoes: [], chamados: [],
+                    usuarios: [], alocacoes: [], checklists: [], locais: []
+                };
             }
         }
         
-        const supabaseDB = window.supabaseReal || window.supabase;
+        // ==========================================
+        // PASSO 2: Atualiza dashboard IMEDIATAMENTE com dados locais
+        // ==========================================
+        console.log('📊 Atualizando dashboard com dados locais...');
+        if (typeof atualizarDashboardCompleto === 'function') {
+            atualizarDashboardCompleto();
+        }
         
-        // Se não tem conexão real com Supabase, usa apenas dados locais
-        if (!supabaseDB || !supabaseDB.temConexaoReal || typeof supabaseDB.from !== 'function') {
-            console.log('ℹ️ Modo local - carregando/validando dados locais');
-            
-            if (typeof carregarDadosLocais === 'function') {
-                await carregarDadosLocais();
-            }
-            
-            // Se não tem veículos, carrega dados de demonstração
-            if (!window.BD.veiculos || window.BD.veiculos.length === 0) {
-                console.log('ℹ️ Sem dados locais, carregando demonstração...');
-                if (typeof carregarDadosDemonstracao === 'function') {
-                    carregarDadosDemonstracao();
-                }
-            }
-            
+        // ==========================================
+        // PASSO 3: Verifica se deve tentar Supabase
+        // ==========================================
+        const supabaseDB = window.supabaseReal;
+        
+        if (!supabaseDB || !window.supabase?.temConexaoReal || typeof supabaseDB.from !== 'function') {
+            console.log('ℹ️ Modo local ativado. Dados:', {
+                veiculos: window.BD.veiculos?.length || 0,
+                gastos: window.BD.gastos?.length || 0
+            });
             atualizarListasDependentes();
+            carregarTabelasModulos();
             return;
         }
         
-        console.log('🌐 Sincronizando com Supabase...');
+        // ==========================================
+        // PASSO 4: Tenta sincronizar com Supabase
+        // ==========================================
+        console.log('🌐 Tentando sincronizar com Supabase...');
         
-        // Lista de tabelas para sincronizar
         const mapeamentoTabelas = [
             { local: 'veiculos', nuvem: 'veiculos' },
             { local: 'usuarios', nuvem: 'usuarios' },
@@ -53,61 +63,83 @@ async function sincronizarBD() {
             { local: 'locais', nuvem: 'locais' }
         ];
         
+        let houveSucesso = false;
+        
         for (const tabela of mapeamentoTabelas) {
             try {
                 const { data, error } = await supabaseDB.from(tabela.nuvem).select('*');
-                if (!error && data && window.BD[tabela.local] !== undefined) {
-                    window.BD[tabela.local] = data;
-                    console.log(`✅ ${tabela.nuvem}: ${data.length} registro(s)`);
+                
+                if (error) {
+                    console.warn(`   ⚠️ ${tabela.nuvem}: ${error.message}`);
+                    continue;
                 }
+                
+                if (data && data.length > 0) {
+                    window.BD[tabela.local] = data;
+                    console.log(`   ✅ ${tabela.nuvem}: ${data.length} registros`);
+                    houveSucesso = true;
+                } else {
+                    console.log(`   ℹ️ ${tabela.nuvem}: vazia na nuvem`);
+                }
+                
             } catch (e) {
-                console.warn(`⚠️ Erro ao sincronizar ${tabela.nuvem}:`, e.message);
+                console.warn(`   ⚠️ Falha em ${tabela.nuvem}:`, e.message);
             }
         }
         
-        // Salva os dados carregados no localStorage como backup
+        // Salva os dados (sejam do Supabase ou locais)
         if (typeof salvarDados === 'function') salvarDados();
         
+        // ==========================================
+        // PASSO 5: Atualiza tela novamente
+        // ==========================================
+        if (houveSucesso) {
+            console.log('✅ Sincronização concluída! Atualizando tela...');
+            if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+        } else {
+            console.log('ℹ️ Nenhum dado novo da nuvem. Mantendo dados locais.');
+        }
+        
         atualizarListasDependentes();
-        console.log('✅ Sincronização concluída!');
+        carregarTabelasModulos();
         
     } catch (e) {
         console.error('❌ Erro na sincronização:', e);
-        // Fallback para dados locais
+        // GARANTIA: mesmo com erro, atualiza a tela com dados locais
+        console.log('🔄 Fallback: atualizando com dados locais...');
         try {
-            if (typeof carregarDadosLocais === 'function') {
-                await carregarDadosLocais();
-            }
-        } catch (err) {
-            console.error('❌ Erro ao carregar dados locais:', err);
+            if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+            atualizarListasDependentes();
+            carregarTabelasModulos();
+        } catch (e2) {
+            console.error('❌ Erro no fallback:', e2);
         }
+    }
+}
+
+function carregarTabelasModulos() {
+    try {
+        if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
+        if (typeof carregarTabelaManutencao === 'function') carregarTabelaManutencao('todos');
+        if (typeof carregarTabelaGastos === 'function') carregarTabelaGastos('todos');
+        if (typeof carregarTabelaChamados === 'function') carregarTabelaChamados();
+        if (typeof carregarTabelaChecklist === 'function') carregarTabelaChecklist();
+        if (typeof carregarTabelaAlocacoes === 'function') carregarTabelaAlocacoes();
+        if (typeof carregarTabelaUsuarios === 'function') carregarTabelaUsuarios();
+    } catch (e) {
+        console.warn('⚠️ Algumas tabelas não puderam ser carregadas:', e.message);
     }
 }
 
 async function sincronizarManualmente() {
     try {
-        if (typeof mostrarToast === 'function') {
-            mostrarToast('Sincronizando...', 'info');
-        }
-        
+        if (typeof mostrarToast === 'function') mostrarToast('Sincronizando...', 'info');
         await sincronizarBD();
-        
-        // Atualiza dashboard
-        if (typeof atualizarDashboardCompleto === 'function') {
-            atualizarDashboardCompleto();
-        }
-        
-        if (typeof mostrarToast === 'function') {
-            mostrarToast('Sincronização concluída!', 'sucesso');
-        }
-        
+        if (typeof mostrarToast === 'function') mostrarToast('Sincronização concluída!', 'sucesso');
         if (typeof fecharModal === 'function') fecharModal();
-        
     } catch (e) {
         console.error('❌ Erro na sincronização manual:', e);
-        if (typeof mostrarToast === 'function') {
-            mostrarToast('Erro ao sincronizar', 'erro');
-        }
+        if (typeof mostrarToast === 'function') mostrarToast('Erro ao sincronizar', 'erro');
     }
 }
 
@@ -116,11 +148,8 @@ function atualizarListasDependentes() {
         if (typeof atualizarListaVeiculosNosFiltros === 'function') {
             atualizarListaVeiculosNosFiltros();
         }
-        if (typeof atualizarListaUsuariosNosFiltros === 'function') {
-            atualizarListaUsuariosNosFiltros();
-        }
     } catch (e) {
-        console.error('❌ Erro ao atualizar listas dependentes:', e);
+        console.error('❌ Erro ao atualizar listas:', e);
     }
 }
 
@@ -128,5 +157,6 @@ function atualizarListasDependentes() {
 window.sincronizarBD = sincronizarBD;
 window.sincronizarManualmente = sincronizarManualmente;
 window.atualizarListasDependentes = atualizarListasDependentes;
+window.carregarTabelasModulos = carregarTabelasModulos;
 
-console.log('✅ js/sync.js carregado');
+console.log('✅ js/sync.js carregado - versão robusta');

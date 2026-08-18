@@ -1,36 +1,54 @@
 // ============================================================
-// 💾 BANCO DE DADOS LOCAL - UNIFICADO E CORRIGIDO
+// 💾 BANCO DE DADOS LOCAL - VERSÃO ROBUSTA
 // ✅ Chave única: 'bd_frotas'
-// ✅ Dados de demonstração carregam se não houver dados salvos
-// ✅ window.BD é criado e mantido consistentemente
+// ✅ SEMPRE carrega dados de demonstração se localStorage estiver vazio
+// ✅ Dados de demonstração usam datas ATUAIS (para aparecer no mês corrente)
 // ============================================================
 
-// Chave ÚNICA do localStorage (todos os arquivos devem usar esta!)
 const BD_CHAVE_LOCALSTORAGE = 'bd_frotas';
 
 function inicializarBD() {
+    console.log('💾 [BD] Inicializando banco de dados...');
+    
     try {
         // Tenta carregar dados salvos
         const dadosSalvos = localStorage.getItem(BD_CHAVE_LOCALSTORAGE);
+        
         if (dadosSalvos) {
-            const bdParseado = JSON.parse(dadosSalvos);
-            // Garante que todas as propriedades existam
-            window.BD = completarEstruturaBD(bdParseado);
-            console.log('💾 BD carregado do localStorage com', window.BD.veiculos.length, 'veículos');
-            return window.BD;
+            try {
+                const bdParseado = JSON.parse(dadosSalvos);
+                window.BD = completarEstruturaBD(bdParseado);
+                
+                // Se não tem veículos, recarrega demonstração
+                if (!window.BD.veiculos || window.BD.veiculos.length === 0) {
+                    console.log('ℹ️ [BD] LocalStorage vazio, carregando demonstração...');
+                    window.BD = criarDadosDemonstracao();
+                    salvarDados();
+                } else {
+                    console.log(`✅ [BD] Carregado do localStorage: ${window.BD.veiculos.length} veículos, ${window.BD.gastos.length} gastos`);
+                }
+                
+                return window.BD;
+                
+            } catch (e) {
+                console.error('❌ [BD] localStorage corrompido, recriando:', e.message);
+            }
         }
     } catch (e) {
-        console.error('❌ Erro ao carregar BD do localStorage:', e);
+        console.error('❌ [BD] Erro ao acessar localStorage:', e);
     }
     
-    // Se não há dados salvos, cria com dados de demonstração
-    console.log('ℹ️ Nenhum dado salvo. Criando BD com dados de demonstração...');
+    // Se chegou aqui, cria dados de demonstração
+    console.log('ℹ️ [BD] Criando dados de demonstração...');
     window.BD = criarDadosDemonstracao();
     salvarDados();
+    console.log(`✅ [BD] Demonstração criada: ${window.BD.veiculos.length} veículos`);
+    
     return window.BD;
 }
 
 function completarEstruturaBD(bd) {
+    if (!bd) bd = {};
     return {
         locais: bd.locais || [
             { id: 'patio-metalica', nome: 'Pátio Metálica' },
@@ -61,6 +79,12 @@ function completarEstruturaBD(bd) {
 }
 
 function criarDadosDemonstracao() {
+    // Usa o mês e ano ATUAIS para os gastos aparecerem no dashboard
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dataAtual = `${ano}-${mes}`;
+    
     return {
         locais: [
             { id: 'patio-metalica', nome: 'Pátio Metálica' },
@@ -75,28 +99,28 @@ function criarDadosDemonstracao() {
         ],
         checklists: [],
         manutencoes: [
-            { id: 1, veiculoId: 3, tipo: 'corretiva', descricao: 'Troca de pastilhas de freio dianteiras', data: '2024-08-10', valor: 850, status: 'Concluída' },
-            { id: 2, veiculoId: 1, tipo: 'preventiva', descricao: 'Revisão completa - troca de óleo e filtros', data: '2024-08-15', valor: 1200, status: 'Pendente', proximaRevisaoKm: 90000 }
+            { id: 1, veiculoId: 3, tipo: 'corretiva', descricao: 'Troca de pastilhas de freio dianteiras', data: `${dataAtual}-10`, valor: 850, status: 'Concluída' },
+            { id: 2, veiculoId: 1, tipo: 'preventiva', descricao: 'Revisão completa - troca de óleo e filtros', data: `${dataAtual}-15`, valor: 1200, status: 'Pendente', proximaRevisaoKm: 90000 }
         ],
         gastos: [
-            { id: 1, veiculoId: 1, tipo: 'Combustível', data: '2026-08-12', valor: 1800, obra: 'Pátio Metálica' },
-            { id: 2, veiculoId: 2, tipo: 'Combustível', data: '2026-08-13', valor: 450, obra: 'Obra' },
-            { id: 3, veiculoId: 3, tipo: 'Manutenção', data: '2026-08-10', valor: 850, obra: 'Pátio Usina Conc.' },
-            { id: 4, veiculoId: 1, tipo: 'Peças', data: '2026-08-05', valor: 1200, obra: 'Pátio Metálica' },
-            { id: 5, veiculoId: 4, tipo: 'Combustível', data: '2026-08-14', valor: 3200, obra: 'Obra' },
-            { id: 6, veiculoId: 2, tipo: 'Seguro', data: '2026-07-01', valor: 4500, obra: '' },
-            { id: 7, veiculoId: 1, tipo: 'IPVA', data: '2026-01-10', valor: 2800, obra: '' },
-            { id: 8, veiculoId: 3, tipo: 'Pneus', data: '2026-06-15', valor: 3500, obra: 'Pátio Usina Conc.' },
-            { id: 9, veiculoId: 1, tipo: 'Pedágio', data: '2026-08-11', valor: 180, obra: '' },
-            { id: 10, veiculoId: 2, tipo: 'Multas', data: '2026-07-20', valor: 350, obra: '' },
-            { id: 11, veiculoId: 4, tipo: 'Serviços', data: '2026-08-01', valor: 2500, obra: 'Obra' },
-            { id: 12, veiculoId: 1, tipo: 'Outros', data: '2026-08-08', valor: 250, obra: '' }
+            { id: 1, veiculoId: 1, tipo: 'Combustível', data: `${dataAtual}-12`, valor: 1800, obra: 'Pátio Metálica' },
+            { id: 2, veiculoId: 2, tipo: 'Combustível', data: `${dataAtual}-13`, valor: 450, obra: 'Obra' },
+            { id: 3, veiculoId: 3, tipo: 'Manutenção', data: `${dataAtual}-10`, valor: 850, obra: 'Pátio Usina Conc.' },
+            { id: 4, veiculoId: 1, tipo: 'Peças', data: `${dataAtual}-05`, valor: 1200, obra: 'Pátio Metálica' },
+            { id: 5, veiculoId: 4, tipo: 'Combustível', data: `${dataAtual}-14`, valor: 3200, obra: 'Obra' },
+            { id: 6, veiculoId: 2, tipo: 'Seguro', data: `${dataAtual}-01`, valor: 4500, obra: '' },
+            { id: 7, veiculoId: 1, tipo: 'IPVA', data: `${ano}-01-10`, valor: 2800, obra: '' },
+            { id: 8, veiculoId: 3, tipo: 'Pneus', data: `${ano}-06-15`, valor: 3500, obra: 'Pátio Usina Conc.' },
+            { id: 9, veiculoId: 1, tipo: 'Pedágio', data: `${dataAtual}-11`, valor: 180, obra: '' },
+            { id: 10, veiculoId: 2, tipo: 'Multas', data: `${ano}-07-20`, valor: 350, obra: '' },
+            { id: 11, veiculoId: 4, tipo: 'Serviços', data: `${dataAtual}-01`, valor: 2500, obra: 'Obra' },
+            { id: 12, veiculoId: 1, tipo: 'Outros', data: `${dataAtual}-08`, valor: 250, obra: '' }
         ],
         chamados: [
-            { id: 1, veiculoId: 3, titulo: 'Ruído estranho no freio dianteiro', descricao: 'Motorista relata barulho metálico ao frear', prioridade: 'Alta', status: 'Em Andamento', data: '2026-08-14', relator: 'João Silva' }
+            { id: 1, veiculoId: 3, titulo: 'Ruído estranho no freio dianteiro', descricao: 'Motorista relata barulho metálico ao frear', prioridade: 'Alta', status: 'Em Andamento', data: `${dataAtual}-14`, relator: 'João Silva' }
         ],
         alocacoes: [
-            { id: 1, veiculoId: 4, motorista: 'Carlos Lima', origem: 'Pátio Metálica', destino: 'Obra', dataSaida: '2026-08-10', kmSaida: 5200, status: 'Ativa', criadoPor: 'Administrador' }
+            { id: 1, veiculoId: 4, motorista: 'Carlos Lima', origem: 'Pátio Metálica', destino: 'Obra', dataSaida: `${dataAtual}-10`, kmSaida: 5200, status: 'Ativa', criadoPor: 'Administrador' }
         ],
         usuarios: [
             { nome: 'Administrador', usuario: 'admin', senha: 'admin123', perfil: 'admin', ativo: true },
@@ -120,13 +144,13 @@ function criarDadosDemonstracao() {
 function salvarDados() {
     try {
         if (!window.BD) {
-            console.warn('⚠️ window.BD não existe, criando novo...');
+            console.warn('⚠️ [BD] window.BD não existe, criando novo...');
             inicializarBD();
             return;
         }
         localStorage.setItem(BD_CHAVE_LOCALSTORAGE, JSON.stringify(window.BD));
     } catch (e) {
-        console.error('❌ Erro ao salvar dados no localStorage:', e);
+        console.error('❌ [BD] Erro ao salvar:', e);
     }
 }
 
@@ -138,9 +162,10 @@ function carregarDadosLocais() {
 }
 
 function carregarDadosDemonstracao() {
+    console.log('🔄 [BD] Recarregando dados de demonstração...');
     window.BD = criarDadosDemonstracao();
     salvarDados();
-    console.log('✅ Dados de demonstração carregados!');
+    console.log('✅ [BD] Demonstração recarregada!');
     return window.BD;
 }
 
@@ -151,9 +176,7 @@ window.salvarDados = salvarDados;
 window.carregarDadosLocais = carregarDadosLocais;
 window.carregarDadosDemonstracao = carregarDadosDemonstracao;
 
-// Inicializa imediatamente
-if (!window.BD) {
-    inicializarBD();
-}
+// 🔥 INICIALIZA IMEDIATAMENTE (garante que window.BD exista)
+inicializarBD();
 
 console.log('✅ js/banco-dados.js carregado - BD inicializado');
