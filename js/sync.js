@@ -1,26 +1,40 @@
-// ==================================================
-// 🔄 SINCRONIZAÇÃO COM SUPABASE - VERSÃO CORRIGIDA
-// ==================================================
+// ============================================================
+// 🔄 SINCRONIZAÇÃO COM SUPABASE - CORRIGIDA E UNIFICADA
+// ✅ Funciona com Supabase OU modo local
+// ✅ Usa window.BD consistente
+// ============================================================
 
 async function sincronizarBD() {
     try {
         console.log('🔄 Iniciando sincronização...');
         
-        const supabaseDB = window.supabase;
+        // Garante que o BD existe
+        if (!window.BD) {
+            if (typeof inicializarBD === 'function') {
+                inicializarBD();
+            } else {
+                window.BD = { veiculos: [], gastos: [], manutencoes: [], chamados: [], usuarios: [], alocacoes: [], checklists: [] };
+            }
+        }
         
-        // Se não tem conexão real, apenas carrega dados locais
-        if (!supabaseDB || !supabaseDB.temConexaoReal) {
-            console.log('ℹ️ Modo local - carregando dados do localStorage');
-            await carregarDadosLocais();
+        const supabaseDB = window.supabaseReal || window.supabase;
+        
+        // Se não tem conexão real com Supabase, usa apenas dados locais
+        if (!supabaseDB || !supabaseDB.temConexaoReal || typeof supabaseDB.from !== 'function') {
+            console.log('ℹ️ Modo local - carregando/validando dados locais');
             
-            // Se não tem dados locais, carrega dados de demonstração
-            if (typeof BD !== 'undefined' && (!BD.veiculos || BD.veiculos.length === 0)) {
+            if (typeof carregarDadosLocais === 'function') {
+                await carregarDadosLocais();
+            }
+            
+            // Se não tem veículos, carrega dados de demonstração
+            if (!window.BD.veiculos || window.BD.veiculos.length === 0) {
+                console.log('ℹ️ Sem dados locais, carregando demonstração...');
                 if (typeof carregarDadosDemonstracao === 'function') {
                     carregarDadosDemonstracao();
                 }
             }
             
-            window.BD = BD;
             atualizarListasDependentes();
             return;
         }
@@ -28,31 +42,42 @@ async function sincronizarBD() {
         console.log('🌐 Sincronizando com Supabase...');
         
         // Lista de tabelas para sincronizar
-        const tabelas = ['veiculos', 'usuarios', 'manutencoes', 'gastos', 'chamados', 'checklists', 'alocacoes', 'locais'];
+        const mapeamentoTabelas = [
+            { local: 'veiculos', nuvem: 'veiculos' },
+            { local: 'usuarios', nuvem: 'usuarios' },
+            { local: 'manutencoes', nuvem: 'manutencoes' },
+            { local: 'gastos', nuvem: 'gastos' },
+            { local: 'chamados', nuvem: 'chamados' },
+            { local: 'checklists', nuvem: 'checklists' },
+            { local: 'alocacoes', nuvem: 'alocacoes' },
+            { local: 'locais', nuvem: 'locais' }
+        ];
         
-        for (const tabela of tabelas) {
+        for (const tabela of mapeamentoTabelas) {
             try {
-                const { data, error } = await supabaseDB.from(tabela).select('*');
-                if (!error && data && BD[tabela] !== undefined) {
-                    BD[tabela] = data;
-                    console.log(`✅ ${tabela}: ${data.length} registro(s)`);
+                const { data, error } = await supabaseDB.from(tabela.nuvem).select('*');
+                if (!error && data && window.BD[tabela.local] !== undefined) {
+                    window.BD[tabela.local] = data;
+                    console.log(`✅ ${tabela.nuvem}: ${data.length} registro(s)`);
                 }
             } catch (e) {
-                console.warn(`⚠️ Erro ao sincronizar ${tabela}:`, e.message);
+                console.warn(`⚠️ Erro ao sincronizar ${tabela.nuvem}:`, e.message);
             }
         }
         
+        // Salva os dados carregados no localStorage como backup
         if (typeof salvarDados === 'function') salvarDados();
-        window.BD = BD;
-        atualizarListasDependentes();
         
+        atualizarListasDependentes();
         console.log('✅ Sincronização concluída!');
         
     } catch (e) {
         console.error('❌ Erro na sincronização:', e);
         // Fallback para dados locais
         try {
-            await carregarDadosLocais();
+            if (typeof carregarDadosLocais === 'function') {
+                await carregarDadosLocais();
+            }
         } catch (err) {
             console.error('❌ Erro ao carregar dados locais:', err);
         }
@@ -63,26 +88,20 @@ async function sincronizarManualmente() {
     try {
         if (typeof mostrarToast === 'function') {
             mostrarToast('Sincronizando...', 'info');
-        } else {
-            alert('🔄 Sincronizando...');
         }
         
         await sincronizarBD();
         
-        // Atualiza a página atual
-        if (typeof window.paginaAtual !== 'undefined' && typeof carregarDadosPagina === 'function') {
-            carregarDadosPagina(window.paginaAtual);
-        } else if (typeof atualizarDashboardCompleto === 'function') {
+        // Atualiza dashboard
+        if (typeof atualizarDashboardCompleto === 'function') {
             atualizarDashboardCompleto();
         }
         
         if (typeof mostrarToast === 'function') {
             mostrarToast('Sincronização concluída!', 'sucesso');
-        } else {
-            alert('✅ Sincronização concluída!');
         }
         
-        fecharModal();
+        if (typeof fecharModal === 'function') fecharModal();
         
     } catch (e) {
         console.error('❌ Erro na sincronização manual:', e);
@@ -101,13 +120,13 @@ function atualizarListasDependentes() {
             atualizarListaUsuariosNosFiltros();
         }
     } catch (e) {
-        console.error('❌ Erro ao atualizar listas:', e);
+        console.error('❌ Erro ao atualizar listas dependentes:', e);
     }
 }
 
-// Expõe funções
+// Expõe funções globalmente
 window.sincronizarBD = sincronizarBD;
 window.sincronizarManualmente = sincronizarManualmente;
 window.atualizarListasDependentes = atualizarListasDependentes;
 
-console.log('✅ js/sync.js inicializado');
+console.log('✅ js/sync.js carregado');
