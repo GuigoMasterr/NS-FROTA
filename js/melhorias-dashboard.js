@@ -90,28 +90,54 @@ function atualizarCardsEstatisticos(dados) {
   const hoje = new Date();
   const mesAtual = hoje.getMonth();
   const anoAtual = hoje.getFullYear();
-  
+
   const total = veiculos.length;
-  const emOperacao = veiculos.filter(v => v.status === 'disponivel' || v.status === 'alocado').length;
-  const emManutencao = veiculos.filter(v => v.status === 'manutencao').length;
-  const chamadosAbertos = Array.isArray(chamados) ? chamados.filter(c => c.status !== 'Resolvido' && c.status !== 'fechado').length : 0;
-  
+  const emOperacao = veiculos.filter(v => 
+    v.status === 'Disponível' || v.status === 'Em Operação' || v.status === 'alocado'
+  ).length;
+  const emManutencao = veiculos.filter(v => 
+    v.status === 'manutencao' || v.status === 'Em Manutenção'
+  ).length;
+  const chamadosAbertos = (chamados || []).filter(c => c.status !== 'Resolvido' && c.status !== 'fechado').length;
+
   const gastosMes = gastos.filter(g => {
-    const d = new Date(g.data + 'T00:00:00');
+    const d = new Date((g.data || '').replace('-', '/'));
     return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
   }).reduce((s, g) => s + (Number(g.valor) || 0), 0);
-  
+
   const kmTotal = veiculos.reduce((s, v) => s + (Number(v.km_atual) || 0), 0);
+
+  console.log(`📊 ATUALIZANDO: Total=${total} | Op=${emOperacao} | Manut=${emManutencao}`);
+
+  // ✅ NOVA FORMA: procurar por POSIÇÃO na tela, NÃO por ID
+  const cardsValores = document.querySelectorAll('.card-valor, .stat-valor, .valor');
   
-  atualizarCard('cardTotalVeiculos', total, 'cadastrados');
-  atualizarCard('cardEmOperacao', emOperacao, `${total ? Math.round(emOperacao/total*100) : 0}% da frota`);
-  atualizarCard('cardEmManutencao', emManutencao, 'precisam de atenção');
-  atualizarCard('cardChamados', chamadosAbertos, 'pendentes');
-  atualizarCard('cardGastosMes', formatarMoeda(gastosMes), 'gastos este mês');
-  atualizarCard('cardKmRodados', formatarKM(kmTotal), 'Total rodado');
-  
-  const elPct = document.getElementById('cardEmOperacaoPct');
-  if (elPct) elPct.textContent = `${total ? Math.round(emOperacao/total*100) : 0}% da frota`;
+  if (cardsValores.length >= 3) {
+    cardsValores[0].textContent = total;
+    cardsValores[1].textContent = emOperacao;
+    cardsValores[2].textContent = emManutencao;
+  } else {
+    // ✅ FALLBACK: procurar todos os números "0" e substituir em ordem
+    const todosElementos = document.body.querySelectorAll('*');
+    let indiceCard = 0;
+    for (let el of todosElementos) {
+      if (el.textContent === '0' && el.children.length === 0) {
+        if (indiceCard === 0) el.textContent = total;
+        if (indiceCard === 1) el.textContent = emOperacao;
+        if (indiceCard === 2) el.textContent = emManutencao;
+        if (indiceCard === 3) el.textContent = chamadosAbertos;
+        if (indiceCard === 5) el.textContent = formatarKM(kmTotal);
+        indiceCard++;
+        if (indiceCard >= 6) break;
+      }
+    }
+  }
+
+  // Atualizar detalhes (percentuais e textos)
+  const detalhes = document.querySelectorAll('.card-detalhe, .stat-detalhe');
+  if (detalhes[0]) detalhes[0].textContent = `${total} cadastrados`;
+  if (detalhes[1]) detalhes[1].textContent = total > 0 ? `${Math.round(emOperacao/total*100)}% da frota` : '0% da frota';
+  if (detalhes[2]) detalhes[2].textContent = 'precisam de atenção';
 }
 
 function atualizarCard(id, valor, detalhe = '') {
