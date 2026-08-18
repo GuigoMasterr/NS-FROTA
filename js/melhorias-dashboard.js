@@ -84,45 +84,32 @@ function carregarDadosDoBD() {
 }
 
 function atualizarCardsEstatisticos(dados) {
-  const { veiculos, chamados } = dados;
+  const { veiculos, gastos, chamados } = dados;
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+  
   const total = veiculos.length;
-  const emOperacao = veiculos.filter(v => 
-    v.status === 'Disponível' || v.status === 'Em Operação' || v.status === 'alocado'
-  ).length;
-  const emManutencao = veiculos.filter(v => 
-    v.status === 'Em Manutenção' || v.status === 'manutencao'
-  ).length;
-  const chamadosAbertos = (chamados || []).filter(c => 
-    c.status !== 'Resolvido' && c.status !== 'fechado'
-  ).length;
+  const emOperacao = veiculos.filter(v => v.status === 'disponivel' || v.status === 'alocado').length;
+  const emManutencao = veiculos.filter(v => v.status === 'manutencao').length;
+  const chamadosAbertos = Array.isArray(chamados) ? chamados.filter(c => c.status !== 'Resolvido' && c.status !== 'fechado').length : 0;
+  
+  const gastosMes = gastos.filter(g => {
+    const d = new Date(g.data + 'T00:00:00');
+    return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+  }).reduce((s, g) => s + (Number(g.valor) || 0), 0);
+  
   const kmTotal = veiculos.reduce((s, v) => s + (Number(v.km_atual) || 0), 0);
-
-  console.log(`📊 [DASHBOARD] Total=${total} | Op=${emOperacao} | Manut=${emManutencao} | KM=${kmTotal.toLocaleString('pt-BR')}`);
-
-  // ✅ MÉTODO INFALÍVEL: Trocar todos os "0" em ordem
-  const todos = document.body.querySelectorAll('*');
-  const zeros = [];
-  todos.forEach(el => {
-    if (el.children.length === 0 && el.textContent.trim() === '0') {
-      zeros.push(el);
-    }
-  });
-
-  // Aplicar valores na ordem dos cards
-  if (zeros[0]) zeros[0].textContent = total;
-  if (zeros[1]) zeros[1].textContent = emOperacao;
-  if (zeros[2]) zeros[2].textContent = emManutencao;
-  if (zeros[3]) zeros[3].textContent = chamadosAbertos;
-  if (zeros[5]) zeros[5].textContent = kmTotal.toLocaleString('pt-BR');
-
-  // Atualizar textos complementares
-  const textos = document.body.querySelectorAll('*');
-  textos.forEach(el => {
-    const txt = el.textContent?.trim() || '';
-    if (txt.includes('% da frota')) {
-      el.textContent = `${total ? Math.round(emOperacao/total*100) : 0}% da frota`;
-    }
-  });
+  
+  atualizarCard('cardTotalVeiculos', total, 'cadastrados');
+  atualizarCard('cardEmOperacao', emOperacao, `${total ? Math.round(emOperacao/total*100) : 0}% da frota`);
+  atualizarCard('cardEmManutencao', emManutencao, 'precisam de atenção');
+  atualizarCard('cardChamados', chamadosAbertos, 'pendentes');
+  atualizarCard('cardGastosMes', formatarMoeda(gastosMes), 'gastos este mês');
+  atualizarCard('cardKmRodados', formatarKM(kmTotal), 'Total rodado');
+  
+  const elPct = document.getElementById('cardEmOperacaoPct');
+  if (elPct) elPct.textContent = `${total ? Math.round(emOperacao/total*100) : 0}% da frota`;
 }
 
 function atualizarCard(id, valor, detalhe = '') {
