@@ -46,20 +46,18 @@ function formatarKM(km) {
   if (k >= 1000) return (k / 1000).toFixed(1).replace('.', ',') + 'K';
   return k.toLocaleString('pt-BR');
 }
-  // ✅ Sempre recarrega BD do window (garante dados atualizados)
+
 window.atualizarDashboardCompleto = function() {
-  // ✅ SEMPRE LER DO GLOBAL, NUNCA SALVAR EM VARIÁVEL LOCAL PERMANENTE
-  const BD = window.BD;
+  // ✅ Sempre recarrega BD do window (garante dados atualizados)
+  BD = window.BD || { veiculos: [], gastos: [], chamados: [], manutencoes: [], alocacoes: [], gastosViagem: [] };
   
-  if (!BD || !BD.veiculos || BD.veiculos.length === 0) {
-    console.warn('⚠️ [DASHBOARD] Aguardando veículos...', BD?.veiculos?.length || 0);
-    setTimeout(atualizarDashboardCompleto, 500);
+  if (!getBD() || !getBD().veiculos) {
+    console.warn('⚠️ [DASHBOARD] BD ainda não disponível, tentando novamente...');
+    setTimeout(atualizarDashboardCompleto, 300);
     return;
   }
   
-  console.log('📊 Dashboard carregando:', BD.veiculos.length, 'veículos');
   const dados = carregarDadosDoBD();
-  atualizarCardsEstatisticos(dados);
   atualizarCardsEstatisticos(dados);
   inicializarGraficos(dados);
   verificarAlertas(dados);
@@ -86,55 +84,32 @@ function carregarDadosDoBD() {
 }
 
 function atualizarCardsEstatisticos(dados) {
-  const { veiculos, chamados } = dados;
+  const { veiculos, gastos, chamados } = dados;
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+  
   const total = veiculos.length;
-  const emOperacao = veiculos.filter(v => 
-    v.status === 'Disponível' || v.status === 'Em Operação' || v.status === 'alocado'
-  ).length;
-  const emManutencao = veiculos.filter(v => 
-    v.status === 'Em Manutenção' || v.status === 'manutencao'
-  ).length;
-  const chamadosAbertos = (chamados || []).filter(c => 
-    c.status !== 'Resolvido' && c.status !== 'fechado'
-  ).length;
+  const emOperacao = veiculos.filter(v => v.status === 'disponivel' || v.status === 'alocado').length;
+  const emManutencao = veiculos.filter(v => v.status === 'manutencao').length;
+  const chamadosAbertos = Array.isArray(chamados) ? chamados.filter(c => c.status !== 'Resolvido' && c.status !== 'fechado').length : 0;
+  
+  const gastosMes = gastos.filter(g => {
+    const d = new Date(g.data + 'T00:00:00');
+    return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+  }).reduce((s, g) => s + (Number(g.valor) || 0), 0);
+  
   const kmTotal = veiculos.reduce((s, v) => s + (Number(v.km_atual) || 0), 0);
-
-  console.log(`📊 [DASHBOARD] Total=${total} | Op=${emOperacao} | Manut=${emManutencao} | KM=${kmTotal.toLocaleString('pt-BR')}`);
-
-  // ✅ CORRIGIDO: Buscar número dentro do MESMO card
-  const todos = document.querySelectorAll('*');
-  todos.forEach(el => {
-    const txt = el.textContent?.trim() || '';
-    if (!txt) return;
-
-    const card = el.closest('div');
-    if (!card) return;
-
-    const numeroEl = card.firstElementChild;
-    if (!numeroEl || numeroEl.textContent === txt) return;
-
-    // Card 1
-    if (txt.includes('cadastrados')) {
-      numeroEl.textContent = total;
-    }
-    // Card 2
-    if (txt.includes('% da frota')) {
-      numeroEl.textContent = emOperacao;
-      el.textContent = `${total ? Math.round(emOperacao/total*100) : 0}% da frota`;
-    }
-    // Card 3
-    if (txt.includes('precisam de atenção')) {
-      numeroEl.textContent = emManutencao;
-    }
-    // Card 4
-    if (txt.includes('pendentes')) {
-      numeroEl.textContent = chamadosAbertos;
-    }
-    // Card 6
-    if (txt.includes('total da frota')) {
-      numeroEl.textContent = kmTotal.toLocaleString('pt-BR');
-    }
-  });
+  
+  atualizarCard('cardTotalVeiculos', total, 'cadastrados');
+  atualizarCard('cardEmOperacao', emOperacao, `${total ? Math.round(emOperacao/total*100) : 0}% da frota`);
+  atualizarCard('cardEmManutencao', emManutencao, 'precisam de atenção');
+  atualizarCard('cardChamados', chamadosAbertos, 'pendentes');
+  atualizarCard('cardGastosMes', formatarMoeda(gastosMes), 'gastos este mês');
+  atualizarCard('cardKmRodados', formatarKM(kmTotal), 'Total rodado');
+  
+  const elPct = document.getElementById('cardEmOperacaoPct');
+  if (elPct) elPct.textContent = `${total ? Math.round(emOperacao/total*100) : 0}% da frota`;
 }
 
 function atualizarCard(id, valor, detalhe = '') {
