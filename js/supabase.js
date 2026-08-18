@@ -1,8 +1,8 @@
 // ==========================================
-// 🔄 SINCRONIZAÇÃO COMPLETA — Dashboard + Tabela
+// 🔄 SINCRONIZAÇÃO — SUPABASE PRIORITÁRIO
 // ==========================================
 
-window.BD = window.BD || {
+window.BD = {
     veiculos: [],
     gastos: [],
     manutencoes: [],
@@ -14,36 +14,22 @@ window.BD = window.BD || {
     configuracoes: {}
 };
 
-// Carregar dados locais
-function carregarDadosLocais() {
-    try {
-        const dados = localStorage.getItem('NS_FROTA_DADOS');
-        if (dados) {
-            const parsed = JSON.parse(dados);
-            Object.assign(window.BD, parsed);
-            console.log('✅ Dados locais carregados:', BD.veiculos.length, 'veículos');
-        }
-    } catch (e) {
-        console.warn('⚠️ Erro ao carregar dados locais:', e);
-    }
-}
-
-// Salvar dados locais
+// Salvar dados no localStorage
 function salvarDados() {
     localStorage.setItem('NS_FROTA_DADOS', JSON.stringify(window.BD));
 }
 
 // ==========================================
-// 📥 BAIXAR DO SUPABASE → ATUALIZAR BD → TELA
+// 📥 BAIXAR DO SUPABASE — PRIMEIRO, ANTES DE TUDO
 // ==========================================
 async function baixarTodosDadosDoSupabase() {
     if (!window.supabaseReal) {
         console.warn('⚠️ Supabase não conectado');
-        return;
+        return false;
     }
 
     try {
-        console.log('🔄 Baixando veículos do Supabase...');
+        console.log('🔄 BAIXANDO veículos do Supabase...');
 
         const { data, error } = await window.supabaseReal
             .from('veiculos')
@@ -51,9 +37,9 @@ async function baixarTodosDadosDoSupabase() {
 
         if (error) throw error;
 
-        console.log(`✅ ${data.length} veículos baixados do Supabase`);
+        console.log(`✅ ${data.length} VEÍCULOS BAIXADOS DO SUPABASE`);
 
-        // ✅ COLOCAR DADOS NO BD QUE O SISTEMA USA
+        // ✅ FORMATAR E COLOCAR NO BD (sobrescreve qualquer dado antigo)
         window.BD.veiculos = data.map(v => ({
             id: v.id,
             placa: (v.placa || 'SEM PLACA').toUpperCase().trim(),
@@ -68,123 +54,57 @@ async function baixarTodosDadosDoSupabase() {
             data_cadastro: v.data_cadastro || v.created_at || ''
         }));
 
-        // Salvar no localStorage
+        // Salvar dados NOVOS no localStorage
         salvarDados();
-        console.log('✅ BD atualizado com', BD.veiculos.length, 'veículos');
+        console.log('✅ BD ATUALIZADO —', BD.veiculos.length, 'veículos prontos');
 
-        // ✅ ATUALIZAR TABELA DE VEÍCULOS
-        await atualizarTabelaVeiculos();
-
-        // ✅ ATUALIZAR DASHBOARD
-        await atualizarDashboard();
+        // ✅ AGORA SIM — atualizar TABELA e DASHBOARD
+        dispararAtualizacaoTela();
+        return true;
 
     } catch (e) {
-        console.error('❌ Erro na sincronização:', e);
+        console.error('❌ Erro ao baixar:', e);
+        return false;
     }
 }
 
 // ==========================================
-// 📊 ATUALIZAR TABELA DE VEÍCULOS
+// 🎯 DISPARAR ATUALIZAÇÃO DA TELA
 // ==========================================
-async function atualizarTabelaVeiculos() {
-    // Esperar a função do sistema estar pronta
+function dispararAtualizacaoTela() {
     let tentativas = 0;
     const esperar = setInterval(() => {
         tentativas++;
+
+        // 1. Atualizar Tabela de Veículos
         if (typeof carregarTabelaVeiculos === 'function') {
-            clearInterval(esperar);
-            console.log('📊 Chamando carregarTabelaVeiculos()...');
+            console.log('📊 Atualizando TABELA de veículos...');
             carregarTabelaVeiculos();
-        } else if (tentativas > 30) {
-            clearInterval(esperar);
-            console.log('⚠️ Função não encontrada — desenhando tabela manualmente');
-            desenharTabelaManual();
         }
-    }, 100);
-}
 
-// ==========================================
-// 🎯 DESENHAR TABELA MANUALMENTE
-// ==========================================
-function desenharTabelaManual() {
-    const tabela = document.querySelector('#tabelaVeiculos tbody') ||
-                   document.querySelector('table tbody');
-    
-    if (!tabela) {
-        console.warn('⚠️ Tabela não encontrada');
-        return;
-    }
-
-    tabela.innerHTML = '';
-
-    BD.veiculos.forEach(v => {
-        const linha = document.createElement('tr');
-        linha.innerHTML = `
-            <td>${v.placa}</td>
-            <td>${v.categoria}</td>
-            <td>${v.marca || ''}</td>
-            <td>${v.modelo || ''}</td>
-            <td>${v.ano || ''}</td>
-            <td>${v.km_atual}</td>
-            <td>—</td>
-            <td>—</td>
-            <td><span class="tag-status ${v.status === 'Disponível' ? 'disponivel' : 'em-uso'}">${v.status}</span></td>
-            <td class="acoes">
-                <button class="btn-editar" data-id="${v.id}">Editar</button>
-                <button class="btn-historico" data-id="${v.id}">Histórico</button>
-                <button class="btn-excluir" data-id="${v.id}">Excluir</button>
-                <button class="btn-documentos" data-id="${v.id}">📄 Doc</button>
-            </td>
-        `;
-        tabela.appendChild(linha);
-    });
-
-    console.log('✅ Tabela desenhada com', BD.veiculos.length, 'veículos');
-}
-
-// ==========================================
-// 📈 ATUALIZAR DASHBOARD
-// ==========================================
-async function atualizarDashboard() {
-    // Esperar a função do sistema
-    let tentativas = 0;
-    const esperar = setInterval(() => {
-        tentativas++;
+        // 2. Atualizar Dashboard
         if (typeof atualizarDashboardCompleto === 'function') {
-            clearInterval(esperar);
-            console.log('📈 Chamando atualizarDashboardCompleto()...');
+            console.log('📈 Atualizando DASHBOARD...');
             atualizarDashboardCompleto();
-        } else if (tentativas > 30) {
+        }
+
+        // Parar após 3 segundos
+        if (tentativas > 30) {
             clearInterval(esperar);
-            console.log('⚠️ Função do Dashboard não encontrada — atualizando manualmente');
-            atualizarDashboardManual();
+            console.log('✅ Atualização concluída!');
         }
     }, 100);
 }
 
 // ==========================================
-// 🎯 ATUALIZAR DASHBOARD MANUALMENTE
-// ==========================================
-function atualizarDashboardManual() {
-    const total = BD.veiculos.length;
-    const emOperacao = BD.veiculos.filter(v => v.status === 'Em Operação').length;
-    const emManutencao = BD.veiculos.filter(v => v.status === 'Em Manutenção').length;
-
-    const cards = document.querySelectorAll('.card-valor');
-    if (cards[0]) cards[0].textContent = total;
-    if (cards[1]) cards[1].textContent = emOperacao;
-    if (cards[2]) cards[2].textContent = emManutencao;
-
-    console.log(`✅ Dashboard: Total=${total} | Em Operação=${emOperacao} | Manutenção=${emManutencao}`);
-}
-
-// ==========================================
-// 🚀 INICIAR AUTOMATICAMENTE
+// 🚀 INICIAR — SUPABASE PRIMEIRO
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Sistema iniciado');
-    carregarDadosLocais();
+    console.log('🚀 SISTEMA INICIADO');
 
+    // ❌ NÃO carregar dados antigos do localStorage — usar SOMENTE do Supabase
+
+    // ✅ BAIXAR DO SUPABASE PRIMEIRO
     setTimeout(() => {
         if (window.supabaseReal) {
             baixarTodosDadosDoSupabase();
@@ -193,5 +113,5 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.supabaseReal) baixarTodosDadosDoSupabase();
             }, 1000);
         }
-    }, 500);
+    }, 300);
 });
