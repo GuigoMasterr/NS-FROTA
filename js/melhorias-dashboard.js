@@ -49,7 +49,7 @@ function formatarKM(km) {
 
 window.atualizarDashboardCompleto = function() {
   // ✅ Sempre recarrega BD do window (garante dados atualizados)
-  BD = window.BD || { veiculos: [], gastos: [], chamados: [], manutencoes: [], alocacoes: [], gastosViagem: [] };
+const BD = window.BD || { veiculos: [], gastos: [], chamados: [], manutencoes: [], alocacoes: [], gastosViagem: [] };
   
   if (!getBD() || !getBD().veiculos) {
     console.warn('⚠️ [DASHBOARD] BD ainda não disponível, tentando novamente...');
