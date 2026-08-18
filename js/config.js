@@ -56,6 +56,19 @@ const CONFIG = {
         'Outros'
     ],
 
+    // Tabelas do Supabase para sincronização
+    TABELAS: [
+        'locais',
+        'usuarios',
+        'veiculos',
+        'checklists',
+        'manutencoes',
+        'gastos',
+        'chamados',
+        'alocacoes',
+        'adiantamentos',
+        'gastosViagem'
+    ],
     // Perfis de Usuário
     PERFIS: {
         ADMIN: 'admin',

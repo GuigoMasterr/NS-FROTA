@@ -90,8 +90,21 @@ function atualizarCardsEstatisticos(dados) {
   const anoAtual = hoje.getFullYear();
   
   const total = veiculos.length;
-  const emOperacao = veiculos.filter(v => v.status === 'disponivel' || v.status === 'alocado').length;
-  const emManutencao = veiculos.filter(v => v.status === 'manutencao').length;
+  const emOperacao = veiculos.filter(v => {
+    if (!v.status) return false;
+    const s = String(v.status).toLowerCase().trim();
+    return s.includes('disponivel') || s.includes('disponível') || 
+           s.includes('alocado') || s.includes('ativo') || 
+           s.includes('operacao') || s.includes('operação') ||
+           s.includes('em oper');
+  }).length;
+  const emManutencao = veiculos.filter(v => {
+    if (!v.status) return false;
+    const s = String(v.status).toLowerCase().trim();
+    return s.includes('manutencao') || s.includes('manutenção') || 
+           s.includes('oficina') || s.includes('inativo') ||
+           s.includes('indisponivel') || s.includes('indisponível');
+  }).length;
   const chamadosAbertos = Array.isArray(chamados) ? chamados.filter(c => c.status !== 'Resolvido' && c.status !== 'fechado').length : 0;
   
   const gastosMes = gastos.filter(g => {
