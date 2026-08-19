@@ -578,6 +578,47 @@
     window.sincronizarPendentes = sincronizarPendentes;
     window.sincronizarLocalParaSupabase = sincronizarLocalParaSupabase;
     window.supabasePronto = supabasePronto;
+    
+    // ============================================================
+    // 🔍 FUNÇÃO DE DEBUG - Testar sincronização
+    // Use no console do navegador (F12): testarSincronizacao()
+    // ============================================================
+    window.testarSincronizacao = async function() {
+        console.log('\n🔍 ==============================================');
+        console.log('🔍 TESTANDO SINCRONIZAÇÃO COM SUPABASE');
+        console.log('🔍 ==============================================');
+        
+        console.log('\n1️⃣ Verificando conexão...');
+        console.log('   supabasePronto():', supabasePronto());
+        console.log('   window.supabase:', typeof window.supabase);
+        if (window.supabase) {
+            console.log('   temConexaoReal:', window.supabase.temConexaoReal);
+            console.log('   typeof from:', typeof window.supabase.from);
+        }
+        
+        console.log('\n2️⃣ Verificando dados locais...');
+        if (window.BD) {
+            console.log('   usuarios:', window.BD.usuarios ? window.BD.usuarios.length : 0, 'registros');
+            console.log('   veiculos:', window.BD.veiculos ? window.BD.veiculos.length : 0, 'registros');
+            if (window.BD.usuarios && window.BD.usuarios.length > 0) {
+                console.log('   Primeiro usuário:', JSON.stringify(window.BD.usuarios[0], null, 2));
+            }
+        } else {
+            console.log('   ❌ window.BD não existe!');
+        }
+        
+        console.log('\n3️⃣ Tentando sincronizar...');
+        if (supabasePronto()) {
+            var resultado = await sincronizarLocalParaSupabase();
+            console.log('   Resultado:', resultado);
+        } else {
+            console.log('   ❌ Supabase não está pronto!');
+        }
+        
+        console.log('\n🔍 ==============================================');
+        console.log('🔍 FIM DO TESTE');
+        console.log('🔍 ==============================================\n');
+    };
 
     // ============================================================
     // 🎬 INICIALIZAÇÃO
