@@ -654,6 +654,96 @@
         }
     }
 
+    // Função auxiliar para gerar hash de strings
+    function hashCode(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash;
+    }
+
+    // ============================================================
+    // 📤 CORRIGIDO — ACHADO CRÍTICO (19/08/2026):
+    // O PostgREST (usado pelo Supabase) exige que TODOS os objetos de
+    // um mesmo upsert/insert em lote tenham o MESMO conjunto de colunas.
+    // Registros novos criados localmente (ex.: um usuário recém-cadastrado
+    // na tela, que ainda não tem "id" porque só o Supabase gera um) eram
+    // enviados na MESMA chamada que registros já existentes sendo
+    // editados (que já têm "id"). Essa mistura de colunas fazia o
+    // Supabase rejeitar o LOTE INTEIRO daquela tabela — inclusive as
+    // edições de registros que já tinham id e estavam corretos. Era por
+    // isso que uma edição de usuário "sumia": nunca chegava a ser
+    // gravada no Supabase, e a próxima busca (a cada 30s, ou ao recarregar
+    // a página) trazia de volta o dado antigo, sobrescrevendo a edição
+    // feita na tela.
+    //
+    // Esta função separa os registros de uma tabela em dois lotes
+    // homogêneos — um só com "id" (upsert = atualiza) e outro sem "id"
+    // (insert = cria) — e envia cada lote em uma chamada própria, para
+    // que um problema em um novo cadastro nunca mais bloqueie a edição
+    // de um registro já existente, e vice-versa.
+    // ============================================================
+    async function enviarTabelaParaSupabase(supabase, tabela, dadosLocais) {
+        const comId = [];
+        const semId = [];
+
+        for (const item of dadosLocais) {
+            let copia = converterParaPostgres({ ...item });
+
+            // Trata locais: converte ID de string para número se necessário
+            // (regra que só existia em forcarSincronizar(); agora é única
+            // e vale também para o ciclo automático de 30s).
+            if (tabela === 'locais' && typeof copia.id === 'string') {
+                const idsLocais = { 'patio-metalica': 1, 'patio-usina-conc': 2, 'obra': 3 };
+                copia.id = idsLocais[copia.id] || Math.abs(hashCode(copia.id));
+            }
+
+            if (copia.id !== undefined && copia.id !== null && copia.id !== '') {
+                copia.id = Number(copia.id);
+                comId.push(copia);
+            } else {
+                // Remove a chave "id" por completo (não deixa undefined),
+                // garantindo que este lote também seja homogêneo entre si.
+                delete copia.id;
+                semId.push(copia);
+            }
+        }
+
+        let totalEnviados = 0;
+        const erros = [];
+        let houveInsercaoNova = false;
+
+        if (comId.length > 0) {
+            const { error } = await supabase
+                .from(tabela)
+                .upsert(comId, { onConflict: 'id', ignoreDuplicates: false })
+                .select();
+            if (error) {
+                erros.push(`atualização: ${error.message}`);
+            } else {
+                totalEnviados += comId.length;
+            }
+        }
+
+        if (semId.length > 0) {
+            const { error } = await supabase
+                .from(tabela)
+                .insert(semId)
+                .select();
+            if (error) {
+                erros.push(`inserção: ${error.message}`);
+            } else {
+                totalEnviados += semId.length;
+                houveInsercaoNova = true;
+            }
+        }
+
+        return { totalEnviados, erros, houveInsercaoNova };
+    }
+
     // ============================================================
     // 📤 SINCRONIZAÇÃO EM MASSA: Local → Supabase
     // Envia todos os dados do localStorage para o Supabase
@@ -674,6 +764,7 @@
         
         let totalSincronizados = 0;
         let tabelasComErro = [];
+        let precisaRebuscar = false;
         
         for (const tabela of TABELAS) {
             try {
@@ -683,31 +774,17 @@
                     console.log(`ℹ️ ${tabela}: sem dados locais para sincronizar`);
                     continue;
                 }
-                
-                // Prepara os dados (remove campos que não devem ir para o banco)
-                // 🔄 CORRIGIDO: faltava converterParaPostgres() aqui. Sem ela,
-                // esta função (usada no auto-sync a cada 30s e na inicialização)
-                // enviava os campos em camelCase e o Postgres rejeitava o
-                // upsert para qualquer campo com letra maiúscula, silenciosamente.
-                const dadosParaEnviar = dadosLocais.map(item => {
-                    let copia = converterParaPostgres({ ...item });
-                    // Garante que o ID seja número ou null
-                    if (copia.id !== undefined && copia.id !== null) {
-                        copia.id = Number(copia.id);
-                    }
-                    return copia;
-                });
 
-                // Faz upsert em massa (insere ou atualiza)
-                const { data, error } = await supabase
-                    .from(tabela)
-                    .upsert(dadosParaEnviar, { onConflict: 'id', ignoreDuplicates: false })
-                    .select();
-                
-                if (error) throw error;
-                
-                console.log(`✅ ${tabela}: ${dadosParaEnviar.length} registros sincronizados`);
-                totalSincronizados += dadosParaEnviar.length;
+                const resultado = await enviarTabelaParaSupabase(supabase, tabela, dadosLocais);
+
+                if (resultado.erros.length > 0) {
+                    console.error(`❌ Erro ao sincronizar ${tabela}:`, resultado.erros.join(' | '));
+                    tabelasComErro.push(tabela);
+                } else {
+                    console.log(`✅ ${tabela}: ${resultado.totalEnviados} registros sincronizados`);
+                    totalSincronizados += resultado.totalEnviados;
+                    if (resultado.houveInsercaoNova) precisaRebuscar = true;
+                }
                 
             } catch (erro) {
                 console.error(`❌ Erro ao sincronizar ${tabela}:`, erro.message);
@@ -719,23 +796,20 @@
         if (tabelasComErro.length > 0) {
             console.warn(`⚠️ Tabelas com erro: ${tabelasComErro.join(', ')}`);
         }
+
+        // 🔄 Se algum registro novo (sem id) foi inserido, busca de volta
+        // do Supabase para que window.BD passe a ter o id real gerado
+        // pelo banco — assim a PRÓXIMA edição desse mesmo registro já
+        // encontra o id certo e vai pelo caminho de atualização.
+        if (precisaRebuscar) {
+            await buscarDadosSupabase();
+        }
         
         return {
             sucesso: tabelasComErro.length === 0,
             totalSincronizados,
             tabelasComErro
         };
-    }
-
-    // Função auxiliar para gerar hash de strings
-    function hashCode(str) {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return hash;
     }
     
     // ============================================================
@@ -861,6 +935,7 @@
         const supabase = window.supabase;
         let totalSincronizados = 0;
         let tabelasComErro = [];
+        let precisaRebuscar = false;
         
         // Log detalhado dos usuários antes de enviar
         if (window.BD.usuarios && window.BD.usuarios.length > 0) {
@@ -879,37 +954,24 @@
                     continue;
                 }
                 
-                const dadosParaEnviar = dadosLocais.map(item => {
-                    // 🔄 Converte camelCase → minúsculas para o Postgres
-                    let copia = converterParaPostgres({ ...item });
-                    if (copia.id !== undefined && copia.id !== null) {
-                        copia.id = Number(copia.id);
-                    }
-                    // Trata locais: converte ID de string para número se necessário
-                    if (tabela === 'locais' && typeof copia.id === 'string') {
-                        // Atribui IDs numéricos para locais
-                        const idsLocais = { 'patio-metalica': 1, 'patio-usina-conc': 2, 'obra': 3 };
-                        copia.id = idsLocais[copia.id] || Math.abs(hashCode(copia.id));
-                    }
-                    return copia;
-                });
-                
-                console.log('📤 [sync.js] Enviando', tabela, '→', dadosParaEnviar.length, 'registros...');
-                
-                // Log do primeiro registro para debug
-                if (dadosParaEnviar.length > 0 && tabela === 'usuarios') {
-                    console.log('   📋 Primeiro usuário:', JSON.stringify(dadosParaEnviar[0], null, 2));
+                console.log('📤 [sync.js] Enviando', tabela, '→', dadosLocais.length, 'registros...');
+
+                // 🔄 CORRIGIDO: esta função tinha sua PRÓPRIA cópia da lógica de
+                // envio, divergente de sincronizarLocalParaSupabase() — por
+                // exemplo, faltava aqui a separação entre registros com/sem id
+                // que evita que um cadastro novo sem id derrube o lote inteiro
+                // da tabela (o bug relatado de edição de usuário não gravar).
+                // Agora as duas funções usam a mesma rotina.
+                const resultado = await enviarTabelaParaSupabase(supabase, tabela, dadosLocais);
+
+                if (resultado.erros.length > 0) {
+                    console.error('❌ [sync.js] ERRO em', tabela, ':', resultado.erros.join(' | '));
+                    tabelasComErro.push(tabela);
+                } else {
+                    console.log('✅ [sync.js]', tabela, ': SINCRONIZADO!', resultado.totalEnviados, 'registros enviados');
+                    totalSincronizados += resultado.totalEnviados;
+                    if (resultado.houveInsercaoNova) precisaRebuscar = true;
                 }
-                
-                const { data, error } = await supabase
-                    .from(tabela)
-                    .upsert(dadosParaEnviar, { onConflict: 'id', ignoreDuplicates: false })
-                    .select();
-                
-                if (error) throw error;
-                
-                console.log('✅ [sync.js]', tabela, ': SINCRONIZADO!', data ? data.length : 0, 'registros retornados');
-                totalSincronizados += dadosParaEnviar.length;
                 
             } catch (erro) {
                 console.error('❌ [sync.js] ERRO em', tabela, ':', erro.message || erro);
@@ -921,6 +983,12 @@
         
         // Atualiza flag
         window._ultimaSincronizacaoSupabase = Date.now();
+
+        // 🔄 Mesma correção do ciclo automático: se algum registro novo
+        // foi inserido, busca de volta para gravar o id real gerado.
+        if (precisaRebuscar) {
+            await buscarDadosSupabase();
+        }
         
         console.log('⚡ [sync.js] ==========================================');
         console.log('⚡ [sync.js] SINCRONIZAÇÃO CONCLUÍDA:');
@@ -929,7 +997,10 @@
         console.log('⚡ [sync.js] ==========================================');
         
         return {
-            sucesso: true,
+            // 🔄 CORRIGIDO: antes retornava sucesso:true sempre, mesmo com
+            // tabelasComErro preenchido — inconsistente com o retorno de
+            // sincronizarLocalParaSupabase() e enganoso para quem chama.
+            sucesso: tabelasComErro.length === 0,
             totalSincronizados,
             tabelasComErro
         };
