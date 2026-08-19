@@ -340,7 +340,24 @@ function verDetalhesChecklist(id) {
     } catch (e) { console.error(e); }
 }
 
-function excluirChecklist(id) {
+async function excluirChecklist(id) {
+    try {
+        if (!confirm('Excluir este registro?')) return;
+        
+        // 🗑️ PRIMEIRO: Tenta apagar do SUPABASE
+        if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+            if (supabasePronto() && id) {
+                const resultado = await excluirDoSupabase('checklists', id);
+                if (!resultado.sucesso) {
+                    console.error('❌ Erro ao apagar checklists do Supabase:', resultado.erro);
+                    alert('❌ Não foi possível apagar do Supabase. Tente novamente.');
+                    return; // NÃO apaga do localStorage se falhar!
+                }
+            }
+        }
+        
+        // 🗑️ DEPOIS: Apaga do localStorage
+
     try {
         if (!confirm('Excluir este check-list?')) return;
         if (typeof BD !== 'undefined' && BD.checklists) {
@@ -360,6 +377,10 @@ function excluirChecklist(id) {
         }
         carregarTabelaChecklist();
     } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e); 
+        alert('❌ Erro ao excluir: ' + e.message);
+    }
 }
 
 window.carregarTabelaChecklist = carregarTabelaChecklist;

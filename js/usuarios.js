@@ -486,7 +486,7 @@ function salvarUsuarioForm(usuarioEditar) {
 // ==================================================
 // 🗑️ EXCLUIR USUÁRIO
 // ==================================================
-function excluirUsuario(usuarioLogin) {
+async function excluirUsuario(usuarioLogin) {
     try {
         if (usuarioLogin === 'admin') {
             alert('⚠️ O usuário admin não pode ser excluído!');
@@ -499,27 +499,32 @@ function excluirUsuario(usuarioLogin) {
             const usuarioParaExcluir = BD.usuarios.find(u => u.usuario === usuarioLogin);
             const usuarioId = usuarioParaExcluir ? usuarioParaExcluir.id : null;
             
-            // 🗑️ Apaga do localStorage
+            // 🗑️ PRIMEIRO: Tenta apagar do SUPABASE
+            let supabaseOk = true;
+            if (usuarioId && typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto()) {
+                    const resultado = await excluirDoSupabase('usuarios', usuarioId);
+                    supabaseOk = resultado.sucesso;
+                    if (!supabaseOk) {
+                        console.error('❌ Erro ao apagar do Supabase:', resultado.erro);
+                        alert('❌ Não foi possível apagar do Supabase. Tente novamente.');
+                        return; // NÃO apaga do localStorage se falhar no Supabase!
+                    }
+                }
+            }
+            
+            // 🗑️ DEPOIS: Apaga do localStorage (só se deu certo no Supabase, ou se está offline)
             BD.usuarios = BD.usuarios.filter(u => u.usuario !== usuarioLogin);
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
             
-            // 🗑️ Apaga do SUPABASE também!
-            if (usuarioId && typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
-                if (supabasePronto()) {
-                    excluirDoSupabase('usuarios', usuarioId).then(function(resultado) {
-                        if (resultado.sucesso) {
-                            console.log('✅ Usuário apagado do Supabase com sucesso!');
-                        } else {
-                            console.error('❌ Erro ao apagar do Supabase:', resultado.erro);
-                            alert('⚠️ Usuário apagado do sistema, mas houve erro ao apagar do Supabase. Tente novamente.');
-                        }
-                    });
-                }
-            }
+            console.log('✅ Usuário excluído com sucesso!');
         }
         carregarTabelaUsuarios();
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e); 
+        alert('❌ Erro ao excluir: ' + e.message);
+    }
 }
 
 // ==================================================

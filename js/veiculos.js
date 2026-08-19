@@ -926,7 +926,24 @@ function salvarVeiculoForm(id) {
     }
 }
 
-function excluirVeiculo(id) {
+async function excluirVeiculo(id) {
+    try {
+        if (!confirm('Excluir este registro?')) return;
+        
+        // 🗑️ PRIMEIRO: Tenta apagar do SUPABASE
+        if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+            if (supabasePronto() && id) {
+                const resultado = await excluirDoSupabase('veiculos', id);
+                if (!resultado.sucesso) {
+                    console.error('❌ Erro ao apagar veiculos do Supabase:', resultado.erro);
+                    alert('❌ Não foi possível apagar do Supabase. Tente novamente.');
+                    return; // NÃO apaga do localStorage se falhar!
+                }
+            }
+        }
+        
+        // 🗑️ DEPOIS: Apaga do localStorage
+
     try {
         if (!confirm('Tem certeza que deseja excluir este veiculo?')) return;
         
@@ -970,6 +987,10 @@ function excluirVeiculo(id) {
         
     } catch (e) {
         console.error('Erro ao excluir:', e);
+    }
+    } catch (e) { 
+        console.error(e); 
+        alert('❌ Erro ao excluir: ' + e.message);
     }
 }
 

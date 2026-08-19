@@ -10,6 +10,14 @@ const BD_CHAVE_LOCALSTORAGE = 'bd_frotas';
 function inicializarBD() {
     console.log('💾 [BD] Inicializando banco de dados...');
     
+    // Flag global: se true, NÃO cria dados de demonstração
+    // O sync.js vai setar isso quando for buscar do Supabase
+    if (window._NAO_CRIAR_DEMONSTRACAO) {
+        console.log('ℹ️ [BD] Modo sincronização ativo - aguardando dados do Supabase...');
+        window.BD = completarEstruturaBD({});
+        return window.BD;
+    }
+    
     try {
         // Tenta carregar dados salvos
         const dadosSalvos = localStorage.getItem(BD_CHAVE_LOCALSTORAGE);
@@ -151,10 +159,17 @@ function salvarDados() {
         localStorage.setItem(BD_CHAVE_LOCALSTORAGE, JSON.stringify(window.BD));
         
         // 🔄 Sincroniza com o Supabase em segundo plano
+        // Só envia se NÃO acabamos de receber dados do Supabase
         if (typeof sincronizarLocalParaSupabase === 'function' && typeof supabasePronto === 'function') {
             if (supabasePronto()) {
                 // Usa setTimeout para não travar a interface
                 setTimeout(() => {
+                    // Verifica flag de proteção contra loops
+                    if (window._ultimaSincronizacaoSupabase && 
+                        Date.now() - window._ultimaSincronizacaoSupabase < 2000) {
+                        console.log('ℹ️ [BD] Dados recentes do Supabase - pulando envio');
+                        return;
+                    }
                     sincronizarLocalParaSupabase().catch(err => {
                         console.warn('⚠️ [BD] Erro ao sincronizar com Supabase:', err);
                     });

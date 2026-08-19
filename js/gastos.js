@@ -598,7 +598,24 @@ function salvarGastoForm(isMotorista) {
 // ==================================================
 // 🗑️ EXCLUIR GASTO
 // ==================================================
-function excluirGasto(id) {
+async function excluirGasto(id) {
+    try {
+        if (!confirm('Excluir este registro?')) return;
+        
+        // 🗑️ PRIMEIRO: Tenta apagar do SUPABASE
+        if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+            if (supabasePronto() && id) {
+                const resultado = await excluirDoSupabase('gastos', id);
+                if (!resultado.sucesso) {
+                    console.error('❌ Erro ao apagar gastos do Supabase:', resultado.erro);
+                    alert('❌ Não foi possível apagar do Supabase. Tente novamente.');
+                    return; // NÃO apaga do localStorage se falhar!
+                }
+            }
+        }
+        
+        // 🗑️ DEPOIS: Apaga do localStorage
+
     try {
         if (!confirm('Excluir este gasto?')) return;
         if (typeof BD !== 'undefined' && BD.gastos) {
@@ -629,6 +646,10 @@ function excluirGasto(id) {
         carregarTabelaGastos();
         if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
     } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e); 
+        alert('❌ Erro ao excluir: ' + e.message);
+    }
 }
 
 // ==================================================

@@ -476,11 +476,12 @@
         
         if (conectou) {
             console.log('✅ [sync.js] Supabase confirmado, sincronizando dados...');
-            // 1. Primeiro envia dados locais para o Supabase
-            await sincronizarLocalParaSupabase();
-            // 2. Depois busca dados atualizados do Supabase
+            // 1. PRIMEIRO busca dados do Supabase (FONTE DA VERDADE)
             await buscarDadosSupabase();
+            // 2. DEPOIS envia apenas dados novos/alterados do localStorage
+            await sincronizarLocalParaSupabase();
             await sincronizarPendentes();
+            console.log('✅ [sync.js] Sincronização bidirecional concluída!');
         } else {
             console.warn('⚠️ [sync.js] Supabase não conectou no tempo limite. Funcionando com dados locais.');
             atualizarDashboardComDadosLocais();
@@ -583,6 +584,90 @@
     // 🔍 FUNÇÃO DE DEBUG - Testar sincronização
     // Use no console do navegador (F12): testarSincronizacao()
     // ============================================================
+    // Flag para evitar loops de sincronização
+    var sincronizacaoEmAndamento = false;
+    var ultimaSincronizacaoSupabase = 0;
+    
+    // Sobrescreve sincronizarLocalParaSupabase para evitar loops
+    const _sincronizarOriginal = sincronizarLocalParaSupabase;
+    sincronizarLocalParaSupabase = async function() {
+        // Se acabamos de receber dados do Supabase (há menos de 2 segundos), não reenvie
+        if (Date.now() - ultimaSincronizacaoSupabase < 2000) {
+            console.log('ℹ️ [sync.js] Pulando envio - dados recentes do Supabase');
+            return { sucesso: true, pulado: true };
+        }
+        if (sincronizacaoEmAndamento) {
+            console.log('ℹ️ [sync.js] Sincronização já em andamento, pulando...');
+            return { sucesso: true, ocupado: true };
+        }
+        sincronizacaoEmAndamento = true;
+        try {
+            return await _sincronizarOriginal();
+        } finally {
+            sincronizacaoEmAndamento = false;
+        }
+    };
+    
+    // Também atualiza a flag quando buscarDadosSupabase é chamado
+    const _buscarOriginal = buscarDadosSupabase;
+    buscarDadosSupabase = async function() {
+        sincronizacaoEmAndamento = true;
+        try {
+            const resultado = await _buscarOriginal();
+            ultimaSincronizacaoSupabase = Date.now();
+            return resultado;
+        } finally {
+            sincronizacaoEmAndamento = false;
+        }
+    };
+    
+    // ============================================================
+    // 🔧 FUNÇÃO PARA LIMPAR CACHE E SINCRONIZAR DO ZERO
+    // Use no console: limparCacheESincronizar()
+    // ============================================================
+    window.limparCacheESincronizar = async function() {
+        console.log('🔄 ==============================================');
+        console.log('🔄 LIMPANDO CACHE E SINCRONIZANDO DO ZERO');
+        console.log('🔄 ==============================================');
+        
+        // 1. Limpa o localStorage
+        localStorage.removeItem('bd_frotas');
+        localStorage.removeItem('backup_locais');
+        localStorage.removeItem('backup_usuarios');
+        localStorage.removeItem('backup_veiculos');
+        localStorage.removeItem('backup_checklists');
+        localStorage.removeItem('backup_manutencoes');
+        localStorage.removeItem('backup_gastos');
+        localStorage.removeItem('backup_chamados');
+        localStorage.removeItem('backup_alocacoes');
+        localStorage.removeItem('backup_adiantamentos');
+        localStorage.removeItem('backup_gastosViagem');
+        localStorage.removeItem('backup_documentosVeiculos');
+        localStorage.removeItem('backup_pontosAbastecimento');
+        localStorage.removeItem('pendentes');
+        
+        console.log('✅ localStorage limpo!');
+        
+        // 2. Limpa o BD em memória
+        window.BD = {};
+        
+        // 3. Busca TUDO do Supabase
+        console.log('📥 Buscando dados do Supabase...');
+        const resultado = await buscarDadosSupabase();
+        
+        console.log('✅ Sincronização concluída!');
+        console.log('📊 Veículos:', window.BD.veiculos?.length || 0);
+        console.log('📊 Usuários:', window.BD.usuarios?.length || 0);
+        
+        // 4. Atualiza a tela
+        if (typeof carregarTabelaUsuarios === 'function') carregarTabelaUsuarios();
+        if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
+        
+        alert('✅ Cache limpo e dados sincronizados do Supabase com sucesso!');
+        
+        return resultado;
+    };
+    
     window.testarSincronizacao = async function() {
         console.log('\n🔍 ==============================================');
         console.log('🔍 TESTANDO SINCRONIZAÇÃO COM SUPABASE');
@@ -637,8 +722,8 @@
     // Atualiza automaticamente a cada 30 segundos
     setInterval(async () => {
         if (supabasePronto()) {
-            await sincronizarLocalParaSupabase();
-            await buscarDadosSupabase();
+            await buscarDadosSupabase();      // Primeiro busca do banco
+            await sincronizarLocalParaSupabase(); // Depois envia alterações locais
             await sincronizarPendentes();
         }
     }, 30000); // 30.000ms = 30 segundos

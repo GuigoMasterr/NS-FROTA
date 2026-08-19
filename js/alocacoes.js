@@ -423,7 +423,24 @@ function encerrarAlocacao(id) {
     } catch (e) { console.error(e); }
 }
 
-function excluirAlocacao(id) {
+async function excluirAlocacao(id) {
+    try {
+        if (!confirm('Excluir este registro?')) return;
+        
+        // 🗑️ PRIMEIRO: Tenta apagar do SUPABASE
+        if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+            if (supabasePronto() && id) {
+                const resultado = await excluirDoSupabase('alocacoes', id);
+                if (!resultado.sucesso) {
+                    console.error('❌ Erro ao apagar alocacoes do Supabase:', resultado.erro);
+                    alert('❌ Não foi possível apagar do Supabase. Tente novamente.');
+                    return; // NÃO apaga do localStorage se falhar!
+                }
+            }
+        }
+        
+        // 🗑️ DEPOIS: Apaga do localStorage
+
     try {
         if (!confirm('Excluir esta alocacao?')) return;
         if (typeof BD !== 'undefined' && BD.alocacoes) {
@@ -450,6 +467,10 @@ function excluirAlocacao(id) {
         if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
         if (typeof atualizarListaVeiculosNosFiltros === 'function') atualizarListaVeiculosNosFiltros();
     } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error(e); 
+        alert('❌ Erro ao excluir: ' + e.message);
+    }
 }
 
 window.carregarTabelaAlocacoes = carregarTabelaAlocacoes;

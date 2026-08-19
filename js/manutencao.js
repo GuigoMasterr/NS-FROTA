@@ -531,7 +531,24 @@ function concluirManutencao(id) {
     }
 }
 
-function excluirManutencao(id) {
+async function excluirManutencao(id) {
+    try {
+        if (!confirm('Excluir este registro?')) return;
+        
+        // 🗑️ PRIMEIRO: Tenta apagar do SUPABASE
+        if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+            if (supabasePronto() && id) {
+                const resultado = await excluirDoSupabase('manutencoes', id);
+                if (!resultado.sucesso) {
+                    console.error('❌ Erro ao apagar manutencoes do Supabase:', resultado.erro);
+                    alert('❌ Não foi possível apagar do Supabase. Tente novamente.');
+                    return; // NÃO apaga do localStorage se falhar!
+                }
+            }
+        }
+        
+        // 🗑️ DEPOIS: Apaga do localStorage
+
     try {
         if (!confirm('Tem certeza que deseja excluir?')) return;
         
@@ -558,6 +575,10 @@ function excluirManutencao(id) {
         
     } catch (e) {
         console.error('❌ Erro ao excluir:', e);
+    }
+    } catch (e) { 
+        console.error(e); 
+        alert('❌ Erro ao excluir: ' + e.message);
     }
 }
 
