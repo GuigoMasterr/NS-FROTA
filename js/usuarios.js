@@ -463,8 +463,16 @@ function salvarUsuarioForm(usuarioEditar) {
                 numeroCNH: document.getElementById('uNumeroCNH')?.value.trim() || '',
                 registroCNH: document.getElementById('uRegistroCNH')?.value.trim() || '',
                 categoriaCNH: document.getElementById('uCategoriaCNH')?.value || '',
-                dataValidadeCNH: dataValCNH || '',
-                dataCadastro: new Date().toISOString().split('T')[0]
+                dataValidadeCNH: dataValCNH || ''
+                // 🔄 CORRIGIDO (rodada 5, 19/08/2026): este objeto incluía
+                // "dataCadastro", mas a tabela "usuarios" no Supabase NUNCA
+                // teve essa coluna (ela existe só na tabela de documentos,
+                // criar-tabela-documentos.sql). O Supabase rejeitava o
+                // INSERT inteiro com "Could not find the 'datacadastro'
+                // column of 'usuarios' in the schema cache" — por isso
+                // nenhum usuário novo ia para o banco. O campo nunca era
+                // lido/exibido em nenhum lugar do sistema, então foi
+                // removido em vez de criar a coluna no banco.
             });
         }
         
