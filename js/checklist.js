@@ -268,6 +268,16 @@ function salvarChecklistForm() {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('checklists', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar checklists do Supabase:', r.erro);
+                    });
+                }
+            }
         
         document.getElementById('modal-checklist-final')?.remove();
         carregarTabelaChecklist();
@@ -337,6 +347,16 @@ function excluirChecklist(id) {
             BD.checklists = BD.checklists.filter(c => c.id !== id);
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('checklists', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar checklists do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         carregarTabelaChecklist();
     } catch (e) { console.error(e); }

@@ -495,9 +495,28 @@ function excluirUsuario(usuarioLogin) {
         if (!confirm('Excluir este usuário?')) return;
         
         if (typeof BD !== 'undefined' && BD.usuarios) {
+            // 🔍 Busca o ID do usuário antes de apagar
+            const usuarioParaExcluir = BD.usuarios.find(u => u.usuario === usuarioLogin);
+            const usuarioId = usuarioParaExcluir ? usuarioParaExcluir.id : null;
+            
+            // 🗑️ Apaga do localStorage
             BD.usuarios = BD.usuarios.filter(u => u.usuario !== usuarioLogin);
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            if (usuarioId && typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto()) {
+                    excluirDoSupabase('usuarios', usuarioId).then(function(resultado) {
+                        if (resultado.sucesso) {
+                            console.log('✅ Usuário apagado do Supabase com sucesso!');
+                        } else {
+                            console.error('❌ Erro ao apagar do Supabase:', resultado.erro);
+                            alert('⚠️ Usuário apagado do sistema, mas houve erro ao apagar do Supabase. Tente novamente.');
+                        }
+                    });
+                }
+            }
         }
         carregarTabelaUsuarios();
     } catch (e) { console.error(e); }

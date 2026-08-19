@@ -273,6 +273,16 @@ function adicionarDocumento(veiculoId) {
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
             
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('veiculos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar veiculos do Supabase:', r.erro);
+                    });
+                }
+            }
+            
             // Limpar campos
             document.getElementById('docNumero').value = '';
             document.getElementById('docEmissao').value = '';
@@ -341,6 +351,16 @@ function excluirDocumento(veiculoId, docId) {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('veiculos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar veiculos do Supabase:', r.erro);
+                    });
+                }
+            }
         
         var container = document.getElementById('lista-documentos-container');
         if (container) renderizarListaDocumentos(veiculoId, container, true);
@@ -366,6 +386,16 @@ function togglePagamentoDocumento(veiculoId, docId) {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('veiculos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar veiculos do Supabase:', r.erro);
+                    });
+                }
+            }
         
         var container = document.getElementById('lista-documentos-container');
         if (container) renderizarListaDocumentos(veiculoId, container, true);
@@ -558,6 +588,16 @@ function registrarHistoricoCondutor(veiculoId, motorista, tipo, observacao) {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('veiculos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar veiculos do Supabase:', r.erro);
+                    });
+                }
+            }
         
     } catch (e) {
         console.error('Erro ao registrar historico:', e);
@@ -850,6 +890,16 @@ function salvarVeiculoForm(id) {
             
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('veiculos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar veiculos do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         
         var modal = document.getElementById('modal-veiculo-final');
@@ -891,6 +941,16 @@ function excluirVeiculo(id) {
             BD.veiculos = BD.veiculos.filter(function(v) { return v.id !== id; });
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('veiculos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar veiculos do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         
         carregarTabelaVeiculos();
@@ -1074,6 +1134,16 @@ function toggleKmVeiculo(veiculoId) {
         v.usaKm = v.usaKm === false ? true : false;
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('veiculos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar veiculos do Supabase:', r.erro);
+                    });
+                }
+            }
         carregarTabelaVeiculos();
         if (typeof mostrarToast === 'function') {
             mostrarToast('KM ' + (v.usaKm ? '✅ HABILITADO' : '❌ DESABILITADO') + ' para ' + v.placa, v.usaKm ? 'sucesso' : 'aviso');
@@ -1090,6 +1160,16 @@ function toggleHorimetroVeiculo(veiculoId) {
         v.usaHorimetro = v.usaHorimetro === true ? false : true;
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('veiculos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar veiculos do Supabase:', r.erro);
+                    });
+                }
+            }
         carregarTabelaVeiculos();
         if (typeof mostrarToast === 'function') {
             mostrarToast('Horímetro ' + (v.usaHorimetro ? '✅ HABILITADO' : '❌ DESABILITADO') + ' para ' + v.placa, v.usaHorimetro ? 'sucesso' : 'aviso');

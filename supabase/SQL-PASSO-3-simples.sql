@@ -1,0 +1,26 @@
+-- ==================================================
+-- PASSO 3: DESATIVAR RLS
+-- Copie TODO este arquivo e execute no Supabase
+-- ==================================================
+
+ALTER TABLE IF EXISTS usuarios DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS veiculos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS checklists DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS manutencoes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS chamados DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS alocacoes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS gastos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS adiantamentos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS locais DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS documentosVeiculos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS pontosAbastecimento DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS solicitacoesTransferencia DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS historico_condutores DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS gastosViagem DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS dados_gerais DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS despesas_gerais DISABLE ROW LEVEL SECURITY;
+
+-- ==================================================
+-- Verifica se deu certo
+-- ==================================================
+SELECT 'RLS desativado com sucesso!' AS resultado;

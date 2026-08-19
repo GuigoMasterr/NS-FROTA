@@ -249,6 +249,16 @@ function salvarAdiantamentoForm() {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('adiantamentos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar adiantamentos do Supabase:', r.erro);
+                    });
+                }
+            }
         
         document.getElementById('modal-adiantamento-final')?.remove();
         carregarAdiantamentos();
@@ -539,6 +549,16 @@ function salvarPrestacaoContas(idAdiantamento) {
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
             
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('adiantamentos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar adiantamentos do Supabase:', r.erro);
+                    });
+                }
+            }
+            
             document.getElementById('modal-prestacao-final')?.remove();
             carregarAdiantamentos();
             
@@ -662,6 +682,16 @@ function confirmarEstorno(idAdiantamento) {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('adiantamentos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar adiantamentos do Supabase:', r.erro);
+                    });
+                }
+            }
         
         document.getElementById('modal-estorno-final')?.remove();
         carregarAdiantamentos();
@@ -829,6 +859,16 @@ function fecharAdiantamento(id) {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('adiantamentos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar adiantamentos do Supabase:', r.erro);
+                    });
+                }
+            }
         
         carregarAdiantamentos();
         
@@ -848,6 +888,16 @@ function excluirAdiantamento(id) {
             BD.adiantamentos = BD.adiantamentos.filter(function(a) { return a.id !== id; });
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('adiantamentos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar adiantamentos do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         carregarAdiantamentos();
     } catch (e) { console.error(e); }

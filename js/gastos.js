@@ -84,6 +84,26 @@ function adicionarPontoAbastecimento() {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('pontosAbastecimento', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar pontosAbastecimento do Supabase:', r.erro);
+                    });
+                }
+            }
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('gastos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar gastos do Supabase:', r.erro);
+                    });
+                }
+            }
         
         document.getElementById('novoPontoNome').value = '';
         document.getElementById('novoPontoEndereco').value = '';
@@ -99,6 +119,26 @@ function excluirPontoAbastecimento(id) {
     BD.pontosAbastecimento = BD.pontosAbastecimento.filter(p => p.id !== id);
     if (typeof salvarDados === 'function') salvarDados();
     window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('pontosAbastecimento', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar pontosAbastecimento do Supabase:', r.erro);
+                    });
+                }
+            }
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('gastos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar gastos do Supabase:', r.erro);
+                    });
+                }
+            }
     renderizarListaPontos();
 }
 
@@ -518,6 +558,26 @@ function salvarGastoForm(isMotorista) {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('pontosAbastecimento', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar pontosAbastecimento do Supabase:', r.erro);
+                    });
+                }
+            }
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('gastos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar gastos do Supabase:', r.erro);
+                    });
+                }
+            }
         
         document.getElementById('modal-gasto-final')?.remove();
         carregarTabelaGastos();
@@ -545,6 +605,26 @@ function excluirGasto(id) {
             BD.gastos = BD.gastos.filter(g => g.id !== id);
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('pontosAbastecimento', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar pontosAbastecimento do Supabase:', r.erro);
+                    });
+                }
+            }
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('gastos', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar gastos do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         carregarTabelaGastos();
         if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();

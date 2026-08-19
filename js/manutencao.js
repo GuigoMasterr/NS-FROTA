@@ -357,6 +357,16 @@ function abrirModalManutencaoEditar(id) {
                 
                 if (typeof salvarDados === 'function') salvarDados();
                 window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('manutencoes', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar manutencoes do Supabase:', r.erro);
+                    });
+                }
+            }
                 
                 fecharModal('modal-manutencao-edit');
                 carregarTabelaManutencao();
@@ -466,6 +476,16 @@ function salvarManutencaoForm(tipo) {
             BD.manutencoes.push(dados);
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('manutencoes', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar manutencoes do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         
         fecharModal('modal-manutencao');
@@ -490,6 +510,16 @@ function concluirManutencao(id) {
                 m.dataConclusao = new Date().toISOString().split('T')[0];
                 if (typeof salvarDados === 'function') salvarDados();
                 window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('manutencoes', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar manutencoes do Supabase:', r.erro);
+                    });
+                }
+            }
             }
         }
         
@@ -511,6 +541,16 @@ function excluirManutencao(id) {
             BD.manutencoes = BD.manutencoes.filter(m => m.id !== id);
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('manutencoes', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar manutencoes do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         
         carregarTabelaManutencao();

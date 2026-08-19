@@ -247,6 +247,16 @@ function salvarChamadoForm() {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('chamados', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar chamados do Supabase:', r.erro);
+                    });
+                }
+            }
         
         document.getElementById('modal-chamado-final')?.remove();
         carregarTabelaChamados();
@@ -273,6 +283,16 @@ function resolverChamado(id) {
             }
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('chamados', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar chamados do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         carregarTabelaChamados();
         if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();
@@ -287,6 +307,16 @@ function excluirChamado(id) {
             BD.chamados = BD.chamados.filter(c => c.id !== id);
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('chamados', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar chamados do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         carregarTabelaChamados();
         if (typeof atualizarDashboardCompleto === 'function') atualizarDashboardCompleto();

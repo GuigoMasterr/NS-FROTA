@@ -292,6 +292,16 @@ function salvarAlocacaoForm() {
         
         if (typeof salvarDados === 'function') salvarDados();
         window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('alocacoes', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar alocacoes do Supabase:', r.erro);
+                    });
+                }
+            }
         
         // Registra historico de condutor
         if (typeof registrarHistoricoCondutor === 'function') {
@@ -387,6 +397,16 @@ function encerrarAlocacao(id) {
             }
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('alocacoes', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar alocacoes do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         
         carregarTabelaAlocacoes();
@@ -415,6 +435,16 @@ function excluirAlocacao(id) {
             BD.alocacoes = BD.alocacoes.filter(function(x) { return x.id !== id; });
             if (typeof salvarDados === 'function') salvarDados();
             window.BD = BD;
+            
+            // 🗑️ Apaga do SUPABASE também!
+            const idExcluir = id;
+            if (typeof excluirDoSupabase === 'function' && typeof supabasePronto === 'function') {
+                if (supabasePronto() && idExcluir) {
+                    excluirDoSupabase('alocacoes', idExcluir).then(function(r) {
+                        if (!r.sucesso) console.error('❌ Erro ao apagar alocacoes do Supabase:', r.erro);
+                    });
+                }
+            }
         }
         carregarTabelaAlocacoes();
         if (typeof carregarTabelaVeiculos === 'function') carregarTabelaVeiculos();
