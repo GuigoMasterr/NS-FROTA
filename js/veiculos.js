@@ -797,6 +797,127 @@ function abrirModalVeiculo(id) {
     
     form.appendChild(configContainer);
     
+    // ============================================================
+    // 🔗 CONFIGURAÇÃO DE CINTAS E ACESSÓRIOS
+    // ============================================================
+    var cintasContainer = document.createElement('div');
+    cintasContainer.style.cssText = 'grid-column:span 2;background:#fffbeb;border-radius:8px;padding:16px;border:1px solid #fde68a;';
+    
+    // Toggle principal para habilitar sistema de cintas
+    var usaCintas = veiculo ? (veiculo.usaCintas === true) : false;
+    var toggleCintasPrincipal = document.createElement('div');
+    toggleCintasPrincipal.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px;background:#fef3c7;border-radius:6px;margin-bottom:16px;';
+    toggleCintasPrincipal.innerHTML = '<div><strong style="color:#92400e;font-size:15px;">🔗 Sistema de Cintas e Acessórios</strong><div style="font-size:12px;color:#b45309;">Habilite para configurar quantidades mínimas e foto da caixa</div></div>';
+    var btnToggleCintas = document.createElement('button');
+    btnToggleCintas.type = 'button';
+    btnToggleCintas.id = 'vUsaCintas';
+    btnToggleCintas.style.cssText = 'padding:10px 20px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:white;background:' + (usaCintas ? '#d97706' : '#94a3b8') + ';';
+    btnToggleCintas.textContent = usaCintas ? '✅ HABILITADO' : '❌ DESABILITADO';
+    
+    // Container que aparece/desaparece conforme o toggle
+    var cintasCampos = document.createElement('div');
+    cintasCampos.id = 'cintasCamposContainer';
+    cintasCampos.style.cssText = 'display:' + (usaCintas ? 'grid' : 'none') + ';grid-template-columns:1fr 1fr 1fr;gap:12px;';
+    
+    btnToggleCintas.onclick = function() {
+        var atual = this.textContent.includes('HABILITADO');
+        var novo = !atual;
+        this.textContent = novo ? '✅ HABILITADO' : '❌ DESABILITADO';
+        this.style.background = novo ? '#d97706' : '#94a3b8';
+        this.dataset.valor = novo;
+        document.getElementById('cintasCamposContainer').style.display = novo ? 'grid' : 'none';
+    };
+    btnToggleCintas.dataset.valor = usaCintas;
+    toggleCintasPrincipal.appendChild(btnToggleCintas);
+    cintasContainer.appendChild(toggleCintasPrincipal);
+    
+    // Função auxiliar para criar campos numéricos de cintas
+    function criarCampoCinta(label, idCampo, valorAtual, placeholder, unidade) {
+        var grupo = document.createElement('div');
+        grupo.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+        var lbl = document.createElement('label');
+        lbl.style.cssText = 'font-size:12px;font-weight:600;color:#78350f;';
+        lbl.textContent = label;
+        grupo.appendChild(lbl);
+        
+        var inputContainer = document.createElement('div');
+        inputContainer.style.cssText = 'display:flex;align-items:center;gap:4px;';
+        
+        var inp = document.createElement('input');
+        inp.type = 'number';
+        inp.id = idCampo;
+        inp.min = '0';
+        inp.value = valorAtual || '';
+        inp.placeholder = placeholder;
+        inp.style.cssText = 'flex:1;padding:8px 10px;border:1px solid #fcd34d;border-radius:6px;font-size:13px;background:white;';
+        inputContainer.appendChild(inp);
+        
+        if (unidade) {
+            var uni = document.createElement('span');
+            uni.style.cssText = 'font-size:12px;color:#92400e;padding:4px;';
+            uni.textContent = unidade;
+            inputContainer.appendChild(uni);
+        }
+        
+        grupo.appendChild(inputContainer);
+        return grupo;
+    }
+    
+    // Cintas de içar carga
+    cintasCampos.appendChild(criarCampoCinta(
+        'Cintas de Içar Carga (Qtd Mínima)',
+        'vCintasIcarQtd',
+        veiculo?.cintasIcarQtd,
+        'Ex: 2',
+        'un'
+    ));
+    cintasCampos.appendChild(criarCampoCinta(
+        'Tamanho das Cintas de Içar',
+        'vCintasIcarTamanho',
+        veiculo?.cintasIcarTamanho,
+        'Ex: 2m',
+        'm'
+    ));
+    cintasCampos.appendChild(criarCampoCinta(
+        'Cintas de Catraca (Qtd Mínima)',
+        'vCintasCatracaQtd',
+        veiculo?.cintasCatracaQtd,
+        'Ex: 5',
+        'un'
+    ));
+    cintasCampos.appendChild(criarCampoCinta(
+        'Catracas (Qtd Mínima)',
+        'vCatracasQtd',
+        veiculo?.catracasQtd,
+        'Ex: 4',
+        'un'
+    ));
+    
+    // Toggle para foto da caixa de cintas
+    var fotoCintasContainer = document.createElement('div');
+    fotoCintasContainer.style.cssText = 'grid-column:span 3;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#fef3c7;border-radius:6px;border:1px solid #fcd34d;';
+    fotoCintasContainer.innerHTML = '<div><strong style="color:#78350f;font-size:13px;">📸 Foto da Caixa de Cintas</strong><div style="font-size:11px;color:#92400e;">Se habilitado, motorista deve tirar foto da caixa de cintas</div></div>';
+    
+    var usaFotoCintas = veiculo ? (veiculo.usaFotoCintas === true) : false;
+    var btnFotoCintas = document.createElement('button');
+    btnFotoCintas.type = 'button';
+    btnFotoCintas.id = 'vUsaFotoCintas';
+    btnFotoCintas.style.cssText = 'padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;color:white;background:' + (usaFotoCintas ? '#d97706' : '#94a3b8') + ';';
+    btnFotoCintas.textContent = usaFotoCintas ? '✅ SIM' : '❌ NÃO';
+    btnFotoCintas.onclick = function() {
+        var atual = this.textContent.includes('SIM');
+        var novo = !atual;
+        this.textContent = novo ? '✅ SIM' : '❌ NÃO';
+        this.style.background = novo ? '#d97706' : '#94a3b8';
+        this.dataset.valor = novo;
+    };
+    btnFotoCintas.dataset.valor = usaFotoCintas;
+    fotoCintasContainer.appendChild(btnFotoCintas);
+    cintasCampos.appendChild(fotoCintasContainer);
+    
+    cintasContainer.appendChild(cintasCampos);
+    form.appendChild(cintasContainer);
+    
     var rodape = document.createElement('div');
     rodape.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;grid-column:span 2;';
     
@@ -845,7 +966,14 @@ function salvarVeiculoForm(id) {
             status: document.getElementById('vStatus')?.value || 'disponivel',
             responsavel: '',
             usaKm: document.getElementById('vUsaKm') ? document.getElementById('vUsaKm').dataset.valor !== 'false' : true,
-            usaHorimetro: document.getElementById('vUsaHorimetro') ? document.getElementById('vUsaHorimetro').dataset.valor === 'true' : false
+            usaHorimetro: document.getElementById('vUsaHorimetro') ? document.getElementById('vUsaHorimetro').dataset.valor === 'true' : false,
+            // 🔗 Dados de cintas e acessórios
+            usaCintas: document.getElementById('vUsaCintas') ? document.getElementById('vUsaCintas').dataset.valor === 'true' : false,
+            cintasIcarQtd: parseInt(document.getElementById('vCintasIcarQtd')?.value) || 0,
+            cintasIcarTamanho: document.getElementById('vCintasIcarTamanho')?.value.trim() || '',
+            cintasCatracaQtd: parseInt(document.getElementById('vCintasCatracaQtd')?.value) || 0,
+            catracasQtd: parseInt(document.getElementById('vCatracasQtd')?.value) || 0,
+            usaFotoCintas: document.getElementById('vUsaFotoCintas') ? document.getElementById('vUsaFotoCintas').dataset.valor === 'true' : false
         };
         
         var veiculoAntigo = null;
