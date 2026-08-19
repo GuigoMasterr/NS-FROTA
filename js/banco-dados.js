@@ -159,17 +159,20 @@ function salvarDados() {
         localStorage.setItem(BD_CHAVE_LOCALSTORAGE, JSON.stringify(window.BD));
         
         // 🔄 Sincroniza com o Supabase em segundo plano
-        // Só envia se NÃO acabamos de receber dados do Supabase
-        if (typeof sincronizarLocalParaSupabase === 'function' && typeof supabasePronto === 'function') {
+        // Usa forcarSincronizar() para garantir que alterações do usuário sejam enviadas
+        if (typeof forcarSincronizar === 'function' && typeof supabasePronto === 'function') {
             if (supabasePronto()) {
                 // Usa setTimeout para não travar a interface
                 setTimeout(() => {
-                    // Verifica flag de proteção contra loops
-                    if (window._ultimaSincronizacaoSupabase && 
-                        Date.now() - window._ultimaSincronizacaoSupabase < 2000) {
-                        console.log('ℹ️ [BD] Dados recentes do Supabase - pulando envio');
-                        return;
-                    }
+                    forcarSincronizar().catch(err => {
+                        console.warn('⚠️ [BD] Erro ao sincronizar com Supabase:', err);
+                    });
+                }, 50);
+            }
+        } else if (typeof sincronizarLocalParaSupabase === 'function' && typeof supabasePronto === 'function') {
+            // Fallback para função antiga
+            if (supabasePronto()) {
+                setTimeout(() => {
                     sincronizarLocalParaSupabase().catch(err => {
                         console.warn('⚠️ [BD] Erro ao sincronizar com Supabase:', err);
                     });

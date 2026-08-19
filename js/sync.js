@@ -586,25 +586,29 @@
     // ============================================================
     // Flag para evitar loops de sincronização
     var sincronizacaoEmAndamento = false;
-    var ultimaSincronizacaoSupabase = 0;
+    // Usa variável GLOBAL para compartilhar com banco-dados.js
+    window._ultimaSincronizacaoSupabase = 0;
+    window._sincronizacaoEmAndamento = false;
     
     // Sobrescreve sincronizarLocalParaSupabase para evitar loops
     const _sincronizarOriginal = sincronizarLocalParaSupabase;
     sincronizarLocalParaSupabase = async function() {
         // Se acabamos de receber dados do Supabase (há menos de 2 segundos), não reenvie
-        if (Date.now() - ultimaSincronizacaoSupabase < 2000) {
+        if (Date.now() - (window._ultimaSincronizacaoSupabase || 0) < 2000) {
             console.log('ℹ️ [sync.js] Pulando envio - dados recentes do Supabase');
             return { sucesso: true, pulado: true };
         }
-        if (sincronizacaoEmAndamento) {
+        if (sincronizacaoEmAndamento || window._sincronizacaoEmAndamento) {
             console.log('ℹ️ [sync.js] Sincronização já em andamento, pulando...');
             return { sucesso: true, ocupado: true };
         }
+        window._sincronizacaoEmAndamento = true;
         sincronizacaoEmAndamento = true;
         try {
             return await _sincronizarOriginal();
         } finally {
             sincronizacaoEmAndamento = false;
+            window._sincronizacaoEmAndamento = false;
         }
     };
     
@@ -614,7 +618,7 @@
         sincronizacaoEmAndamento = true;
         try {
             const resultado = await _buscarOriginal();
-            ultimaSincronizacaoSupabase = Date.now();
+            window._ultimaSincronizacaoSupabase = Date.now();
             return resultado;
         } finally {
             sincronizacaoEmAndamento = false;
@@ -668,6 +672,69 @@
         return resultado;
     };
     
+    // ============================================================
+    // ⚡ FORÇAR SINCRONIZAÇÃO - ignora proteções de tempo
+    // Usada quando o usuário salva uma edição
+    // ============================================================
+    window.forcarSincronizar = async function() {
+        if (!supabasePronto()) {
+            console.warn('⚠️ [sync.js] Sem conexão com Supabase');
+            return { sucesso: false, erro: 'Sem conexão' };
+        }
+        
+        console.log('⚡ [sync.js] Forçando sincronização local → Supabase...');
+        
+        const supabase = window.supabase;
+        let totalSincronizados = 0;
+        let tabelasComErro = [];
+        
+        for (const tabela of TABELAS) {
+            try {
+                const dadosLocais = window.BD[tabela];
+                
+                if (!dadosLocais || !Array.isArray(dadosLocais) || dadosLocais.length === 0) {
+                    continue;
+                }
+                
+                const dadosParaEnviar = dadosLocais.map(item => {
+                    const copia = { ...item };
+                    if (copia.id !== undefined && copia.id !== null) {
+                        copia.id = Number(copia.id);
+                    }
+                    return copia;
+                });
+                
+                const { data, error } = await supabase
+                    .from(tabela)
+                    .upsert(dadosParaEnviar, { onConflict: 'id', ignoreDuplicates: false })
+                    .select();
+                
+                if (error) throw error;
+                
+                console.log(`✅ ${tabela}: ${dadosParaEnviar.length} registros sincronizados`);
+                totalSincronizados += dadosParaEnviar.length;
+                
+            } catch (erro) {
+                // Ignora erro de tabela não existir (provavelmente não foi criada ainda)
+                if (!erro.message || !erro.message.includes('does not exist')) {
+                    console.error(`❌ Erro ao sincronizar ${tabela}:`, erro.message);
+                }
+                tabelasComErro.push(tabela);
+            }
+        }
+        
+        // Atualiza flag
+        window._ultimaSincronizacaoSupabase = Date.now();
+        
+        console.log(`⚡ [sync.js] Sincronização forçada concluída: ${totalSincronizados} registros`);
+        
+        return {
+            sucesso: true,
+            totalSincronizados,
+            tabelasComErro
+        };
+    };
+
     window.testarSincronizacao = async function() {
         console.log('\n🔍 ==============================================');
         console.log('🔍 TESTANDO SINCRONIZAÇÃO COM SUPABASE');
