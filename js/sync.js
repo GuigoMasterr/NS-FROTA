@@ -336,22 +336,28 @@
         try {
             let resultado;
 
-            if (dados.id && dados.id !== null) {
+            // 🔄 CORRIGIDO: esta função enviava os campos em camelCase direto
+            // (ex.: kmAtual, veiculoId), sem converter para o formato que o
+            // Postgres realmente usa (kmatual, veiculoid). O envio falhava
+            // silenciosamente para qualquer campo com letra maiúscula.
+            const dadosConvertidos = converterParaPostgres(dados);
+
+            if (dadosConvertidos.id && dadosConvertidos.id !== null) {
                 // 🔄 Atualiza registro existente
                 const { data: dataResult, error } = await supabase
                     .from(tabela)
-                    .update(dados)
-                    .eq('id', dados.id)
+                    .update(dadosConvertidos)
+                    .eq('id', dadosConvertidos.id)
                     .select();
 
                 if (error) throw error;
                 resultado = dataResult[0];
-                console.log(`✅ ${tabela} #${dados.id} atualizado no Supabase`);
+                console.log(`✅ ${tabela} #${dadosConvertidos.id} atualizado no Supabase`);
             } else {
                 // ➕ Insere novo registro
                 const { data: dataResult, error } = await supabase
                     .from(tabela)
-                    .insert([dados])
+                    .insert([dadosConvertidos])
                     .select();
 
                 if (error) throw error;
@@ -612,15 +618,19 @@
                 }
                 
                 // Prepara os dados (remove campos que não devem ir para o banco)
+                // 🔄 CORRIGIDO: faltava converterParaPostgres() aqui. Sem ela,
+                // esta função (usada no auto-sync a cada 30s e na inicialização)
+                // enviava os campos em camelCase e o Postgres rejeitava o
+                // upsert para qualquer campo com letra maiúscula, silenciosamente.
                 const dadosParaEnviar = dadosLocais.map(item => {
-                    const copia = { ...item };
+                    let copia = converterParaPostgres({ ...item });
                     // Garante que o ID seja número ou null
                     if (copia.id !== undefined && copia.id !== null) {
                         copia.id = Number(copia.id);
                     }
                     return copia;
                 });
-                
+
                 // Faz upsert em massa (insere ou atualiza)
                 const { data, error } = await supabase
                     .from(tabela)

@@ -2038,19 +2038,12 @@
      SCRIPTS - ORDEM CORRETA
      ============================================================ -->
 
-<!-- 1. Inicialização do Supabase -->
-<script>
-    const SUPABASE_URL = 'https://ccacecyqkseniqmrvnap.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_aRQgU6fTTModcqdb4hSgHQ_bPKp2R3m';
-    let supabaseReal = null;
-    try {
-        supabaseReal = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ Supabase inicializado');
-    } catch(e) {
-        console.warn('⚠️ Supabase não disponível, usando modo local:', e);
-    }
-    window.supabaseReal = supabaseReal;
-</script>
+<!-- 1. Inicialização do Supabase removida daqui: existia em TRÊS lugares
+     diferentes (este script inline, supabase.js da raiz e js/supabase.js),
+     com o risco real de dois deles usarem URLs divergentes dependendo da
+     ordem de carregamento. Agora existe um único ponto de criação do
+     cliente (supabase.js da raiz, carregado abaixo), com js/supabase.js
+     atuando apenas como reforço caso o primeiro falhe. -->
 
 <!-- 1. INICIALIZADOR (DEVE SER O PRIMEIRO!) -->
 <script src="js/inicializador.js"></script>
@@ -2060,10 +2053,10 @@
 <script src="js/utils.js"></script>
 <script src="js/validacoes.js"></script>
 
-<!-- 3. Conexão Supabase (cria window.supabaseReal) -->
+<!-- 3. Conexão Supabase (cria window.supabaseReal e window.supabase) -->
 <script src="supabase.js"></script>
 
-<!-- 4. Wrapper Supabase (sincronização) -->
+<!-- 4. Reforço: só cria um cliente próprio se o passo 3 tiver falhado -->
 <script src="js/supabase.js"></script>
 
 <!-- 5. Banco de Dados (local + Supabase) -->

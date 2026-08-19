@@ -158,9 +158,17 @@
     </div>
     <div id="areaFormularios"></div>
     <div id="modais"></div>
+    <!-- CORRIGIDO: esta página carregava js/sync.js mas nunca criava o
+         cliente Supabase (nem o SDK, nem supabase.js). Por isso
+         supabasePronto() sempre retornava falso e o app do motorista
+         nunca sincronizava com a nuvem, mesmo com o painel web ao lado
+         sincronizando normalmente. -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/validacoes.js"></script>
+    <script src="supabase.js"></script>
+    <script src="js/supabase.js"></script>
     <script src="js/banco-dados.js"></script>
     <script src="js/sync.js"></script>
     <script src="js/checklist.js"></script>

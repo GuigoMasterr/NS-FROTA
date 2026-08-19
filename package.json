@@ -10,7 +10,7 @@
     "cap:copy": "cap copy",
     "cap:open:android": "cap open android",
     "cap:open:ios": "cap open ios",
-    "sync:server": "node server/sync-server.js"
+    "sync:server": "node _legado-nao-usado/server/sync-server.js"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0"

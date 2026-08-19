@@ -8,7 +8,11 @@
     'use strict';
 
     // ⚠️ SUAS CREDENCIAIS DO SUPABASE
-    const SUPABASE_URL = 'https://ccacecyqksenigmrvnap.supabase.co';
+    // CORRIGIDO: esta URL estava com um typo (kseniG em vez de kseniQ),
+    // divergente das demais duas cópias no projeto (supabase.js da raiz e
+    // o script inline de index.html). Isso podia apontar o cliente para um
+    // projeto Supabase inexistente dependendo da ordem de carregamento.
+    const SUPABASE_URL = 'https://ccacecyqkseniqmrvnap.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_aRQgU6fTTModcqdb4hSgHQ_bPKp2R3m';
 
     // 🔍 VERIFICA SE JÁ EXISTE UM CLIENTE VÁLIDO CRIADO POR OUTRO ARQUIVO
