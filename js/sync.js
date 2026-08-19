@@ -117,18 +117,72 @@
         return sb && typeof sb.from === 'function' && sb.temConexaoReal === true;
     }
 
-    // Espera o Supabase ficar pronto, com timeout
+    // ============================================================
+    // 🔌 CORRIGIDO: verificação REAL de conectividade
+    // Antes, temConexaoReal era setada como true assim que o cliente
+    // Supabase era criado (em supabase.js e js/supabase.js), inclusive
+    // quando a consulta de teste falhava — ou seja, a flag refletia
+    // "o objeto cliente existe", não "o banco está de fato acessível".
+    // Isso impedia o sistema de perceber quedas de conexão durante o
+    // uso e de reagir quando a conexão voltava. Esta função faz uma
+    // consulta leve real e só marca temConexaoReal=true/false conforme
+    // o resultado, distinguindo falha de REDE (offline de verdade) de
+    // erro de permissão/RLS (que significa que o banco respondeu).
+    // ============================================================
+    function pareceErroDeRede(erro) {
+        const msg = ((erro && erro.message) || String(erro || '')).toLowerCase();
+        return msg.includes('failed to fetch') ||
+               msg.includes('network') ||
+               msg.includes('load failed') ||
+               msg.includes('timeout');
+    }
+
+    let _verificandoConexao = false;
+    let _estavaOffline = false; // rastreia transição offline → online para disparar resync imediato
+    async function verificarConexaoReal() {
+        const sb = window.supabase;
+        if (!sb || typeof sb.from !== 'function') {
+            if (sb) sb.temConexaoReal = false;
+            return false;
+        }
+        if (_verificandoConexao) {
+            return sb.temConexaoReal === true;
+        }
+        _verificandoConexao = true;
+        try {
+            const { error } = await sb.from('locais').select('id', { count: 'exact', head: true });
+            // Erro de RLS/permissão ainda significa que o Supabase respondeu:
+            // só tratamos como offline erros de rede de verdade.
+            const online = !error || !pareceErroDeRede(error);
+            sb.temConexaoReal = online;
+            return online;
+        } catch (erro) {
+            const online = !pareceErroDeRede(erro);
+            sb.temConexaoReal = online;
+            return online;
+        } finally {
+            _verificandoConexao = false;
+        }
+    }
+
+    // Espera o Supabase ficar pronto, com timeout (agora com verificação real)
     function esperarSupabasePronto(timeoutMs) {
         return new Promise((resolve) => {
             const inicio = Date.now();
-            const verificar = () => {
-                if (supabasePronto()) {
-                    resolve(true);
-                } else if (Date.now() - inicio > timeoutMs) {
+            const verificar = async () => {
+                const sb = window.supabase;
+                if (sb && typeof sb.from === 'function') {
+                    const conectado = await verificarConexaoReal();
+                    if (conectado) {
+                        resolve(true);
+                        return;
+                    }
+                }
+                if (Date.now() - inicio > timeoutMs) {
                     console.warn('⚠️ [sync.js] Timeout esperando Supabase conectar');
                     resolve(false);
                 } else {
-                    setTimeout(verificar, 200);
+                    setTimeout(verificar, 500);
                 }
             };
             verificar();
@@ -372,6 +426,15 @@
         } catch (erro) {
             console.error(`❌ Erro ao salvar em ${tabela}:`, erro.message);
 
+            // 🔄 CORRIGIDO: se o erro é de rede (não de permissão/validação),
+            // marca a conexão como caída imediatamente, sem esperar o próximo
+            // ciclo de verificação — assim o monitor de reconexão detecta a
+            // volta da conexão mais rápido, pois já sabe que estava offline.
+            if (pareceErroDeRede(erro) && window.supabase) {
+                window.supabase.temConexaoReal = false;
+                _estavaOffline = true;
+            }
+
             // 🚨 Salva na fila de pendentes para sincronizar depois
             adicionarPendente(tabela, dados);
 
@@ -412,6 +475,10 @@
             return { sucesso: true };
         } catch (erro) {
             console.error(`❌ Erro ao excluir:`, erro.message);
+            if (pareceErroDeRede(erro) && window.supabase) {
+                window.supabase.temConexaoReal = false;
+                _estavaOffline = true;
+            }
             return { sucesso: false, erro: erro.message };
         }
     }
@@ -991,6 +1058,51 @@
             await sincronizarPendentes();
         }
     }, 30000); // 30.000ms = 30 segundos
+
+    // ============================================================
+    // 🔄 NOVO: MONITOR DE RECONEXÃO
+    // Faz uma verificação real e leve de conectividade a cada 10s
+    // (independente do ciclo de 30s de dados, que só roda se já
+    // estiver "pronto"). Assim que detecta que a conexão com o
+    // Supabase voltou depois de ter caído, dispara IMEDIATAMENTE
+    // busca + envio + fila de pendentes, sem esperar o próximo tick.
+    // ============================================================
+    async function monitorarConectividade() {
+        const conectadoAgora = await verificarConexaoReal();
+
+        if (conectadoAgora && _estavaOffline) {
+            console.log('✅ [sync.js] Conexão com o Supabase reestabelecida! Sincronizando automaticamente...');
+            _estavaOffline = false;
+            await buscarDadosSupabase();
+            await sincronizarLocalParaSupabase();
+            await sincronizarPendentes();
+            console.log('✅ [sync.js] Sincronização pós-reconexão concluída!');
+        } else if (!conectadoAgora) {
+            if (!_estavaOffline) {
+                console.warn('📴 [sync.js] Conexão com o Supabase caiu. Trabalhando com backup local até reconectar.');
+            }
+            _estavaOffline = true;
+        }
+    }
+
+    // Verifica conectividade real a cada 10 segundos
+    setInterval(monitorarConectividade, 10000);
+
+    // 🌐 Reage IMEDIATAMENTE quando o navegador recupera a rede
+    window.addEventListener('online', () => {
+        console.log('🌐 [sync.js] Navegador detectou rede de volta. Verificando Supabase...');
+        monitorarConectividade();
+    });
+
+    // 📴 Reage IMEDIATAMENTE quando o navegador perde a rede
+    window.addEventListener('offline', () => {
+        console.warn('📴 [sync.js] Navegador sem rede. Modo offline ativado — dados continuam sendo salvos localmente.');
+        _estavaOffline = true;
+        if (window.supabase) window.supabase.temConexaoReal = false;
+    });
+
+    // Expõe para debug manual no console (F12): verificarConexaoReal()
+    window.verificarConexaoReal = verificarConexaoReal;
 
     console.log("✅ [sync.js] Script carregado e pronto!");
 

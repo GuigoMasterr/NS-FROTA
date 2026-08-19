@@ -18,6 +18,12 @@ nunca é executado).
 - `supabase-sync.js`: uma implementação alternativa e mais antiga de
   sincronização bidirecional com o Supabase. Nunca foi carregada por
   nenhuma página; o sistema usa exclusivamente `js/sync.js`.
+- `dashboard.js`: encontrado ainda duplicado em `js/` na rodada de correções
+  de 19/08/2026 (a movimentação anterior havia copiado os oito arquivos
+  acima para cá, mas sem remover os originais de `js/`, e este arquivo em
+  especial não fazia parte daquela lista). Nenhum `<script>` o carrega; o
+  dashboard ativo usa `js/melhorias-dashboard.js`. Nesta rodada as cópias
+  duplicadas em `js/` foram removidas — este arquivo só existe aqui agora.
 
 ## server/
 
