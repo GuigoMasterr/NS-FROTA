@@ -75,6 +75,19 @@
     }
     
     // Converte objeto para enviar ao Postgres (camelCase → minúsculas)
+    // 🔄 CORRIGIDO (achado rodada 4, 19/08/2026): campos de data ficam
+    // sempre como string vazia ('') no formulário quando não preenchidos
+    // (ex.: dataValidadeCNH de um usuário sem CNH cadastrada). O Postgres
+    // rejeita '' para colunas tipadas como DATE/NUMERIC/BOOLEAN/INTEGER
+    // com erro do tipo "invalid input syntax for type date: """ — e esse
+    // erro derruba a chamada INTEIRA (o upsert/insert de toda a tabela
+    // naquele lote), mesmo que os demais campos estivessem corretos e
+    // mesmo depois da correção de lotes por id da rodada anterior. Isso
+    // explica por que adicionar/editar usuários sem CNH preenchida nunca
+    // ia para o Supabase, enquanto excluir (que não envia esses campos)
+    // sempre funcionava. Aqui toda string vazia é convertida para null
+    // antes do envio — comportamento correto também semanticamente
+    // ("sem valor" deve ser NULL, não uma string vazia).
     function converterParaPostgres(obj) {
         if (!obj || typeof obj !== 'object') return obj;
         if (Array.isArray(obj)) {
@@ -84,7 +97,8 @@
         for (const chave in obj) {
             if (obj.hasOwnProperty(chave)) {
                 const chaveConvertida = MAPEAMENTO_CAMPOS[chave] || chave.toLowerCase();
-                resultado[chaveConvertida] = obj[chave];
+                const valor = obj[chave];
+                resultado[chaveConvertida] = (valor === '') ? null : valor;
             }
         }
         return resultado;
@@ -722,7 +736,11 @@
                 .upsert(comId, { onConflict: 'id', ignoreDuplicates: false })
                 .select();
             if (error) {
-                erros.push(`atualização: ${error.message}`);
+                // 🔄 CORRIGIDO: agora inclui details/hint do Postgres (ex.:
+                // "invalid input syntax for type date" aparecia só como
+                // "erro genérico" antes; com details/hint fica claro qual
+                // campo e qual tabela precisam de atenção).
+                erros.push(`atualização: ${error.message}${error.details ? ' | ' + error.details : ''}${error.hint ? ' | dica: ' + error.hint : ''}`);
             } else {
                 totalEnviados += comId.length;
             }
@@ -734,7 +752,7 @@
                 .insert(semId)
                 .select();
             if (error) {
-                erros.push(`inserção: ${error.message}`);
+                erros.push(`inserção: ${error.message}${error.details ? ' | ' + error.details : ''}${error.hint ? ' | dica: ' + error.hint : ''}`);
             } else {
                 totalEnviados += semId.length;
                 houveInsercaoNova = true;

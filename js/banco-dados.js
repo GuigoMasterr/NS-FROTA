@@ -185,7 +185,17 @@ function salvarDados() {
                     try {
                         const resultado = await forcarSincronizar();
                         console.log('✅ [BD] Resultado da sincronização:', resultado);
-                        if (typeof mostrarToast === 'function' && resultado && resultado.totalSincronizados > 0) {
+                        // 🔄 CORRIGIDO: antes só existia toast de SUCESSO. Quando a
+                        // sincronização falhava (ex.: erro de tipo de dado, tabela
+                        // rejeitada pelo Supabase), o usuário não recebia nenhum
+                        // aviso — a tela simplesmente não mostrava nada de errado,
+                        // e só ao recarregar a página é que a alteração "sumia".
+                        // Agora um erro de sincronização sempre gera um toast.
+                        if (resultado && resultado.tabelasComErro && resultado.tabelasComErro.length > 0) {
+                            if (typeof mostrarToast === 'function') {
+                                mostrarToast('Não sincronizou com o Supabase: ' + resultado.tabelasComErro.join(', ') + ' (veja o console)', 'erro');
+                            }
+                        } else if (typeof mostrarToast === 'function' && resultado && resultado.totalSincronizados > 0) {
                             mostrarToast('Dados sincronizados!', 'sucesso');
                         }
                     } catch(err) {
