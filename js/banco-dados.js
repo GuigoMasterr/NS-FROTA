@@ -156,31 +156,57 @@ function salvarDados() {
             inicializarBD();
             return;
         }
+        
+        console.log('💾 [BD] Salvando dados no localStorage...');
+        if (window.BD.usuarios) {
+            console.log('💾 [BD] Usuários a salvar:', window.BD.usuarios.length);
+            window.BD.usuarios.forEach(function(u, i) {
+                console.log('   Usuário', i, '- ID:', u.id, 'Nome:', u.nome, 'CPF:', u.cpf || 'sem');
+            });
+        }
+        
         localStorage.setItem(BD_CHAVE_LOCALSTORAGE, JSON.stringify(window.BD));
+        console.log('✅ [BD] Dados salvos no localStorage com sucesso!');
         
         // 🔄 Sincroniza com o Supabase em segundo plano
-        // Usa forcarSincronizar() para garantir que alterações do usuário sejam enviadas
+        console.log('🔄 [BD] Verificando sincronização com Supabase...');
+        console.log('   forcarSincronizar disponível:', typeof forcarSincronizar === 'function');
+        console.log('   supabasePronto disponível:', typeof supabasePronto === 'function');
+        
+        if (typeof supabasePronto === 'function') {
+            console.log('   supabasePronto():', supabasePronto());
+        }
+        
         if (typeof forcarSincronizar === 'function' && typeof supabasePronto === 'function') {
             if (supabasePronto()) {
+                console.log('🚀 [BD] Chamando forcarSincronizar()...');
                 // Usa setTimeout para não travar a interface
-                setTimeout(() => {
-                    forcarSincronizar().catch(err => {
-                        console.warn('⚠️ [BD] Erro ao sincronizar com Supabase:', err);
-                    });
+                setTimeout(async () => {
+                    try {
+                        const resultado = await forcarSincronizar();
+                        console.log('✅ [BD] Resultado da sincronização:', resultado);
+                        if (typeof mostrarToast === 'function' && resultado && resultado.totalSincronizados > 0) {
+                            mostrarToast('Dados sincronizados!', 'sucesso');
+                        }
+                    } catch(err) {
+                        console.error('❌ [BD] Erro CRÍTICO ao sincronizar:', err);
+                        if (typeof mostrarToast === 'function') {
+                            mostrarToast('Erro ao sincronizar: ' + err.message, 'erro');
+                        }
+                    }
                 }, 50);
+            } else {
+                console.warn('⚠️ [BD] Supabase NÃO está pronto - dados salvos apenas localmente');
+                if (typeof mostrarToast === 'function') {
+                    mostrarToast('Dados salvos localmente (sem conexão)', 'aviso');
+                }
             }
-        } else if (typeof sincronizarLocalParaSupabase === 'function' && typeof supabasePronto === 'function') {
-            // Fallback para função antiga
-            if (supabasePronto()) {
-                setTimeout(() => {
-                    sincronizarLocalParaSupabase().catch(err => {
-                        console.warn('⚠️ [BD] Erro ao sincronizar com Supabase:', err);
-                    });
-                }, 100);
-            }
+        } else {
+            console.warn('⚠️ [BD] Funções de sincronização não disponíveis');
         }
     } catch (e) {
         console.error('❌ [BD] Erro ao salvar:', e);
+        alert('❌ Erro ao salvar: ' + e.message);
     }
 }
 

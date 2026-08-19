@@ -22,6 +22,89 @@
         'gastos', 'chamados', 'alocacoes', 'adiantamentos', 'gastosViagem',
         'documentosVeiculos'
     ];
+    
+    // ============================================================
+    // 🔄 CONVERSÃO DE CHAVES: camelCase ↔ minúsculas
+    // O Postgres converte tudo para minúsculas, então precisamos
+    // converter os nomes dos campos ao enviar/receber dados
+    // ============================================================
+    
+    // Mapeamento de campos que precisam de conversão
+    const MAPEAMENTO_CAMPOS = {
+        // Usuários
+        'numeroCNH': 'numerocnh',
+        'registroCNH': 'registrocnh',
+        'categoriaCNH': 'categoriacnh',
+        'dataValidadeCNH': 'datavalidadecnh',
+        // Veículos
+        'usaKm': 'usakm',
+        'usaHorimetro': 'usahorimetro',
+        // Manutenções
+        'kmAtual': 'kmatual',
+        'dataProximaRevisao': 'dataproximarevisao',
+        // Alocações
+        'horimetroSaida': 'horimetrosaida',
+        'horimetroRetorno': 'horimetroretorno',
+        'horimetroRodado': 'horimetrorodado',
+        // Gastos
+        'pontoAbastecimento': 'pontoabastecimento',
+        'tipoCombustivel': 'tipocombustivel',
+        'perfilLancamento': 'perfillancamento',
+        // Adiantamentos
+        'valorEstornado': 'valorestornado',
+        'liberadoPor': 'liberadopor',
+        'dataLiberacao': 'dataliberacao',
+        'dataFechamento': 'datafechamento',
+        'fechadoPor': 'fechadopor',
+        // Documentos
+        'veiculoId': 'veiculoid',
+        'dataEmissao': 'dataemissao',
+        'dataVencimento': 'datavencimento',
+        'dataCadastro': 'datacadastro',
+        'arquivoNome': 'arquivonome',
+        'arquivoTipo': 'arquivotipo',
+        'arquivoBase64': 'arquivobase64',
+        'arquivoTamanho': 'arquivotamanho',
+        'criado_em': 'criado_em'
+    };
+    
+    // Cria mapa reverso (minúsculas → camelCase)
+    const MAPEAMENTO_REVERSO = {};
+    for (const key in MAPEAMENTO_CAMPOS) {
+        MAPEAMENTO_REVERSO[MAPEAMENTO_CAMPOS[key]] = key;
+    }
+    
+    // Converte objeto para enviar ao Postgres (camelCase → minúsculas)
+    function converterParaPostgres(obj) {
+        if (!obj || typeof obj !== 'object') return obj;
+        if (Array.isArray(obj)) {
+            return obj.map(converterParaPostgres);
+        }
+        const resultado = {};
+        for (const chave in obj) {
+            if (obj.hasOwnProperty(chave)) {
+                const chaveConvertida = MAPEAMENTO_CAMPOS[chave] || chave.toLowerCase();
+                resultado[chaveConvertida] = obj[chave];
+            }
+        }
+        return resultado;
+    }
+    
+    // Converte objeto recebido do Postgres (minúsculas → camelCase)
+    function converterDoPostgres(obj) {
+        if (!obj || typeof obj !== 'object') return obj;
+        if (Array.isArray(obj)) {
+            return obj.map(converterDoPostgres);
+        }
+        const resultado = {};
+        for (const chave in obj) {
+            if (obj.hasOwnProperty(chave)) {
+                const chaveConvertida = MAPEAMENTO_REVERSO[chave] || chave;
+                resultado[chaveConvertida] = obj[chave];
+            }
+        }
+        return resultado;
+    }
 
     // Armazena os dados na memória para acesso rápido
     window.dadosSistema = window.dadosSistema || {};
@@ -100,7 +183,8 @@
 
                 if (error) throw error;
 
-                todosDados[tabela] = data || [];
+                // 🔄 Converte minúsculas → camelCase para o JavaScript
+                todosDados[tabela] = converterDoPostgres(data || []);
                 console.log(`✅ ${tabela}: ${data.length} registros baixados`);
 
                 // 💾 Faz backup automático no localStorage
@@ -566,6 +650,17 @@
         };
     }
 
+    // Função auxiliar para gerar hash de strings
+    function hashCode(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash;
+    }
+    
     // ============================================================
     // 📢 EXPÕE FUNÇÕES GLOBALMENTE
     // ============================================================
@@ -682,27 +777,52 @@
             return { sucesso: false, erro: 'Sem conexão' };
         }
         
-        console.log('⚡ [sync.js] Forçando sincronização local → Supabase...');
+        console.log('⚡ [sync.js] ==========================================');
+        console.log('⚡ [sync.js] FORÇANDO SINCRONIZAÇÃO LOCAL → SUPABASE');
+        console.log('⚡ [sync.js] ==========================================');
         
         const supabase = window.supabase;
         let totalSincronizados = 0;
         let tabelasComErro = [];
+        
+        // Log detalhado dos usuários antes de enviar
+        if (window.BD.usuarios && window.BD.usuarios.length > 0) {
+            console.log('👤 [sync.js] Usuários que serão enviados:');
+            window.BD.usuarios.forEach(function(u, i) {
+                console.log('   ', i + 1, '| ID:', u.id, '| Nome:', u.nome, '| CPF:', u.cpf || 'VAZIO', '| Tel:', u.telefone || 'VAZIO');
+            });
+        }
         
         for (const tabela of TABELAS) {
             try {
                 const dadosLocais = window.BD[tabela];
                 
                 if (!dadosLocais || !Array.isArray(dadosLocais) || dadosLocais.length === 0) {
+                    console.log('ℹ️ [sync.js]', tabela, ': sem dados locais, pulando...');
                     continue;
                 }
                 
                 const dadosParaEnviar = dadosLocais.map(item => {
-                    const copia = { ...item };
+                    // 🔄 Converte camelCase → minúsculas para o Postgres
+                    let copia = converterParaPostgres({ ...item });
                     if (copia.id !== undefined && copia.id !== null) {
                         copia.id = Number(copia.id);
                     }
+                    // Trata locais: converte ID de string para número se necessário
+                    if (tabela === 'locais' && typeof copia.id === 'string') {
+                        // Atribui IDs numéricos para locais
+                        const idsLocais = { 'patio-metalica': 1, 'patio-usina-conc': 2, 'obra': 3 };
+                        copia.id = idsLocais[copia.id] || Math.abs(hashCode(copia.id));
+                    }
                     return copia;
                 });
+                
+                console.log('📤 [sync.js] Enviando', tabela, '→', dadosParaEnviar.length, 'registros...');
+                
+                // Log do primeiro registro para debug
+                if (dadosParaEnviar.length > 0 && tabela === 'usuarios') {
+                    console.log('   📋 Primeiro usuário:', JSON.stringify(dadosParaEnviar[0], null, 2));
+                }
                 
                 const { data, error } = await supabase
                     .from(tabela)
@@ -711,14 +831,13 @@
                 
                 if (error) throw error;
                 
-                console.log(`✅ ${tabela}: ${dadosParaEnviar.length} registros sincronizados`);
+                console.log('✅ [sync.js]', tabela, ': SINCRONIZADO!', data ? data.length : 0, 'registros retornados');
                 totalSincronizados += dadosParaEnviar.length;
                 
             } catch (erro) {
-                // Ignora erro de tabela não existir (provavelmente não foi criada ainda)
-                if (!erro.message || !erro.message.includes('does not exist')) {
-                    console.error(`❌ Erro ao sincronizar ${tabela}:`, erro.message);
-                }
+                console.error('❌ [sync.js] ERRO em', tabela, ':', erro.message || erro);
+                if (erro.details) console.error('   Detalhes:', erro.details);
+                if (erro.hint) console.error('   Dica:', erro.hint);
                 tabelasComErro.push(tabela);
             }
         }
@@ -726,13 +845,81 @@
         // Atualiza flag
         window._ultimaSincronizacaoSupabase = Date.now();
         
-        console.log(`⚡ [sync.js] Sincronização forçada concluída: ${totalSincronizados} registros`);
+        console.log('⚡ [sync.js] ==========================================');
+        console.log('⚡ [sync.js] SINCRONIZAÇÃO CONCLUÍDA:');
+        console.log('⚡ [sync.js] Total de registros:', totalSincronizados);
+        console.log('⚡ [sync.js] Tabelas com erro:', tabelasComErro);
+        console.log('⚡ [sync.js] ==========================================');
         
         return {
             sucesso: true,
             totalSincronizados,
             tabelasComErro
         };
+    };
+
+    // ============================================================
+    // 🧪 FUNÇÃO DE TESTE: Atualizar um usuário específico
+    // Use no console: testarAtualizarUsuario('joao', { cpf: '12345678909' })
+    // ============================================================
+    window.testarAtualizarUsuario = async function(usuarioLogin, novosDados) {
+        console.log('🧪 ==========================================');
+        console.log('🧪 TESTE: Atualizando usuário', usuarioLogin);
+        console.log('🧪 Novos dados:', novosDados);
+        console.log('🧪 ==========================================');
+        
+        if (!supabasePronto()) {
+            console.error('❌ Supabase não está pronto!');
+            return;
+        }
+        
+        // 1. Atualiza no localStorage
+        const usuario = window.BD.usuarios.find(u => u.usuario === usuarioLogin);
+        if (!usuario) {
+            console.error('❌ Usuário não encontrado no localStorage!');
+            return;
+        }
+        
+        console.log('👤 Usuário encontrado - ID:', usuario.id, 'Nome:', usuario.nome);
+        
+        // Aplica novos dados
+        Object.assign(usuario, novosDados);
+        console.log('👤 Dados atualizados:', JSON.stringify(usuario, null, 2));
+        
+        // 2. Salva
+        salvarDados();
+        
+        // 3. Tenta atualizar DIRETAMENTE no Supabase
+        console.log('📤 Tentando UPSERT DIRETO no Supabase...');
+        
+        try {
+            const { data, error } = await window.supabase
+                .from('usuarios')
+                .upsert([usuario], { onConflict: 'id', ignoreDuplicates: false })
+                .select();
+            
+            if (error) {
+                console.error('❌ ERRO do Supabase:', error);
+            } else {
+                console.log('✅ SUPABASE RESPOSTA:', data);
+                console.log('✅ USUÁRIO ATUALIZADO NO SUPABASE!');
+            }
+        } catch (e) {
+            console.error('❌ EXCEÇÃO:', e);
+        }
+        
+        // 4. Busca do Supabase para confirmar
+        console.log('🔍 Buscando dados do Supabase para confirmar...');
+        const { data: dadosConfirmacao, error: erroConfirmacao } = await window.supabase
+            .from('usuarios')
+            .select('*')
+            .eq('id', usuario.id);
+        
+        if (erroConfirmacao) {
+            console.error('❌ Erro ao confirmar:', erroConfirmacao);
+        } else {
+            console.log('✅ DADOS NO SUPABASE:', dadosConfirmacao);
+        }
     };
 
     window.testarSincronizacao = async function() {
